@@ -7,21 +7,29 @@ import "./uniswapv2/interfaces/IUniswapV2Factory.sol";
 import "./libraries/Priviledgeable.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "./interfaces/IEmiRouter.sol";
+import "./interfaces/IEmiswap.sol";
+import "./libraries/TransferHelper.sol";
 
 /**
- * @dev Contract to convert liquidity from other market makers to our Uniswap pairs.
+ * @dev Contract to convert liquidity from other market makers (Uniswap/Mooniswap) to our pairs.
  */
 contract EmiVamp is Initializable, Priviledgeable {
     using SafeERC20 for IERC20;
 
-    IERC20 [] private _allowedTokens; // List of tokens that we accept
+    struct LPTokenInfo {
+      address lpToken;
+      uint16  tokenType; // Token type: 0 - uniswap (default), 1 - mooniswap
+    }
+
+    IERC20 [] public allowedTokens; // List of tokens that we accept
 
     // Info of each third-party lp-token.
-    IUniswapV2Pair [] public lpTokensInfo;
- string public codeVersion = "EmiVamp v1.0-11-g02dccfa";
+    LPTokenInfo [] public lpTokensInfo;
+
+ string public codeVersion = "EmiVamp v1.0-20-g84634f1";
     IEmiRouter public ourRouter;
 
-    event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
+    event Deposit(address indexed user, address indexed token, uint256 amount);
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
@@ -29,13 +37,14 @@ contract EmiVamp is Initializable, Priviledgeable {
   /**
    * @dev Implementation of {UpgradeableProxy} type of constructors
    */
-  function initialize(address[] calldata _lptokens, address _ourrouter) public onlyAdmin initializer
+  function initialize(address[] calldata _lptokens, uint8[] calldata _types, address _ourrouter) public onlyAdmin initializer
   {
     require(_lptokens.length > 0);
+    require(_lptokens.length == _types.length);
     require(_ourrouter != address(0));
 
     for (uint i = 0; i < _lptokens.length; i++) {
-      lpTokensInfo.push(IUniswapV2Pair(_lptokens[i]));
+      lpTokensInfo.push(LPTokenInfo({lpToken: _lptokens[i], tokenType: _types[i]}));
     }
     ourRouter = IEmiRouter(_ourrouter);
     _addAdmin(msg.sender);
@@ -44,23 +53,14 @@ contract EmiVamp is Initializable, Priviledgeable {
   /**
    * @dev Returns length of allowed tokens private array
    */
-  function getAllowedTokensLength() external view onlyAdmin returns (uint)
+  function getAllowedTokensLength() external view returns (uint)
   {
-    return _allowedTokens.length;
+    return allowedTokens.length;
   }
 
   function lpTokensInfoLength() external view returns (uint)
   {
     return lpTokensInfo.length;
-  }
-
-  /**
-   * @dev Returns allowed token address stored under specified index in array
-   */
-  function getAllowedToken(uint idx) external view onlyAdmin returns (address)
-  {
-    require(idx < _allowedTokens.length);
-    return address(_allowedTokens[idx]);
   }
 
   /**
@@ -70,27 +70,28 @@ contract EmiVamp is Initializable, Priviledgeable {
   {
     require(_token != address(0));
 
-    for (uint i = 0; i < _allowedTokens.length; i++) {
-      if (address(_allowedTokens[i])==_token) {
+    for (uint i = 0; i < allowedTokens.length; i++) {
+      if (address(allowedTokens[i])==_token) {
         return;
       }
     }
-    _allowedTokens.push(IERC20(_token));
+    allowedTokens.push(IERC20(_token));
   }
 
   /**
    * @dev Adds new entry to the list of convertible LP-tokens
    */  
-  function addLPToken(address _token) external onlyAdmin returns (uint)
+  function addLPToken(address _token, uint16 _tokenType) external onlyAdmin returns (uint)
   {
     require(_token != address(0));
+    require(_tokenType < 2);
 
     for (uint i = 0; i < lpTokensInfo.length; i++) {
-      if (address(lpTokensInfo[i])==_token) {
+      if (lpTokensInfo[i].lpToken==_token) {
         return i;
       }
     }
-    lpTokensInfo.push(IUniswapV2Pair(_token));
+    lpTokensInfo.push(LPTokenInfo({lpToken: _token, tokenType: _tokenType}));
     return lpTokensInfo.length;
   }
 
@@ -98,10 +99,26 @@ contract EmiVamp is Initializable, Priviledgeable {
   /**
    * @dev Main function that converts third-party liquidity (represented by LP-tokens) to our own LP-tokens
    */  
-    function deposit(uint256 _pid, uint256 _amount) public {
+    function deposit(uint256 _pid, uint256 _amount) public
+  {
         require(_pid < lpTokensInfo.length);
-        IUniswapV2Pair lpToken = lpTokensInfo[_pid];
 
+        if (lpTokensInfo[_pid].tokenType == 0) {
+          _depositUniswap(_pid, _amount);
+        } else if (lpTokensInfo[_pid].tokenType == 1) {
+          _depositMooniswap(_pid, _amount);
+        } else {
+          return;
+        }
+        emit Deposit(msg.sender, lpTokensInfo[_pid].lpToken, _amount);
+    }
+
+  /**
+   * @dev Actual function that converts third-party Uniswap liquidity (represented by LP-tokens) to our own LP-tokens
+   */  
+    function _depositUniswap(uint256 _pid, uint256 _amount) internal {
+        IUniswapV2Pair lpToken = IUniswapV2Pair(lpTokensInfo[_pid].lpToken);
+    
 	// check pair existance
         IERC20 token0 = IERC20(lpToken.token0());
         IERC20 token1 = IERC20(lpToken.token1());
@@ -112,18 +129,69 @@ contract EmiVamp is Initializable, Priviledgeable {
 	// get liquidity
         (uint amountIn0, uint amountIn1) = lpToken.burn(address(this));
 
-        (uint amountOut0, uint amountOut1, ) = ourRouter.addLiquidity(address(token0), address(token1), amountIn0, amountIn1, amountIn0.div(2), amountIn1.div(2));
+        _addOurLiquidity(address(token0), address(token1), amountIn0, amountIn1);
+    }
+
+   function _addOurLiquidity(address _token0, address _token1, uint _amount0, uint _amount1) internal
+   {
+        (uint amountOut0, uint amountOut1, ) = ourRouter.addLiquidity(
+          address(_token0), address(_token1), _amount0, _amount1, 0, 0
+        );
 
         // return the change
-        if (amountOut0 - amountIn0 > 0) {
-          token0.safeTransfer(address(msg.sender), amountOut0 - amountIn0);
+        if (amountOut0 - _amount0 > 0) {
+          TransferHelper.safeTransfer(_token0, address(msg.sender), amountOut0 - _amount0);
         }
 
-        if (amountOut1 - amountIn1 > 0) {
-          token1.safeTransfer(address(msg.sender), amountOut1 - amountIn1);
+        if (amountOut1 - _amount1 > 0) {
+          TransferHelper.safeTransfer(_token1, address(msg.sender), amountOut1 - _amount1);
         }
-        emit Deposit(msg.sender, _pid, _amount);
+   }
+
+  /**
+   * @dev Actual function that converts third-party Mooniswap liquidity (represented by LP-tokens) to our own LP-tokens
+   */  
+    function _depositMooniswap(uint256 _pid, uint256 _amount) internal {
+        IEmiswap lpToken = IEmiswap(lpTokensInfo[_pid].lpToken);
+
+	// check pair existance
+        IERC20 token0 = IERC20(lpToken.tokens(0));
+        IERC20 token1 = IERC20(lpToken.tokens(1));
+
+        // transfer to us
+        uint amountBefore0 = token0.balanceOf(msg.sender);
+        uint amountBefore1 = token1.balanceOf(msg.sender);
+
+        uint [] memory minVals = new uint[](2);
+
+        lpToken.withdraw(_amount, minVals);
+
+	// get liquidity
+        uint amount0 = token0.balanceOf(msg.sender) - amountBefore0;
+        uint amount1 = token1.balanceOf(msg.sender) - amountBefore1;
+
+        _addOurLiquidity(address(token0), address(token1), amount0, amount1);
     }
+
+  /**
+    @dev Function check for LP token pair availability. Return _pid or 0 if none exists
+  */
+   function isPairAvailable(address _token0, address _token1) public view returns (uint16)
+   {
+     require(_token0 != address(0));
+     require(_token1 != address(0));
+
+     for (uint16 i = 0; i < lpTokensInfo.length; i++) {
+       IUniswapV2Pair lpt = IUniswapV2Pair(lpTokensInfo[i].lpToken);
+       address t0 = lpt.token0();
+       address t1 = lpt.token1();
+
+       if ((t0 ==_token0 && t1 == _token1) || (t1 ==_token0 && t0 == _token1)) {
+         return i;
+       }
+     }
+     return 0;
+   }
 
    /**
     * @dev Owner can transfer out any accidentally sent ERC20 tokens
