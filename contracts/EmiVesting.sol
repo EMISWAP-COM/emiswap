@@ -55,12 +55,12 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
- string public codeVersion = "EmiVesting v1.0-11-g02dccfa";
+ string public codeVersion = "EmiVesting v1.0-20-g84634f1";
 
     //-----------------------------------------------------------------------------------
     // Smart contract Constructor
     //-----------------------------------------------------------------------------------
-    function initialize(address _ESW, uint _version) public initializer
+    function initialize(address _ESW) public initializer
     {
       require(_ESW != address(0), "Token address cannot be empty");
       _token = _ESW;

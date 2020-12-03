@@ -32,7 +32,7 @@ const { BN,
     beforeEach(async function () {
       this.usdy = await MockUSDY.new();
       this.emiVest = await EmiVesting.new();
-      await this.emiVest.initialize(this.usdy.address, 2);
+      await this.emiVest.initialize(this.usdy.address);
     });
   
     describe('As a generic user we', async function () {  

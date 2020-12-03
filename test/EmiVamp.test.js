@@ -137,7 +137,7 @@ describe('EmiVamp test', function () {
 
         this.router = await EmiRouter.new(this.factory.address, weth.address);
 
-        await vamp.initialize([pairAddress, pairAddressUSDX_WETH], this.router.address, {from:henry});
+        await vamp.initialize([pairAddress, pairAddressUSDX_WETH], [0, 0], this.router.address, {from:henry});
         await uniswapPair.approve(vamp.address, '1000000000000000000000000000', {from: alice});
     });
     describe('Process allowed tokens lists', ()=> {
