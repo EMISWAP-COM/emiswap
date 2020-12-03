@@ -13,8 +13,9 @@ import "./libraries/Sqrt.sol";
 
 interface IFactory {
     function fee() external view returns(uint256);
+    function feeVault() external view returns(uint256);
+    function addressVault() external view returns(address);
 }
-
 
 library VirtualBalance {
     using SafeMath for uint256;
@@ -49,7 +50,7 @@ library VirtualBalance {
 }
 
 
-contract Mooniswap is ERC20, ReentrancyGuard, Ownable {
+contract Emiswap is ERC20, ReentrancyGuard, Ownable {
     using Sqrt for uint256;
     using SafeMath for uint256;
     using UniERC20 for IERC20;
@@ -87,6 +88,12 @@ contract Mooniswap is ERC20, ReentrancyGuard, Ownable {
         address referral
     );
 
+    event Swapped2(
+        address indexed account,
+        address indexed to,        
+        uint256 resultVault
+    );
+
     uint256 public constant REFERRAL_SHARE = 20; // 1/share = 5% of LPs revenue
     uint256 public constant BASE_SUPPLY = 1000;  // Total supply on first deposit
     uint256 public constant FEE_DENOMINATOR = 1e18;
@@ -99,20 +106,28 @@ contract Mooniswap is ERC20, ReentrancyGuard, Ownable {
     mapping(IERC20 => VirtualBalance.Data) public virtualBalancesForRemoval;
 
     constructor(IERC20[] memory assets, string memory name, string memory symbol) public ERC20(name, symbol) {
-        require(bytes(name).length > 0, "Mooniswap: name is empty");
-        require(bytes(symbol).length > 0, "Mooniswap: symbol is empty");
-        require(assets.length == 2, "Mooniswap: only 2 tokens allowed");
+        require(bytes(name).length > 0, "Emiswap: name is empty");
+        require(bytes(symbol).length > 0, "Emiswap: symbol is empty");
+        require(assets.length == 2, "Emiswap: only 2 tokens allowed");
 
         factory = IFactory(msg.sender);
         tokens = assets;
         for (uint i = 0; i < assets.length; i++) {
-            require(!isToken[assets[i]], "Mooniswap: duplicate tokens");
+            require(!isToken[assets[i]], "Emiswap: duplicate tokens");
             isToken[assets[i]] = true;
         }
     }
 
     function fee() public view returns(uint256) {
         return factory.fee();
+    }
+
+    function feeVault() public view returns(uint256) {
+        return factory.feeVault();
+    }
+
+    function addressVault() public view returns(address) {
+        return factory.addressVault();
     }
 
     function getTokens() external view returns(IERC20[] memory) {
@@ -133,18 +148,18 @@ contract Mooniswap is ERC20, ReentrancyGuard, Ownable {
         return Math.min(virtualBalancesForRemoval[token].current(balance), balance);
     }
 
-    function getReturn(IERC20 src, IERC20 dst, uint256 amount) external view returns(uint256) {
+    function getReturn(IERC20 src, IERC20 dst, uint256 amount) external view returns(uint256, uint256) {
         return _getReturn(src, dst, amount, getBalanceForAddition(src), getBalanceForRemoval(dst));
     }
 
-    function deposit(uint256[] calldata amounts, uint256[] calldata minAmounts) external payable nonReentrant returns(uint256 fairSupply) {
+    function deposit(uint256[] calldata amounts, uint256[] calldata minAmounts) external nonReentrant returns(uint256 fairSupply) {
         IERC20[] memory _tokens = tokens;
-        require(amounts.length == _tokens.length, "Mooniswap: wrong amounts length");
-        require(msg.value == (_tokens[0].isETH() ? amounts[0] : (_tokens[1].isETH() ? amounts[1] : 0)), "Mooniswap: wrong value usage");
+        require((amounts.length > 0) && (amounts.length == _tokens.length), "Emiswap: wrong amounts length");
+        require((amounts[0] > 0) && (amounts[1] > 0), "Emiswap: wrong value usage");
 
         uint256[] memory realBalances = new uint256[](amounts.length);
         for (uint i = 0; i < realBalances.length; i++) {
-            realBalances[i] = _tokens[i].uniBalanceOf(address(this)).sub(_tokens[i].isETH() ? msg.value : 0);
+            realBalances[i] = _tokens[i].uniBalanceOf(address(this));
         }
 
         uint256 totalSupply = totalSupply();
@@ -167,10 +182,10 @@ contract Mooniswap is ERC20, ReentrancyGuard, Ownable {
 
         uint256 fairSupplyCached = fairSupply;
         for (uint i = 0; i < amounts.length; i++) {
-            require(amounts[i] > 0, "Mooniswap: amount is zero");
+            require(amounts[i] > 0, "Emiswap: amount is zero");
             uint256 amount = (totalSupply == 0) ? amounts[i] :
                 realBalances[i].mul(fairSupplyCached).add(totalSupply - 1).div(totalSupply);
-            require(amount >= minAmounts[i], "Mooniswap: minAmount not reached");
+            require(amount >= minAmounts[i], "Emiswap: minAmount not reached");
 
             _tokens[i].uniTransferFromSenderToThis(amount);
             if (totalSupply > 0) {
@@ -186,7 +201,7 @@ contract Mooniswap is ERC20, ReentrancyGuard, Ownable {
             }
         }
 
-        require(fairSupply > 0, "Mooniswap: result is not enough");
+        require(fairSupply > 0, "Emniswap: result is not enough");
         _mint(msg.sender, fairSupply);
 
         emit Deposited(msg.sender, fairSupply);
@@ -202,7 +217,7 @@ contract Mooniswap is ERC20, ReentrancyGuard, Ownable {
             uint256 preBalance = token.uniBalanceOf(address(this));
             uint256 value = preBalance.mul(amount).div(totalSupply);
             token.uniTransfer(msg.sender, value);
-            require(i >= minReturns.length || value >= minReturns[i], "Mooniswap: result is not enough");
+            require(i >= minReturns.length || value >= minReturns[i], "Emiswap: result is not enough");
 
             virtualBalancesForAddition[token].scale(preBalance, totalSupply.sub(amount), totalSupply);
             virtualBalancesForRemoval[token].scale(preBalance, totalSupply.sub(amount), totalSupply);
@@ -211,11 +226,11 @@ contract Mooniswap is ERC20, ReentrancyGuard, Ownable {
         emit Withdrawn(msg.sender, amount);
     }
 
-    function swap(IERC20 src, IERC20 dst, uint256 amount, uint256 minReturn, address referral) external payable nonReentrant returns(uint256 result) {
-        require(msg.value == (src.isETH() ? amount : 0), "Mooniswap: wrong value usage");
+    function swap(IERC20 src, IERC20 dst, uint256 amount, uint256 minReturn, address to, address referral) external nonReentrant returns(uint256 result) {
+        require(address(src) != address(0), "Emiswap: only tokens allowed");
 
         Balances memory balances = Balances({
-            src: src.uniBalanceOf(address(this)).sub(src.isETH() ? msg.value : 0),
+            src: src.uniBalanceOf(address(this)),
             dst: dst.uniBalanceOf(address(this))
         });
 
@@ -225,9 +240,14 @@ contract Mooniswap is ERC20, ReentrancyGuard, Ownable {
 
         src.uniTransferFromSenderToThis(amount);
         uint256 confirmed = src.uniBalanceOf(address(this)).sub(balances.src);
-        result = _getReturn(src, dst, confirmed, srcAdditionBalance, dstRemovalBalance);
-        require(result > 0 && result >= minReturn, "Mooniswap: return is not enough");
-        dst.uniTransfer(msg.sender, result);
+
+        uint256 resultVault;
+        (result, resultVault) = _getReturn(src, dst, confirmed, srcAdditionBalance, dstRemovalBalance);
+        require(result > 0 && result >= minReturn, "Emiswap: return is not enough");
+        dst.uniTransfer( payable(to), result );
+        if (resultVault > 0) {
+            dst.uniTransfer( payable(addressVault()), resultVault );
+        }
 
         // Update virtual balances to the same direction only at imbalanced state
         if (srcAdditionBalance != balances.src) {
@@ -241,20 +261,9 @@ contract Mooniswap is ERC20, ReentrancyGuard, Ownable {
         virtualBalancesForRemoval[src].update(balances.src);
         virtualBalancesForAddition[dst].update(balances.dst);
 
-        if (referral != address(0)) {
-            uint256 invariantRatio = uint256(1e36);
-            invariantRatio = invariantRatio.mul(balances.src.add(confirmed)).div(balances.src);
-            invariantRatio = invariantRatio.mul(balances.dst.sub(result)).div(balances.dst);
-            if (invariantRatio > 1e36) {
-                // calculate share only if invariant increased
-                uint256 referralShare = invariantRatio.sqrt().sub(1e18).mul(totalSupply()).div(1e18).div(REFERRAL_SHARE);
-                if (referralShare > 0) {
-                    _mint(referral, referralShare);
-                }
-            }
-        }
+        emit Swapped(msg.sender, address(src), address(dst),confirmed, result, balances.src, balances.dst, totalSupply(), referral);
+        emit Swapped2(msg.sender, to, resultVault);
 
-        emit Swapped(msg.sender, address(src), address(dst), confirmed, result, balances.src, balances.dst, totalSupply(), referral);
 
         // Overflow of uint128 is desired
         volumes[src].confirmed += uint128(confirmed);
@@ -270,15 +279,19 @@ contract Mooniswap is ERC20, ReentrancyGuard, Ownable {
         token.uniTransfer(msg.sender, amount);
 
         for (uint i = 0; i < balances.length; i++) {
-            require(tokens[i].uniBalanceOf(address(this)) >= balances[i], "Mooniswap: access denied");
+            require(tokens[i].uniBalanceOf(address(this)) >= balances[i], "Emiswap: access denied");
         }
-        require(balanceOf(address(this)) >= BASE_SUPPLY, "Mooniswap: access denied");
+        require(balanceOf(address(this)) >= BASE_SUPPLY, "Emiswap: access denied");
     }
 
-    function _getReturn(IERC20 src, IERC20 dst, uint256 amount, uint256 srcBalance, uint256 dstBalance) internal view returns(uint256) {
+    function _getReturn(IERC20 src, IERC20 dst, uint256 amount, uint256 srcBalance, uint256 dstBalance) internal view returns(uint256, uint256) {
         if (isToken[src] && isToken[dst] && src != dst && amount > 0) {
             uint256 taxedAmount = amount.sub(amount.mul(fee()).div(FEE_DENOMINATOR));
-            return taxedAmount.mul(dstBalance).div(srcBalance.add(taxedAmount));
+            uint256 resWFee  = taxedAmount.mul( dstBalance ).div(srcBalance.add(taxedAmount));
+            uint256 resWOFee = amount.mul     ( dstBalance ).div(srcBalance.add(amount));
+            uint256 resVault = (feeVault() == 0 ? 0 : resWOFee.sub(resWFee).div( fee().div(feeVault()) ) ) ;
+
+            return( resWFee, resVault );
         }
     }
 }

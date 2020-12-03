@@ -3,3 +3,5 @@ coverage
 coverage.json
 dist
 build
+
+\.env
