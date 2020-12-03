@@ -13,7 +13,7 @@ contract EmiPrice is Initializable, Priviledgeable {
   address [3] public market;
   address private _DAI;
 
- string public codeVersion = "EmiPrice v1.0-11-g02dccfa";
+ string public codeVersion = "EmiPrice v1.0-14-ge70a9b4";
 
     /**
      * @dev Upgradeable proxy constructor replacement
