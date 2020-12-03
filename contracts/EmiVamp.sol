@@ -134,6 +134,9 @@ contract EmiVamp is Initializable, Priviledgeable {
 
    function _addOurLiquidity(address _token0, address _token1, uint _amount0, uint _amount1) internal
    {
+        TransferHelper.safeApprove(_token0, address(ourRouter), _amount0);
+        TransferHelper.safeApprove(_token1, address(ourRouter), _amount1);
+
         (uint amountOut0, uint amountOut1, ) = ourRouter.addLiquidity(
           address(_token0), address(_token1), _amount0, _amount1, 0, 0
         );
