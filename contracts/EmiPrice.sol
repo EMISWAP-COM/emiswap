@@ -5,8 +5,9 @@ import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./uniswapv2/interfaces/IUniswapV2Factory.sol";
 import "./uniswapv2/interfaces/IUniswapV2Pair.sol";
+import "./libraries/Priviledgeable.sol";
 
-contract EmiPrice is Initializable {
+contract EmiPrice is Initializable, Priviledgeable {
   using SafeMath for uint;
   using SafeMath for uint256;
   address [3] public market;
@@ -27,6 +28,7 @@ contract EmiPrice is Initializable {
     market[1] = _market2;
     market[2] = _market3;
     _DAI = _daitoken;
+    _addAdmin(msg.sender);
   }
 
 
@@ -61,4 +63,19 @@ contract EmiPrice is Initializable {
 
     return _prices;
   }
+
+  function changeDAI(address _daiToken) external onlyAdmin
+  {
+    require(_daiToken != address(0), "Token address cannot be 0");
+    _DAI = _daiToken; 
+  }
+
+  function changeMarket(uint8 idx, address _market) external onlyAdmin
+  {
+    require(_market != address(0), "Token address cannot be 0");
+    require(idx < 3, "Wrong market index");
+
+    market[idx] = _market;
+  }
+
 }

@@ -134,11 +134,17 @@ describe('EmiVamp test', function () {
         await this.factory.setFeeVault(money.weth('0.0005'), {from: TestOwner});
         await this.factory.setaddressVault(clarc, {from: TestOwner});
 
-
         this.router = await EmiRouter.new(this.factory.address, weth.address);
 
         await vamp.initialize([pairAddress, pairAddressUSDX_WETH], [0, 0], this.router.address, {from:henry});
         await uniswapPair.approve(vamp.address, '1000000000000000000000000000', {from: alice});
+        await uniswapPair.approve(this.router.address, '1000000000000000000000000000', {from: alice});
+        await weth.approve(this.router.address, '1000000000000000000000000000', {from: alice});
+        await usdz.approve(this.router.address, '1000000000000000000000000000', {from: alice});
+        await usdx.approve(this.router.address, '1000000000000000000000000000', {from: alice});
+        await weth.approve(vamp.address, '1000000000000000000000000000', {from: alice});
+        await usdz.approve(vamp.address, '1000000000000000000000000000', {from: alice});
+        await usdx.approve(vamp.address, '1000000000000000000000000000', {from: alice});
     });
     describe('Process allowed tokens lists', ()=> {
       it('should successfully get tokens list length under admin', async function () {
@@ -146,8 +152,9 @@ describe('EmiVamp test', function () {
         console.log('We have %d allowed tokens', b);
         assert.equal(b, 0);
       });
-      it('should deny to get tokens list length under non-admin wallet', async function () {
-        expectRevert.unspecified(vamp.getAllowedTokensLength());
+      it('should successfully get tokens list length under non-admin wallet', async function () {
+        let b = await vamp.getAllowedTokensLength();
+        assert.equal(b, 0);
       });
       it('should successfully add tokens under admin', async function () {
         let tx = await vamp.addAllowedToken(weth.address, {from: henry});
@@ -162,9 +169,9 @@ describe('EmiVamp test', function () {
         await vamp.addAllowedToken(usdz.address, {from: henry});
         b = await vamp.getAllowedTokensLength({from: henry});
         assert.equal(b, 2);
-        b = await vamp.getAllowedToken(0, {from: henry});
+        b = await vamp.allowedTokens(0, {from: henry});
         assert.equal(b, weth.address);
-        b = await vamp.getAllowedToken(1, {from: henry});
+        b = await vamp.allowedTokens(1, {from: henry});
         assert.equal(b, usdz.address);
       });
       it('should allow to list LP-tokens', async function () {
@@ -172,25 +179,24 @@ describe('EmiVamp test', function () {
         console.log(b);
         assert.equal(b, 2);
 	b = await vamp.lpTokensInfo(0);
-        assert.equal(b, uniswapPair.address);
+        assert.equal(b.lpToken, uniswapPair.address);
 	b = await vamp.lpTokensInfo(1);
-        assert.equal(b, uniswapPairUSDX_WETH.address);
+        assert.equal(b.lpToken, uniswapPairUSDX_WETH.address);
       });
-      it('should deny to list tokens under non-admin wallet', async function () {
-        expectRevert.unspecified(vamp.getAllowedToken(0));
+      it('should succeed to list tokens under non-admin wallet', async function () {
+        await vamp.addAllowedToken(usdz.address, {from: henry});
+        let b = await vamp.allowedTokens(0);
+        assert.equal(b, usdz.address);
       });
     });
     describe('Deposit LP-tokens to our contract', ()=> {
       it('should be transferring tokens successfully', async function () {
-        await uniswapPair.sync();
         let r = await uniswapPair.getReserves();
         console.log('Pair rsv: %d, %d', r[0].toString(), r[1].toString());
         let b = await uniswapPair.balanceOf(alice);
         console.log('Alice has %d LP-tokens', b);
         let tx = await vamp.deposit(0, 40000000, {from: alice});
         console.log('Gas used for LP-tokens transfer: ' + tx.receipt.gasUsed);
-        b = await this.router.getLiquidity(weth.address, usdz.address, {from: alice});
-        console.log(b);
       });
     });
 });
