@@ -112,7 +112,7 @@ describe('CrowdSale Test', function () {
         let initData = await this.emiVestImpl.contract.methods.initialize(esw.address).encodeABI();
 
         let t = await Proxy.new(this.emiVestImpl.address, this.emiProxyAdmin.address, initData, {from: proxyAdmin});
-        await this.emiVestImpl2.initialize(esw.address, 3);
+        await this.emiVestImpl2.initialize(esw.address);
 
         initData = await this.refImpl.contract.methods.initialize().encodeABI();
 
