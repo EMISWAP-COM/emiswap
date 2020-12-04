@@ -15,7 +15,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "ESW v1.0-18-g44fc1eb";
+ string public codeVersion = "ESW v1.0-20-ga130a08";
 
   modifier mintGranted() {
     require(_mintGranted[msg.sender], "ESWc mint: caller is not alowed!");
