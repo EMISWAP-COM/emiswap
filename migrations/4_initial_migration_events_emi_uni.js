@@ -14,6 +14,8 @@ const MockEMRX = artifacts.require('./MockUSDY.sol');
 
 const EmiVamp  = artifacts.require('EmiVamp');
 
+const EmiPrice = artifacts.require('EmiPrice');
+
 const ESW = artifacts.require('./ESW.sol');
 const EmiVesting = artifacts.require('./EmiVesting.sol');
 const CrowdSale = artifacts.require('./CrowdSale.sol');
@@ -47,7 +49,12 @@ module.exports = async function (deployer, network, accounts) {
     let Referral_deployed  = await deployer.deploy(Referral);
     let EmiRouter_deployed = await deployer.deploy(EmiRouter, EmiFactory_deployed.address, MockWETH_deployed.address);
     let crowdSale_deployed = await deployer.deploy(CrowdSale);
-    let EmiVamp_deployed   = await deployer.deploy(EmiVamp);    
+    let EmiVamp_deployed   = await deployer.deploy(EmiVamp);
+    let EmiPrice_deployed  = await deployer.deploy(EmiPrice);
+
+    /* EmiPrice */
+    await EmiPrice_deployed.initialize(UniswapV2Factory_deployed.address, UniswapV2Factory_deployed.address, 
+        UniswapV2Factory_deployed.address, MockWETH_deployed.address);
 
     /* EmiFactory init */
     await EmiFactory_deployed.setAdminGrant(accounts[0], true);
@@ -152,7 +159,6 @@ module.exports = async function (deployer, network, accounts) {
     await crowdSale_deployed.fetchCoin(MockWBTC_deployed.address,    0, 3); // WBTC, rate from uniswap
 
     /* EmiVamp can eat liquidity from uiniswap pairs */
-    console.log('pairAddressDAIUSDC', pairAddressDAIUSDC);
     await EmiVamp_deployed.initialize([pairAddressDAIUSDC, pairAddressDAIWBTC, pairAddressDAIWETH], [0, 0, 0], EmiRouter_deployed.address);
     
     console.log("========= EMISWAP ======================================================",        
@@ -184,7 +190,9 @@ module.exports = async function (deployer, network, accounts) {
         "\n can eat:",
         "\n uniswap Pair DAI-USDC  = ", pairAddressDAIUSDC, 
         "\n uniswap Pair DAI-WBTC  = ", pairAddressDAIWBTC, 
-        "\n uniswap Pair DAI-WETH  = ", pairAddressDAIWETH
+        "\n uniswap Pair DAI-WETH  = ", pairAddressDAIWETH,
+        "\n\n---------- EmiPrice ---------------------------------------------------",
+        "\n EmiPrice               = ", EmiPrice_deployed.address
     );
 
     // Approve for remove liauiduty
