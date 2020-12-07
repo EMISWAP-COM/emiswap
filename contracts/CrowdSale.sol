@@ -12,8 +12,9 @@ import "./interfaces/IERC20Detailed.sol";
 import "./uniswapv2/interfaces/IUniswapV2Factory.sol";
 import "./uniswapv2/interfaces/IUniswapV2Pair.sol";
 import "./libraries/Priviledgeable.sol";
+import "./libraries/OracleSign.sol";
 
-contract CrowdSale is Initializable, Priviledgeable {
+contract CrowdSale is Initializable, Priviledgeable, OracleSign {
   using SafeMath for uint256;
   using SafeMath for uint32;
   using SafeERC20 for IERC20;
@@ -51,7 +52,7 @@ contract CrowdSale is Initializable, Priviledgeable {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "CrowdSale v1.0-20-ga130a08";
+ string public codeVersion = "CrowdSale v1.0-22-g306519b";
   
   //-----------------------------------------------------------------------------------
   // Smart contract Constructor
@@ -436,6 +437,75 @@ contract CrowdSale is Initializable, Priviledgeable {
     IERC20(coinAddress).safeTransferFrom(msg.sender, foundationWallet, paymentTokenAmount);
     _sendESWToken(eswCurrentTokenAmount);
     emit Buy(msg.sender, eswCurrentTokenAmount, coinId, paymentTokenAmount, _saveReferrals(referralInput));
+  }
+
+  /*
+  * Buy ESW for tokens, with oracle sign
+  * @param coinAddress - payment token address
+  * @param amount - payment token amount (isReverse = false), ESW token amount (isReverse = true),
+  * @param referralInput - referrral address
+  * @param isReverse - 'false' for view from payment token to ESW amount, 'true' for view from ESW amount to payment token amount
+  * @param nonce - buy nonce
+  * @param sig - oracle signature hash
+  */
+  function buySigned(
+    address coinAddress, 
+    uint256 amount, 
+    address referralInput,
+    bool    isReverse, 
+    uint256 nonce,
+    bytes   memory sig
+  )
+    public    
+  {
+    require(amount > 0, "Sale:amount needed");
+    require(coinAddress == _coins[coinIndex[coinAddress]].token, "Sale:Coin not allowed");
+    require(_coins[coinIndex[coinAddress]].status != 0, "Sale:Coin not active");
+
+    // check sign
+    walletNonce[msg.sender] = nonce;
+    bytes32 message = _prefixed(keccak256(abi.encodePacked(
+      msg.sender, 
+      coinAddress, 
+      amount,
+      referralInput,
+      isReverse,
+      nonce, 
+      this)));    
+    require(_recoverSigner(message, sig) == oracle, "CrowdSale:signer is not oracle");
+    
+    (uint256 currentTokenAmount, uint16 coinId,) = buyView(coinAddress, amount, isReverse);
+
+    require(currentTokenAmount > 0, "Sale:0 ESW");
+
+    uint256 eswCurrentTokenAmount;
+    uint256 paymentTokenAmount;
+    if (!isReverse) {
+      eswCurrentTokenAmount = currentTokenAmount;
+      paymentTokenAmount = amount;
+    } else {
+      eswCurrentTokenAmount = amount;
+      paymentTokenAmount = currentTokenAmount;
+    }
+
+    require(eswCurrentTokenAmount.mul(105).div(100) <= IESW(_token).currentCrowdsaleLimit(), "Sale:limit exceeded");
+    IERC20(coinAddress).safeTransferFrom(msg.sender, foundationWallet, paymentTokenAmount);
+    emit Buy(msg.sender, eswCurrentTokenAmount, coinId, paymentTokenAmount, _saveReferrals(referralInput));
+  }
+
+  function setOracle(address _oracle) 
+    public 
+    onlyAdmin
+  {
+    _setOracle(_oracle);
+  }
+
+  function getOracle()
+    public
+    view
+    returns(address)
+  {
+    return(oracle);
   }
 
   /*

@@ -11,7 +11,7 @@ contract EmiReferral is Initializable {
 
   mapping(address => address) public referrals;
 
- string public codeVersion = "EmiReferral v1.0-20-ga130a08";
+ string public codeVersion = "EmiReferral v1.0-22-g306519b";
 
   function initialize() public initializer
   {
