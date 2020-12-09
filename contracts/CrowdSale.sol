@@ -52,7 +52,7 @@ contract CrowdSale is Initializable, Priviledgeable, OracleSign {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "CrowdSale v1.0-22-g306519b";
+ string public codeVersion = "CrowdSale v1.0-23-g0b23f88";
   
   //-----------------------------------------------------------------------------------
   // Smart contract Constructor
@@ -627,6 +627,62 @@ contract CrowdSale is Initializable, Priviledgeable, OracleSign {
     foundationWallet.transfer(ethTokenAmount);
 
     _sendESWToken(eswTokenAmount);
+    emit Buy(msg.sender, eswTokenAmount, 999, ethTokenAmount, _saveReferrals(referralInput));
+  }
+
+  /*
+  * @param referralInput address of referral
+  * @param amount in case isReverse=false amount is ETH value, in case isReverse=true amount is ESW value
+  * @param isReverse switch calc mode false - calc from ETH value, true - calc from ESW value
+  * @param nonce - buy nonce
+  * @param sig - oracle signature hash
+  */
+  function buyWithETHSign(
+    address referralInput, 
+    uint256 amount, 
+    bool    isReverse, 
+    uint256 nonce,
+    bytes   memory sig
+  ) 
+    public 
+    payable
+  {
+    require(msg.value > 0 && (!isReverse ? msg.value == amount : true) , "Sale:ETH needed");
+    if (!isReverse) {
+      require(msg.value == amount, "Sale:ETH needed");
+    } else {
+      require(amount > 0, "Sale:incorrect amount");
+    }
+
+    // check sign
+    walletNonce[msg.sender] = nonce;
+    bytes32 message = _prefixed(keccak256(abi.encodePacked(
+      msg.sender,
+      amount,
+      referralInput,
+      isReverse,
+      nonce, 
+      this)));    
+    require(_recoverSigner(message, sig) == oracle, "CrowdSale:signer is not oracle");
+        
+    uint256 eswTokenAmount;
+    uint256 ethTokenAmount;
+    
+    (uint256 currentTokenAmount, ) = buyWithETHView( (!isReverse ? msg.value : amount) , isReverse);
+
+    if (!isReverse) {
+      eswTokenAmount = currentTokenAmount;
+      ethTokenAmount = msg.value;
+    } else {
+      eswTokenAmount = amount;
+      ethTokenAmount = currentTokenAmount;
+    }
+    
+    require(eswTokenAmount > 0 &&  ethTokenAmount > 0 && ethTokenAmount == msg.value, "Sale:0 ETH");
+    require(eswTokenAmount.mul(105).div(100) <= IESW(_token).currentCrowdsaleLimit(), "Sale:limit exceeded");
+    
+    foundationWallet.transfer(ethTokenAmount);
+    
     emit Buy(msg.sender, eswTokenAmount, 999, ethTokenAmount, _saveReferrals(referralInput));
   }
   
