@@ -15,7 +15,8 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "ESW v1.0-18-g44fc1eb";
+ string public codeVersion = "ESW v1.0-20-ga130a08";
+ uint256 constant public MAXIMUM_SUPPLY = 200_000_000e18;
 
   modifier mintGranted() {
     require(_mintGranted[msg.sender], "ESWc mint: caller is not alowed!");
@@ -88,6 +89,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
   }
 
   function _mint(address recipient, uint256 amount) override internal {
+    require(totalSupply().add(amount) <= MAXIMUM_SUPPLY, "ESW: Maximum supply exceeded");
     _mintLimit[msg.sender] = _mintLimit[msg.sender].sub(amount);
     super._mint(recipient, amount);
   }
