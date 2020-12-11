@@ -47,7 +47,6 @@ contract EmiVamp is Initializable, Priviledgeable {
       lpTokensInfo.push(LPTokenInfo({lpToken: _lptokens[i], tokenType: _types[i]}));
     }
     ourRouter = IEmiRouter(_ourrouter);
-    _addAdmin(msg.sender);
   }
 
   /**
