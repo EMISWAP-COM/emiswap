@@ -115,7 +115,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
   * 
   *************************************************************/
   function mintClaimed(address recipient, uint256 amount, uint256 category) external mintGranted() {
-    require( (crowdSalePoolRemains >= amount || SwapLpPoolRemains >= amount || AmbassadorPoolRemains > amount), 'ESW: pool is empty');
+    require( (crowdSalePoolRemains >= amount || SwapLpPoolRemains >= amount || AmbassadorPoolRemains > amount), "ESW: pool is empty");
     if (category == 1 || category == 2) {
       crowdSalePoolRemains = crowdSalePoolRemains.sub(amount);
     }

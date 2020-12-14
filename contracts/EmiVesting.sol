@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "./interfaces/IEmiVesting.sol";
+import "./interfaces/IESW.sol";
 import "./interfaces/IERC20Detailed.sol";
 import "./libraries/Priviledgeable.sol";
 
@@ -284,21 +285,25 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
       return IERC20(_token).transfer(msg.sender, tokensAvailable);
     }
 
-    function mint() external returns (bool)
+    function mint() external
     {
       // get virtual balance
       (uint _totalBalanceVirt, ) = _getBalance(msg.sender, true);
       require(_totalBalanceVirt > 0, "No virtual tokens available");
-      // mint tokens to vesting address
-      IERC20(_token).mintClaimed(address(this), _totalBalanceVirt);
       // update locks
-      LockRecord[] memory addressLock = _locksTable[beneficiary];
+      LockRecord[] memory addressLock = _locksTable[msg.sender];
 
       for (uint i = 0; i < addressLock.length; i++) {
         if (_isVirtual(addressLock[i].category)) {
-          addressLock[i].category = addressLock[i].category & ~VIRTUAL_MASK;
-          _statsTable[msg.sender][addressLock[i].category].tokensAvailableToMint -= addressLock[i].amount;
-          _statsTable[msg.sender][addressLock[i].category].tokensMinted += addressLock[i].amount;
+          uint32 cat = addressLock[i].category;
+          uint amt = addressLock[i].amountLocked;
+          cat = cat & ~VIRTUAL_MASK;
+          addressLock[i].category = cat;          
+          // mint tokens to vesting address
+          IESW(_token).mintClaimed(address(this), amt, cat);
+
+          _statsTable[msg.sender][cat].tokensAvailableToMint -= amt;
+          _statsTable[msg.sender][cat].tokensMinted += amt;
         }
       }
     }
