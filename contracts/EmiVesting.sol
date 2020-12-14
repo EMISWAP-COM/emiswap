@@ -284,6 +284,24 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
       return IERC20(_token).transfer(msg.sender, tokensAvailable);
     }
 
+    function mint() external returns (bool)
+    {
+      // get virtual balance
+      (uint _totalBalanceVirt, ) = _getBalance(msg.sender, true);
+      require(_totalBalanceVirt > 0, "No virtual tokens available");
+      // mint tokens to vesting address
+      IERC20(_token).mintClaimed(address(this), _totalBalanceVirt);
+      // update locks
+      LockRecord[] memory addressLock = _locksTable[beneficiary];
+
+      for (uint i = 0; i < addressLock.length; i++) {
+        if (_isVirtual(addressLock[i].category)) {
+          addressLock[i].category = addressLock[i].category & ~VIRTUAL_MASK;
+          _statsTable[msg.sender][addressLock[i].category].tokensAvailableToMint -= addressLock[i].amount;
+          _statsTable[msg.sender][addressLock[i].category].tokensMinted += addressLock[i].amount;
+        }
+      }
+    }
     //-----------------------------------------------------------------------------------
     // Locks manipulation
     //-----------------------------------------------------------------------------------    

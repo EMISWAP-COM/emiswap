@@ -177,7 +177,35 @@ const { BN,
         console.log("Unlocked balance after claim, after 2nd period: " + b.toString());
         assert.equal(b, 4750);
       });
+
+      it('Can mint virtual tokens', async function () {
+        await this.usdy.transfer(this.emiVest.address, 8000);
+        await this.emiVest.freeze(userBob, 8000, 2); // freeze 8000 for 2 years quarterly
+        await this.usdy.transfer(this.emiVest.address, 11000);
+        let t = moment().subtract(19, 'days');
+        await this.emiVest.freezePresale(userBob, Math.floor(t/1000), 10000, 1); // freeze 10000 for 2 years quarterly
   
+        t = moment().subtract(85, 'days');
+        await this.emiVest.freezePresale(userBob, Math.floor(t/1000), 1000, 1); // freeze 1000 for 2 years quarterly
+  
+        let b = await this.emiVest.balanceOf(userBob);
+        assert.equal(b, 19000);
+        b = await this.emiVest.unlockedBalanceOf(userBob);
+        assert.equal(b, 13000);
+        b = await this.emiVest.virtualBalanceOf(userBob);
+        console.log("Virtual balance before mint: " + b.toString());
+        assert.equal(b, 11000);
+        r = await this.emiVest.mint({from: userBob});
+        expectEvent.inLogs(r.logs,'Mint');
+        console.log('Mint gas used: ', r.receipt.gasUsed);
+        let c = await this.usdy.balanceOf(userBob);
+        assert.equal(c, 19000);
+        b = await this.emiVest.virtualBalanceOf(userBob);
+        assert.equal(b, 0);
+        b = await this.emiVest.unlockedBalanceOf(userBob);
+        console.log("Unlocked balance after mint: " + b.toString());
+        assert.equal(b, 13000);
+      });  
       it('Can view own locks', async function () {
         await this.usdy.transfer(this.emiVest.address, 8000);
         await this.emiVest.freeze(userBob, 8000, 1); // freeze 8000 for cat 1
