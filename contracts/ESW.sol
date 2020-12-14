@@ -15,8 +15,11 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "ESW v1.0-27-ga1a2e2c";
- uint256 constant public MAXIMUM_SUPPLY = 200_000_000e18;
+ string public codeVersion = "ESW v1.0-28-g50beda1";
+ uint256 constant public MAXIMUM_SUPPLY    = 200_000_000e18;
+ uint256 public crowdSalePoolRemains       =  40_000_000e18;
+ uint256 public SwapLpPoolRemains          =  50_000_000e18;
+ uint256 public AmbassadorPoolRemains      =  10_000_000e18;
 
   modifier mintGranted() {
     require(_mintGranted[msg.sender], "ESW mint: caller is not alowed!");
@@ -111,7 +114,18 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
   * mint only claimed from vesting for the recipient 
   * 
   *************************************************************/
-  function mintClaimed(address recipient, uint256 amount) external mintGranted() {
+  function mintClaimed(address recipient, uint256 amount, uint256 category) external mintGranted() {
+    require( (crowdSalePoolRemains >= amount || SwapLpPoolRemains >= amount || AmbassadorPoolRemains > amount), 'ESW: pool is empty');
+    if (category == 1 || category == 2) {
+      crowdSalePoolRemains = crowdSalePoolRemains.sub(amount);
+    }
+    if (category == 3 || category == 4 || category == 5) {
+      SwapLpPoolRemains = SwapLpPoolRemains.sub(amount);
+    }
+    if (category == 6) {
+      AmbassadorPoolRemains = AmbassadorPoolRemains.sub(amount);
+    }
+    
     _mint(recipient, amount);
   }
 
