@@ -569,6 +569,30 @@ interface IEmiVesting {
   function getCrowdsaleLimit() external view returns (uint);
 }
 
+// File: contracts/interfaces/IESW.sol
+
+// SPDX-License-Identifier: UNLICENSED
+
+pragma solidity ^0.6.0;
+
+/**
+ * @dev Interface of the DAO token.
+ */
+interface IESW {
+  function name() external returns (string memory);
+  function symbol() external returns (string memory);
+  function decimals() external returns (uint8);  
+  function initialSupply() external returns (uint256);
+  function currentCrowdsaleLimit() external view returns(uint256);
+  function rawBalanceOf(address account) external view returns (uint256);
+  
+  function setVesting(address _vesting) external;
+  function mintAndFreeze(address recipient, uint256 amount, uint256 category) external;
+  function mintVirtualAndFreeze(address recipient, uint256 amount, uint256 category) external;
+  function mintVirtualAndFreezePresale(address recipient, uint32 sinceDate, uint256 amount, uint256 category) external;
+  function mintClaimed(address recipient, uint256 amount, uint256 category) external;
+}
+
 // File: contracts/interfaces/IERC20Detailed.sol
 
 // SPDX-License-Identifier: UNLICENSED
@@ -655,6 +679,7 @@ pragma solidity ^0.6.2;
 
 
 
+
 contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
     using SafeMath for uint;
     using SafeMath for uint256;
@@ -701,7 +726,7 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
- string public codeVersion = "EmiVesting v1.0-26-ga79a53b";
+ string public codeVersion = "EmiVesting v1.0-35-gc5c61d2";
 
     //-----------------------------------------------------------------------------------
     // Smart contract Constructor
@@ -930,6 +955,28 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
       return IERC20(_token).transfer(msg.sender, tokensAvailable);
     }
 
+    function mint() external
+    {
+      // get virtual balance
+      (uint _totalBalanceVirt, ) = _getBalance(msg.sender, true);
+      require(_totalBalanceVirt > 0, "No virtual tokens available");
+      // update locks
+      LockRecord[] memory addressLock = _locksTable[msg.sender];
+
+      for (uint i = 0; i < addressLock.length; i++) {
+        if (_isVirtual(addressLock[i].category)) {
+          uint32 cat = addressLock[i].category & ~VIRTUAL_MASK;
+          uint amt = addressLock[i].amountLocked;
+          _locksTable[msg.sender][i].category = cat;
+          
+          // mint tokens to vesting address
+          IESW(_token).mintClaimed(address(this), amt, cat);
+
+          _statsTable[msg.sender][cat].tokensAvailableToMint -= amt;
+          _statsTable[msg.sender][cat].tokensMinted += amt;
+        }
+      }
+    }
     //-----------------------------------------------------------------------------------
     // Locks manipulation
     //-----------------------------------------------------------------------------------    

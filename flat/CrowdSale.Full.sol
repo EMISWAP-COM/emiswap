@@ -590,6 +590,7 @@ interface IESW {
   function mintAndFreeze(address recipient, uint256 amount, uint256 category) external;
   function mintVirtualAndFreeze(address recipient, uint256 amount, uint256 category) external;
   function mintVirtualAndFreezePresale(address recipient, uint32 sinceDate, uint256 amount, uint256 category) external;
+  function mintClaimed(address recipient, uint256 amount, uint256 category) external;
 }
 
 // File: contracts/interfaces/IERC20Detailed.sol
@@ -794,7 +795,7 @@ contract CrowdSale is Initializable, Priviledgeable {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "CrowdSale v1.0-26-ga79a53b";
+ string public codeVersion = "CrowdSale v1.0-35-gc5c61d2";
   
   //-----------------------------------------------------------------------------------
   // Smart contract Constructor

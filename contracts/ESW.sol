@@ -15,7 +15,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "ESW v1.0-29-gc3feadb";
+ string public codeVersion = "ESW v1.0-35-gc5c61d2";
  uint256 constant public MAXIMUM_SUPPLY    = 200_000_000e18;
  uint256 constant public MAXIMUM_CROWDSALE_POOL =  40_000_000e18;
  uint256 constant public MAXIMUM_SWAP_LP_POOL   =  50_000_000e18;
