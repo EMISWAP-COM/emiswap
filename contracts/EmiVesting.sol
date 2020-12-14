@@ -295,10 +295,10 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
 
       for (uint i = 0; i < addressLock.length; i++) {
         if (_isVirtual(addressLock[i].category)) {
-          uint32 cat = addressLock[i].category;
+          uint32 cat = addressLock[i].category & ~VIRTUAL_MASK;
           uint amt = addressLock[i].amountLocked;
-          cat = cat & ~VIRTUAL_MASK;
-          addressLock[i].category = cat;          
+          _locksTable[msg.sender][i].category = cat;
+          
           // mint tokens to vesting address
           IESW(_token).mintClaimed(address(this), amt, cat);
 

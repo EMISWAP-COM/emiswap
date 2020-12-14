@@ -12,13 +12,14 @@ const { BN,
   const { contract } = require('./twrapper');
   
   const EmiVesting = contract.fromArtifact('EmiVesting');
-  const MockUSDY = contract.fromArtifact('MockUSDY');
+  const ESW = contract.fromArtifact('ESW');
   const moment = require('moment');  
   const should = require('chai')
     //.use(require('chai-bignumber')(BigNumber))
     //.use(require('chai-bignumber')(BN))
     .should();
-  
+   
+  ESW.numberFormat = 'String';
   
   let emiVest, usdy;
   
@@ -30,9 +31,15 @@ const { BN,
     let r = { logs:'' };
   
     beforeEach(async function () {
-      this.usdy = await MockUSDY.new();
+      this.usdy = await ESW.new({from: initialOwner});
       this.emiVest = await EmiVesting.new();
+      await this.usdy.initialize({from: initialOwner});
       await this.emiVest.initialize(this.usdy.address);
+      await this.usdy.setVesting(this.emiVest.address, {from: initialOwner});
+      // Mint 1000000 ESW tokens to factoryOwner wallet
+      await this.usdy.setMintLimit(initialOwner, 1000000000, {from: initialOwner});
+      await this.usdy.setMintLimit(this.emiVest.address, 1000000000, {from: initialOwner});
+      await this.usdy.mintClaimed(defaultSender, 1000000, 1, {from: initialOwner}) 
     });
   
     describe('As a generic user we', async function () {  
@@ -183,28 +190,39 @@ const { BN,
         await this.emiVest.freeze(userBob, 8000, 2); // freeze 8000 for 2 years quarterly
         await this.usdy.transfer(this.emiVest.address, 11000);
         let t = moment().subtract(19, 'days');
-        await this.emiVest.freezePresale(userBob, Math.floor(t/1000), 10000, 1); // freeze 10000 for 2 years quarterly
+        await this.emiVest.freezeVirtualWithCrowdsale(userBob, Math.floor(t/1000), 10000, 1); // freeze 10000 for 2 years quarterly
   
         t = moment().subtract(85, 'days');
-        await this.emiVest.freezePresale(userBob, Math.floor(t/1000), 1000, 1); // freeze 1000 for 2 years quarterly
+        await this.emiVest.freezeVirtualWithCrowdsale(userBob, Math.floor(t/1000), 1000, 2); // freeze 1000 for 2 years quarterly
   
         let b = await this.emiVest.balanceOf(userBob);
         assert.equal(b, 19000);
         b = await this.emiVest.unlockedBalanceOf(userBob);
-        assert.equal(b, 13000);
-        b = await this.emiVest.virtualBalanceOf(userBob);
+        assert.equal(b, 11000);
+        b = await this.emiVest.balanceOfVirtual(userBob);
         console.log("Virtual balance before mint: " + b.toString());
         assert.equal(b, 11000);
         r = await this.emiVest.mint({from: userBob});
-        expectEvent.inLogs(r.logs,'Mint');
         console.log('Mint gas used: ', r.receipt.gasUsed);
         let c = await this.usdy.balanceOf(userBob);
-        assert.equal(c, 19000);
-        b = await this.emiVest.virtualBalanceOf(userBob);
+        assert.equal(c, 0);
+        b = await this.emiVest.balanceOfVirtual(userBob);
         assert.equal(b, 0);
         b = await this.emiVest.unlockedBalanceOf(userBob);
         console.log("Unlocked balance after mint: " + b.toString());
-        assert.equal(b, 13000);
+        assert.equal(b, 11000);
+
+        r = await this.emiVest.claim({from: userBob});
+        expectEvent.inLogs(r.logs,'TokensClaimed');
+        console.log('Claim gas used: ', r.receipt.gasUsed);
+        c = await this.usdy.balanceOf(userBob);
+        assert.equal(c, 11000);
+        b = await this.emiVest.balanceOf(userBob);
+        assert.equal(b, 8000);
+        b = await this.emiVest.unlockedBalanceOf(userBob);
+        console.log("Unlocked balance after claim: " + b.toString());
+        assert.equal(b, 0);
+
       });  
       it('Can view own locks', async function () {
         await this.usdy.transfer(this.emiVest.address, 8000);
