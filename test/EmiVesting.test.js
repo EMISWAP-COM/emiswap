@@ -154,20 +154,20 @@ const { BN,
         t = new Date('2020-07-30 11:20:57 GMT');
         await this.emiVest.freezePresale(userBob, Math.floor(t/1000), 1000, 1); // freeze 1000 for 2 years quarterly
   
-        let releaseTime = (await time.latest()).add(time.duration.days(102));
+        let releaseTime = (await time.latest()).add(time.duration.days(90));
         await time.increaseTo(releaseTime);
         let b = await this.emiVest.balanceOf(userBob);
         assert.equal(b, 19000);
         b = await this.emiVest.unlockedBalanceOf(userBob);
         console.log("Unlocked balance before claim, after 1 period: " + b.toString());
-        assert.equal(b, 10500);
+        assert.equal(b, 13000);
         r = await this.emiVest.claim({from: userBob});
         expectEvent.inLogs(r.logs,'TokensClaimed');
         console.log('Claim gas used: ', r.receipt.gasUsed);
         let c = await this.usdy.balanceOf(userBob);
-        assert.equal(c, 10500);
+        assert.equal(c, 13000);
         b = await this.emiVest.balanceOf(userBob);
-        assert.equal(b, 8500);
+        assert.equal(b, 6000);
         b = await this.emiVest.unlockedBalanceOf(userBob);
         console.log("Unlocked balance after claim: " + b.toString());
         assert.equal(b, 0);
@@ -175,7 +175,7 @@ const { BN,
         await time.increaseTo(releaseTime);
         b = await this.emiVest.unlockedBalanceOf(userBob);
         console.log("Unlocked balance after claim, after 2nd period: " + b.toString());
-        assert.equal(b, 4500);
+        assert.equal(b, 2000);
       });
   
       it('Can view own locks', async function () {
