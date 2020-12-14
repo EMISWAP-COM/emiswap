@@ -151,9 +151,10 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
     function unlockedBalanceOf(address beneficiary) external view returns (uint)
     {
       require(beneficiary != address(0), "Address should not be zero");
-      (uint _totalBalance, uint _lockedBalance) = _getBalance(beneficiary, false);
+      (uint _totalBalanceReal, uint _lockedBalanceReal) = _getBalance(beneficiary, false);
+      (uint _totalBalanceVirt, uint _lockedBalanceVirt) = _getBalance(beneficiary, true);
 
-      return _totalBalance - _lockedBalance;
+      return _totalBalanceReal + _totalBalanceVirt - _lockedBalanceReal - _lockedBalanceVirt;
     }
 
     function balanceOf(address beneficiary) external override view returns (uint)
@@ -241,10 +242,9 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
     }
 
     // freeze presale tokens from specified date with crowdsale limit updates
-    function freezeVirtual2(address beneficiary, uint32 sinceDate, uint tokens, uint category) external override onlyAdmin
+    function freezeVirtualWithCrowdsale(address beneficiary, uint32 sinceDate, uint tokens, uint category) external override onlyAdmin
     {
       require(beneficiary != address(0), "Address should not be zero");
-      require(sinceDate > 1593561600, "Date must be after token sale start"); // 2020-07-01
       require(tokens > 0, "Token amount should be positive non-zero");
       require(category < CATEGORY_COUNT, "Wrong category idx");
 
