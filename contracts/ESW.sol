@@ -15,11 +15,15 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "ESW v1.0-28-g50beda1";
+ string public codeVersion = "ESW v1.0-29-gc3feadb";
  uint256 constant public MAXIMUM_SUPPLY    = 200_000_000e18;
- uint256 public crowdSalePoolRemains       =  40_000_000e18;
- uint256 public SwapLpPoolRemains          =  50_000_000e18;
- uint256 public AmbassadorPoolRemains      =  10_000_000e18;
+ uint256 constant public MAXIMUM_CROWDSALE_POOL =  40_000_000e18;
+ uint256 constant public MAXIMUM_SWAP_LP_POOL   =  50_000_000e18;
+ uint256 constant public MAXIMUM_AMBASSADOR_POOL=  10_000_000e18;
+
+ uint256 public crowdSalePool;
+ uint256 public swapLpPool;
+ uint256 public ambassadorPool;
 
   modifier mintGranted() {
     require(_mintGranted[msg.sender], "ESW mint: caller is not alowed!");
@@ -115,18 +119,24 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
   * 
   *************************************************************/
   function mintClaimed(address recipient, uint256 amount, uint256 category) external mintGranted() {
-    require( (crowdSalePoolRemains >= amount || SwapLpPoolRemains >= amount || AmbassadorPoolRemains > amount), 'ESW: pool is empty');
-    if (category == 1 || category == 2) {
-      crowdSalePoolRemains = crowdSalePoolRemains.sub(amount);
+    bool isOk;
+    if ( ( (category == 1 || category == 2) ) && ( MAXIMUM_CROWDSALE_POOL >= crowdSalePool.add(amount) ) ) {
+      crowdSalePool = crowdSalePool.add(amount);
+      isOk = true;
     }
-    if (category == 3 || category == 4 || category == 5) {
-      SwapLpPoolRemains = SwapLpPoolRemains.sub(amount);
+    if ( (category == 3 || category == 4 || category == 5) && ( MAXIMUM_SWAP_LP_POOL >= swapLpPool.add(amount) ) ) {
+      swapLpPool = swapLpPool.add(amount);
+      isOk = true;
     }
-    if (category == 6) {
-      AmbassadorPoolRemains = AmbassadorPoolRemains.sub(amount);
+    if ( (category == 6) && (MAXIMUM_AMBASSADOR_POOL >= ambassadorPool.add(amount) )  ) {
+      ambassadorPool = ambassadorPool.add(amount);
+      isOk = true;
+    }    
+    if (isOk) {
+      _mint(recipient, amount);
     }
-    
-    _mint(recipient, amount);
+    else 
+      revert("ESW: pool is empty");
   }
 
   /************************************************************
