@@ -13,7 +13,7 @@ const { BN,
   
   const EmiVesting = contract.fromArtifact('EmiVesting');
   const MockUSDY = contract.fromArtifact('MockUSDY');
-  
+  const moment = require('moment');  
   const should = require('chai')
     //.use(require('chai-bignumber')(BigNumber))
     //.use(require('chai-bignumber')(BN))
@@ -148,10 +148,10 @@ const { BN,
         await this.usdy.transfer(this.emiVest.address, 8000);
         await this.emiVest.freeze(userBob, 8000, 2); // freeze 8000 for 2 years quarterly
         await this.usdy.transfer(this.emiVest.address, 11000);
-        let t = new Date('2020-09-12 03:44:17 GMT');
+        let t = moment().subtract(19, 'days');
         await this.emiVest.freezePresale(userBob, Math.floor(t/1000), 10000, 1); // freeze 10000 for 2 years quarterly
   
-        t = new Date('2020-07-30 11:20:57 GMT');
+        t = moment().subtract(85, 'days');
         await this.emiVest.freezePresale(userBob, Math.floor(t/1000), 1000, 1); // freeze 1000 for 2 years quarterly
   
         let releaseTime = (await time.latest()).add(time.duration.days(90));
@@ -160,14 +160,14 @@ const { BN,
         assert.equal(b, 19000);
         b = await this.emiVest.unlockedBalanceOf(userBob);
         console.log("Unlocked balance before claim, after 1 period: " + b.toString());
-        assert.equal(b, 13000);
+        assert.equal(b, 10250);
         r = await this.emiVest.claim({from: userBob});
         expectEvent.inLogs(r.logs,'TokensClaimed');
         console.log('Claim gas used: ', r.receipt.gasUsed);
         let c = await this.usdy.balanceOf(userBob);
-        assert.equal(c, 13000);
+        assert.equal(c, 10250);
         b = await this.emiVest.balanceOf(userBob);
-        assert.equal(b, 6000);
+        assert.equal(b, 8750);
         b = await this.emiVest.unlockedBalanceOf(userBob);
         console.log("Unlocked balance after claim: " + b.toString());
         assert.equal(b, 0);
@@ -175,7 +175,7 @@ const { BN,
         await time.increaseTo(releaseTime);
         b = await this.emiVest.unlockedBalanceOf(userBob);
         console.log("Unlocked balance after claim, after 2nd period: " + b.toString());
-        assert.equal(b, 2000);
+        assert.equal(b, 4750);
       });
   
       it('Can view own locks', async function () {
