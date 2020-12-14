@@ -146,15 +146,15 @@ const { BN,
   
       it('Can claim partially unlocked tokens', async function () {
         await this.usdy.transfer(this.emiVest.address, 8000);
-        await this.emiVest.freeze(userBob, 8000, 2); // freeze 9000 for 2 years quarterly
-        await this.usdy.transfer(this.emiVest.address, 10000);
+        await this.emiVest.freeze(userBob, 8000, 2); // freeze 8000 for 2 years quarterly
+        await this.usdy.transfer(this.emiVest.address, 11000);
         let t = new Date('2020-09-12 03:44:17 GMT');
-        await this.emiVest.freeze2(userBob, Math.floor(t/1000), 10000, 1); // freeze 9000 for 2 years quarterly
+        await this.emiVest.freezePresale(userBob, Math.floor(t/1000), 10000, 1); // freeze 10000 for 2 years quarterly
   
         t = new Date('2020-07-30 11:20:57 GMT');
-        await this.emiVest.freeze2(userBob, Math.floor(t/1000), 1000, 1); // freeze 9000 for 2 years quarterly
+        await this.emiVest.freezePresale(userBob, Math.floor(t/1000), 1000, 1); // freeze 1000 for 2 years quarterly
   
-        let releaseTime = (await time.latest()).add(time.duration.days(92));
+        let releaseTime = (await time.latest()).add(time.duration.days(102));
         await time.increaseTo(releaseTime);
         let b = await this.emiVest.balanceOf(userBob);
         assert.equal(b, 19000);
@@ -267,14 +267,6 @@ const { BN,
         assert.equal(b[1], 4000);
         b = await this.emiVest.getLock(userAlice, 0);
         assert.equal(b[1], 11000);
-      });
-  
-      it('Can change contract token', async function () {
-        r = await this.emiVest.changeToken(accounts[4]);
-        expectEvent.inLogs(r.logs,'TokenChanged');
-        let t = await this.emiVest._token();
-  
-        assert.equal(t, accounts[4]);
       });
     });
   });

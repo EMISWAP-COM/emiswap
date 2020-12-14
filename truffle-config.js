@@ -1,9 +1,20 @@
 const HDWalletProvider = require('@truffle/hdwallet-provider');
+var fs = require('fs');
 
 require('dotenv').config()
 
 module.exports = {
     networks: { // use with node 12 -> nvm use 12 && ganache-cli
+        mainnet: {
+            networkCheckTimeout: 300000,
+            provider: () => new HDWalletProvider(process.env.PRIVATE_KEY_MAINNET, process.env.PROVIDER_MAINNET),
+            network_id: 1,       // id
+            gas: 8500000,        // Ropsten has a lower block limit than mainnet
+            gasPrice: 1500000000,
+            confirmations: 2,    // # of confs to wait between deployments. (default: 0)
+            timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
+            skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
+        },
         ropsten: {
             provider: () => new HDWalletProvider(process.env.PRIVATE_KEY_ROPSTEN, process.env.PROVIDER_ROPSTEN),
             network_id: 3,       // Ropsten's id
@@ -61,24 +72,22 @@ module.exports = {
             settings: {
                 optimizer: {
                     enabled: true,
-                    runs: 1000000,
+                    runs: 100000,
                 }
             }
         },
     },
-    plugins: ["solidity-coverage"] ,
+    plugins: ["solidity-coverage"],
     mocha: { // https://github.com/cgewecke/eth-gas-reporter
         timeout: 100000,
-/*
-        reporter: 'eth-gas-reporter',
-        url='http://localhost:8545',
+        reporter: '',
         reporterOptions : {
             currency: 'USD',
             gasPrice: 10,
             onlyCalledMethods: true,
             showTimeSpent: true,
-            excludeContracts: ['Migrations', 'mocks']
+            excludeContracts: ['Migrations', 'mocks'],
+            url: 'http://localhost:8545'
         }
-*/
     }
 };

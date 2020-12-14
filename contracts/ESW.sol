@@ -116,7 +116,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
   * 
   *************************************************************/
   function mintVirtualAndFreezePresale(address recipient, uint32 sinceDate, uint256 amount, uint256 category) external mintGranted() {
-    IEmiVesting(vesting).freezeVirtual2(recipient, sinceDate, amount, category);
+    IEmiVesting(vesting).freezeVirtualWithCrowdsale(recipient, sinceDate, amount, category);
   }  
 
   /*

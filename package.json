@@ -11,7 +11,9 @@
         "bignumber.js": "^9.0.1",
         "chai-bignumber": "^3.0.0",
         "dotenv": "^8.2.0",
-        "web3": "^1.3.0"
+        "truffle-flattener": "^1.5.0",
+        "web3": "^1.3.0",
+        "xlsx": "^0.16.8"
     },
     "devDependencies": {
         "@codechecks/client": "^0.1.10",
@@ -39,8 +41,7 @@
         "solc": "^0.6.12",
         "solhint": "^3.0.0",
         "solidity-coverage": "^0.7.9",
-        "truffle": "^5.1.35",
-        "truffle-flattener": "^1.4.4"
+        "truffle": "^5.1.35"
     },
     "engines": {
         "node": "^12.18.0"
@@ -56,16 +57,14 @@
         "ttest": "truffle test --network test",
         "compile": "node update-version.js && truffle compile",
         "deploy": "truffle migrate --network local",
-        "deploy_local": "truffle migrate --network local",
+        "deploy_local": "truffle migrate --reset --network local --f 1 --to 2",
         "deploy_kovan": "truffle migrate --reset --network kovan",
-        "deploy_crowdsale_local": "truffle migrate --network local --f 3 --to 3",
-        "deploy_crowdsale_ropsten": "truffle migrate --network ropsten --f 3 --to 3",
-        "deploy_crowdsale_kovan": "truffle migrate --reset --network kovan --f 3 --to 3",
-        "deploy_crowdsale_rinkeby": "truffle migrate --network rinkeby --f 3 --to 3",
+        "deploy_crowdsale_local": "truffle migrate --network local --f 2 --to 2",
+        "deploy_crowdsale_ropsten": "truffle migrate --network ropsten --f 1 --to 2",
+        "deploy_crowdsale_kovan": "truffle migrate --reset --network kovan --f 2 --to 2",
+        "deploy_crowdsale_rinkeby": "truffle migrate --network rinkeby --f 1 --to 2",
         "deploy_dex_kovan": "truffle migrate --network kovan --f 1 --to 1",
-        "deploy_dex_kovan2": "truffle migrate --network kovan --f 2 --to 2",
         "deploy_dex_local": "truffle migrate --network local --f 1 --to 1",
-        "deploy_dex_local2": "truffle migrate --network local --f 2 --to 2",
         "test2": "truffle test --stacktrace",
         "coverage": "truffle run coverage",
         "coveralls": "truffle run coverage && cat coverage/lcov.info | coveralls",
@@ -76,10 +75,26 @@
         "lint": "yarn run lint:js && yarn run lint:sol",
         "lint:fix": "yarn run lint:js:fix && yarn run lint:sol:fix",
         "dist": "truffle-flattener ./contracts/Mooniswap.sol |  awk '/SPDX-License-Identifier/&&c++>0 {next} 1' > ./Mooniswap.full.sol && solcjs --bin --abi --optimize ./Mooniswap.full.sol && mv ./__Mooniswap_full_sol_Mooniswap.bin ./Mooniswap.full.bin && mv ./__Mooniswap_full_sol_Mooniswap.abi ./Mooniswap.full.abi && rm ./*_sol_*",
-        "dist:crowdsale": "node update-version.js && truffle-flattener ./contracts/CrowdSale.sol > ./flat/CrowdSale.Full.sol",
         "dist:factory": "truffle-flattener ./contracts/MooniFactory.sol |  awk '/SPDX-License-Identifier/&&c++>0 {next} 1' > ./MooniFactory.full.sol && solcjs --bin --abi --optimize ./MooniFactory.full.sol && mv ./__MooniFactory_full_sol_MooniFactory.bin ./MooniFactory.full.bin && mv ./__MooniFactory_full_sol_MooniFactory.abi ./MooniFactory.full.abi && rm ./*_sol_*",
-        "dist:factory2": "truffle-flattener ./contracts/MooniFactory.sol |  awk '/SPDX-License-Identifier/&&c++>0 {next} 1' > ./flat/MooniFactory.full.sol",
-        "dist:migrator2": "truffle-flattener ./contracts/migrator2.sol > ./flat/migratorfull.sol",
-        "dist:uniswaphelper": "truffle-flattener ./contracts/UniswapHelper.sol > ./flat/UniswapHelperfull.sol"
+        "script:setRates:mainnet": "truffle exec scripts/setRates.js --network mainnet",
+        "script:setRates:local": "truffle exec scripts/setRates.js --network local",
+        "script:setRates:kovan": "truffle exec scripts/setRates.js --network kovan",
+        "script:getRates:mainnet": "truffle exec scripts/getRates.js --network mainnet",
+        "script:getRates:local": "truffle exec scripts/getRates.js --network local",
+        "script:getRates:kovan": "truffle exec scripts/getRates.js --network kovan",
+        "script:loadPresale:mainnet": "truffle exec scripts/loadPresale.js --network mainnet",
+        "script:loadPresale:local": "truffle exec scripts/loadPresale.js --network local",
+        "script:loadPresale:kovan": "truffle exec scripts/loadPresale.js --network kovan",
+        "script:getLocks:mainnet": "truffle exec scripts/getLocks.js --network mainnet",
+        "script:getLocks:local": "truffle exec scripts/getLocks.js --network local",
+        "script:getLocks:kovan": "truffle exec scripts/getLocks.js --network kovan",
+        "dist:esw": "node update-version.js && truffle-flattener ./contracts/ESW.sol > ./flat/ESW.Full.sol",
+        "dist:crowdsale": "node update-version.js && truffle-flattener ./contracts/CrowdSale.sol > ./flat/CrowdSale.Full.sol",
+        "dist:emivesting": "node update-version.js && truffle-flattener ./contracts/EmiVesting.sol > ./flat/EmiVesting.Full.sol",
+        "dist:emireferral": "node update-version.js && truffle-flattener ./contracts/EmiReferral.sol > ./flat/EmiReferral.Full.sol",
+        "dist:emivoting": "node update-version.js && truffle-flattener ./contracts/EmiVoting.sol > ./flat/EmiVoting.Full.sol",
+        "dist:emiproxyadmin": "node update-version.js && truffle-flattener ./contracts/VotableProxyAdmin.sol > ./flat/VotableProxyAdmin.Full.sol",
+        "dist:emiproxy": "node update-version.js && truffle-flattener @openzeppelin/contracts/proxy/TransparentUpgradeableProxy.sol > ./flat/TransparentProxy.Full.sol",
+        "dist:uniswapv2factory": "node update-version.js && truffle-flattener ./contracts/uniswapv2/UniswapV2Factory.sol > ./flat/UniswapV2Factory.Full.sol"
     }
 }

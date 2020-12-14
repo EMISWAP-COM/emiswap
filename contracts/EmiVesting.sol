@@ -162,7 +162,7 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
       (uint _totalBalanceReal, ) = _getBalance(beneficiary, false);
       (uint _totalBalanceVirt, ) = _getBalance(beneficiary, true);
 
-      return _totalBalanceReal - _totalBalanceVirt;
+      return _totalBalanceReal + _totalBalanceVirt;
     }
 
     function balanceOfVirtual(address beneficiary) external view returns (uint)
