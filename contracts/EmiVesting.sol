@@ -56,7 +56,7 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
- string public codeVersion = "EmiVesting v1.0-35-gc5c61d2";
+ string public codeVersion = "EmiVesting v1.0-36-g6f19da6";
 
     //-----------------------------------------------------------------------------------
     // Smart contract Constructor
@@ -300,7 +300,7 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
           _locksTable[msg.sender][i].category = cat;
           
           // mint tokens to vesting address
-          IESW(_token).mintClaimed(address(this), amt, cat);
+          IESW(_token).mintClaimed(address(this), amt);
 
           _statsTable[msg.sender][cat].tokensAvailableToMint -= amt;
           _statsTable[msg.sender][cat].tokensMinted += amt;

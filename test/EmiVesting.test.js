@@ -39,7 +39,7 @@ const { BN,
       // Mint 1000000 ESW tokens to factoryOwner wallet
       await this.usdy.setMintLimit(initialOwner, 1000000000, {from: initialOwner});
       await this.usdy.setMintLimit(this.emiVest.address, 1000000000, {from: initialOwner});
-      await this.usdy.mintClaimed(defaultSender, 1000000, 1, {from: initialOwner}) 
+      await this.usdy.mintClaimed(defaultSender, 1000000, {from: initialOwner}) 
     });
   
     describe('As a generic user we', async function () {  

@@ -968,16 +968,9 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "ESW v1.0-35-gc5c61d2";
- uint256 constant public MAXIMUM_SUPPLY    = 200_000_000e18;
- uint256 constant public MAXIMUM_CROWDSALE_POOL =  40_000_000e18;
- uint256 constant public MAXIMUM_SWAP_LP_POOL   =  50_000_000e18;
- uint256 constant public MAXIMUM_AMBASSADOR_POOL=  10_000_000e18;
-
- uint256 public crowdSalePool;
- uint256 public swapLpPool;
- uint256 public ambassadorPool;
-
+ string public codeVersion = "ESW v1.0-36-g6f19da6";
+  uint256 constant public MAXIMUM_SUPPLY = 200_000_000e18; 
+  
   modifier mintGranted() {
     require(_mintGranted[msg.sender], "ESW mint: caller is not alowed!");
     _;
@@ -1071,25 +1064,8 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
   * mint only claimed from vesting for the recipient 
   * 
   *************************************************************/
-  function mintClaimed(address recipient, uint256 amount, uint256 category) external mintGranted() {
-    bool isOk;
-    if ( ( (category == 1 || category == 2) ) && ( MAXIMUM_CROWDSALE_POOL >= crowdSalePool.add(amount) ) ) {
-      crowdSalePool = crowdSalePool.add(amount);
-      isOk = true;
-    }
-    if ( (category == 3 || category == 4 || category == 5) && ( MAXIMUM_SWAP_LP_POOL >= swapLpPool.add(amount) ) ) {
-      swapLpPool = swapLpPool.add(amount);
-      isOk = true;
-    }
-    if ( (category == 6) && (MAXIMUM_AMBASSADOR_POOL >= ambassadorPool.add(amount) )  ) {
-      ambassadorPool = ambassadorPool.add(amount);
-      isOk = true;
-    }    
-    if (isOk) {
-      _mint(recipient, amount);
-    }
-    else 
-      revert("ESW: pool is empty");
+  function mintClaimed(address recipient, uint256 amount) external mintGranted() {
+    _mint(recipient, amount);
   }
 
   /************************************************************
