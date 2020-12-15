@@ -441,6 +441,14 @@ describe('CrowdSale Test', function () {
             console.log('Clarc as 1 level referral received 5%', (Ref1Balance / this.BuyWithETHTest.Decimals).toString(), 'ESW', 'gas used', await tx.receipt.gasUsed);
             assert.equal('0', new BN(Ref1Balance).toString(), '1-lv referral must be 0.05% of buyer\'s');
         });
+        it('buyWithETH exact ESW, should mint 7000 esw both to buyer and get more then 1.926 ETH from buyer (1.929 ETH) ESW price up', async function () { // 7000 * 0.11 / 399 = 1.929824561
+            let tx = await crowdSale.buyWithETH(clarc, money.esw('7000'), true, { from: bob, value: money.eth('1.929824561') });
+            const BuyerBalance = await esw.balanceOf2(bob);
+            const Ref1Balance = await esw.balanceOf2(clarc);
+
+            console.log('Clarc as 1 level referral received 5%', (Ref1Balance / this.BuyWithETHTest.Decimals).toString(), 'ESW', 'gas used', await tx.receipt.gasUsed);
+            assert.equal('0', new BN(Ref1Balance).toString(), '1-lv referral must be 0.05% of buyer\'s');
+        });
         it('buyWithETH exact ESW, expect revert of buying 7000 esw both for 1.92 ETH', async function () { // 7000 * 0.11 / 400 = 1.925
             this.isPreview = true;
             await expectRevert(
@@ -455,12 +463,11 @@ describe('CrowdSale Test', function () {
                 'Sale:ETH needed'
             );
         });
-        it('buyWithETH exact ESW, expect revert of buying 7000 esw both for 1.926 ETH', async function () { // 7000 * 0.11 / 400 = 1.925
+        it('buyWithETH exact ESW, expect revert of buying 7000 esw both for 1.9250000001 ETH', async function () { // 7000 * 0.11 / 400 = 1.925
             this.isPreview = true;
-            await expectRevert(
-                crowdSale.buyWithETH(clarc, money.esw('7000'), true, { from: bob, value: money.eth('1.926') }),
-                'Sale:0 ETH'
-            );
+            await crowdSale.buyWithETH(clarc, money.esw('7000'), true, { from: bob, value: money.eth('1.9250000001') })
+            const BuyerBalance = await esw.balanceOf2(bob);
+            assert.equal(BuyerBalance, money.esw('7000'), 'buyer must get esw 7000');
         });
         it('buyWithETH, should mint an equal value of esw both to a buyer and owner with 1-lv referral', async function () {
             let tx = await crowdSale.buyWithETH(clarc, this.BuyWithETHTest.WEIValue, false, { from: bob, value: this.BuyWithETHTest.WEIValue });

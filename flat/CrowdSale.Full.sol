@@ -795,7 +795,7 @@ contract CrowdSale is Initializable, Priviledgeable {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "CrowdSale v1.0-36-g6f19da6";
+ string public codeVersion = "CrowdSale v1.0-37-gb4792a3";
   
   //-----------------------------------------------------------------------------------
   // Smart contract Constructor
@@ -1295,7 +1295,7 @@ contract CrowdSale is Initializable, Priviledgeable {
       ethTokenAmount = currentTokenAmount;
     }
     
-    require(eswTokenAmount > 0 &&  ethTokenAmount > 0 && ethTokenAmount == msg.value, "Sale:0 ETH");
+    require(eswTokenAmount > 0 &&  ethTokenAmount > 0 && ethTokenAmount <= msg.value, "Sale:0 ETH");
     require(eswTokenAmount.mul(105).div(100) <= IESW(_token).currentCrowdsaleLimit(), "Sale:limit exceeded");
     
     foundationWallet.transfer(ethTokenAmount);
