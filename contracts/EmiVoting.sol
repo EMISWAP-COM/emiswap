@@ -22,7 +22,7 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
 
   mapping(uint => VotingRecord) private _votingList;
   uint[] private _votingHash;
- string public codeVersion = "EmiVoting v1.0-38-g7011886";
+ string public codeVersion = "EmiVoting v1.0-39-gbe96add";
 
     function initialize(address _admin) public initializer
     {
