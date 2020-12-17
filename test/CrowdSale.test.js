@@ -1159,6 +1159,7 @@ describe('CrowdSale Test', function () {
                 // sign hash (paramentrs) with oracle_private_key -> get signature and send it back to front
                 // core step, this signature contains oracle_wallet (from private key) and hashed parameters
                 this.sigObject = await web3.eth.accounts.sign(hash, oracleWalletPriv)
+                console.log('this.txCount', this.txCount);
             })
             it('should be same oracle wallet', async function() {
                 // sign check, correct signature recover must return signer wallet
@@ -1168,6 +1169,7 @@ describe('CrowdSale Test', function () {
             it('ESW should be sold correctly to alice', async function () {
                 // front part
                 // make user approve tokens and call crowdSale.buySigned
+                console.log('this.txCount', this.txCount);
                 try {
                     await usdx.transfer(alice, money.usdx('10000'));
                     await usdx.approve(crowdSale.address, money.usdx('10000'), { from: alice });
@@ -1204,7 +1206,7 @@ describe('CrowdSale Test', function () {
                         this.sigObject.signature, 
                         {from: bob}
                         ),
-                        'CrowdSale:signer is not oracle');
+                        'CrowdSale:sign incorrect');
                 }  catch (error) {
                     console.log(error)
                 }
@@ -1222,7 +1224,7 @@ describe('CrowdSale Test', function () {
                         this.sigObject.signature, 
                         {from: alice}
                         ),
-                        'CrowdSale:signer is not oracle');
+                        'CrowdSale:sign incorrect');
                 }  catch (error) {
                     console.log(error)
                 }
@@ -1290,7 +1292,7 @@ describe('CrowdSale Test', function () {
                         this.txCount,
                         this.sigObject.signature, 
                         {from: bob} ),
-                        'CrowdSale:signer is not oracle');
+                        'CrowdSale:sign incorrect');
                 }  catch (error) {
                     console.log(error)
                 }
@@ -1307,7 +1309,7 @@ describe('CrowdSale Test', function () {
                         this.txCount,
                         this.sigObject.signature, 
                         {from: bob} ),
-                        'CrowdSale:signer is not oracle');
+                        'CrowdSale:sign incorrect');
                 }  catch (error) {
                     console.log(error)
                 }
@@ -1367,6 +1369,48 @@ describe('CrowdSale Test', function () {
                     console.log(error)
                 }
             });
+            it('ESW should be sold to alice only one for one signature and not sold again with the same signature', async function () {
+                // front part
+                // make user approve tokens and call crowdSale.buySigned
+                try {
+                    await wbtc.transfer(alice, money.wbtc('100'));
+                    await wbtc.approve(crowdSale.address, money.wbtc('100'), { from: alice });
+                    let res = await crowdSale.buySigned(
+                        wbtc.address, 
+                        money.esw('1000'), 
+                        this.ZEROref, 
+                        true, 
+                        this.txCount,
+                        this.sigObject.signature, 
+                        {from: alice}
+                    );
+                    console.log('        buySigned first time, gasUsed', await res.receipt.gasUsed);
+                    expectEvent(res.receipt, 'Buy', { 
+                        account: alice, 
+                        amount: money.esw('1000'), 
+                        coinId: '3', 
+                        coinAmount: money.wbtc('0.01089108'),
+                        referral: this.ZEROref                });
+                }  catch (error) {
+                    console.log(error)
+                }
+
+                try {
+                    await wbtc.transfer(alice, money.wbtc('100'));
+                    await wbtc.approve(crowdSale.address, money.wbtc('100'), { from: alice });
+                    await expectRevert(crowdSale.buySigned(
+                        wbtc.address, 
+                        money.esw('1000'), 
+                        this.ZEROref, 
+                        true, 
+                        this.txCount,
+                        this.sigObject.signature, 
+                        {from: alice}),
+                        'CrowdSale:sign incorrect');
+                }  catch (error) {
+                    console.log(error)
+                }
+            });
             it('FRAUD test - ESW should not be sold to bob', async function () {
                 try {
                     await usdx.transfer(bob, money.wbtc('100'));
@@ -1380,7 +1424,7 @@ describe('CrowdSale Test', function () {
                         this.sigObject.signature, 
                         {from: bob}
                         ),
-                        'CrowdSale:signer is not oracle');
+                        'CrowdSale:sign incorrect');
                 }  catch (error) {
                     console.log(error)
                 }
@@ -1398,7 +1442,7 @@ describe('CrowdSale Test', function () {
                         this.sigObject.signature, 
                         {from: alice}
                         ),
-                        'CrowdSale:signer is not oracle');
+                        'CrowdSale:sign incorrect');
                 }  catch (error) {
                     console.log(error)
                 }

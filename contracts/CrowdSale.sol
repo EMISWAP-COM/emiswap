@@ -52,7 +52,7 @@ contract CrowdSale is Initializable, Priviledgeable, OracleSign {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "CrowdSale v1.0-23-g0b23f88";
+ string public codeVersion = "CrowdSale v1.0-24-g72de00c";
   
   //-----------------------------------------------------------------------------------
   // Smart contract Constructor
@@ -460,10 +460,9 @@ contract CrowdSale is Initializable, Priviledgeable, OracleSign {
   {
     require(amount > 0, "Sale:amount needed");
     require(coinAddress == _coins[coinIndex[coinAddress]].token, "Sale:Coin not allowed");
-    require(_coins[coinIndex[coinAddress]].status != 0, "Sale:Coin not active");
+    require(_coins[coinIndex[coinAddress]].status != 0, "Sale:Coin not active");    
 
-    // check sign
-    walletNonce[msg.sender] = nonce;
+    // check sign    
     bytes32 message = _prefixed(keccak256(abi.encodePacked(
       msg.sender, 
       coinAddress, 
@@ -472,7 +471,9 @@ contract CrowdSale is Initializable, Priviledgeable, OracleSign {
       isReverse,
       nonce, 
       this)));    
-    require(_recoverSigner(message, sig) == oracle, "CrowdSale:signer is not oracle");
+    require(_recoverSigner(message, sig) == oracle && walletNonce[msg.sender] != nonce, "CrowdSale:sign incorrect");
+
+    walletNonce[msg.sender] = nonce;
     
     (uint256 currentTokenAmount, uint16 coinId,) = buyView(coinAddress, amount, isReverse);
 
