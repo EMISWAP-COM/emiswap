@@ -22,7 +22,7 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
 
   mapping(uint => VotingRecord) private _votingList;
   uint[] private _votingHash;
- string public codeVersion = "EmiVoting v1.0-18-g44fc1eb";
+ string public codeVersion = "EmiVoting v1.0-39-gbe96add";
 
     function initialize(address _admin) public initializer
     {
@@ -57,6 +57,7 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
     require(_newContract!=address(0), "New contract cannot be null");
     require(_votingEndTime > block.timestamp, "Voting end time is in the past");
     require(_hash!=0, "Hash cannot be 0");
+    require(_votingList[_hash].oldContract == address(0), "Hash is not unique");
 
     _votingList[_hash].oldContract = _oldContract;
     _votingList[_hash].newContract = _newContract;

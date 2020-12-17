@@ -15,16 +15,21 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "ESW v1.0-18-g44fc1eb";
-
+ string public codeVersion = "ESW v1.0-39-gbe96add";
+  uint256 constant public MAXIMUM_SUPPLY = 200_000_000e18; 
+  
   modifier mintGranted() {
-    require(_mintGranted[msg.sender], "ESWc mint: caller is not alowed!");
+    require(_mintGranted[msg.sender], "ESW mint: caller is not alowed!");
     _;
   }
 
   function initialize() public virtual {
-    _initialize("EmiDAO Token crowdsale", "ESWc", 18);
+    _initialize("EmiDAO Token", "ESW", 18);
     _addAdmin(msg.sender);
+  }
+
+  function updateTokenName(string memory newName, string memory newSymbol) public onlyAdmin {
+    _updateTokenName(newName, newSymbol);
   }
 
   function grantMint(address _newIssuer) public onlyAdmin {
@@ -88,6 +93,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
   }
 
   function _mint(address recipient, uint256 amount) override internal {
+    require(totalSupply().add(amount) <= MAXIMUM_SUPPLY, "ESW: Maximum supply exceeded");
     _mintLimit[msg.sender] = _mintLimit[msg.sender].sub(amount);
     super._mint(recipient, amount);
   }
@@ -99,6 +105,14 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
   function mintAndFreeze(address recipient, uint256 amount, uint256 category) external mintGranted() {
     IEmiVesting(vesting).freeze(recipient, amount, category);
     _mint(vesting, amount);
+  }
+
+  /************************************************************
+  * mint only claimed from vesting for the recipient 
+  * 
+  *************************************************************/
+  function mintClaimed(address recipient, uint256 amount) external mintGranted() {
+    _mint(recipient, amount);
   }
 
   /************************************************************
@@ -114,7 +128,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
   * 
   *************************************************************/
   function mintVirtualAndFreezePresale(address recipient, uint32 sinceDate, uint256 amount, uint256 category) external mintGranted() {
-    IEmiVesting(vesting).freezeVirtual2(recipient, sinceDate, amount, category);
+    IEmiVesting(vesting).freezeVirtualWithCrowdsale(recipient, sinceDate, amount, category);
   }  
 
   /*

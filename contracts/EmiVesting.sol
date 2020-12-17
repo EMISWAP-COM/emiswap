@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "./interfaces/IEmiVesting.sol";
+import "./interfaces/IESW.sol";
 import "./interfaces/IERC20Detailed.sol";
 import "./libraries/Priviledgeable.sol";
 
@@ -55,7 +56,7 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
- string public codeVersion = "EmiVesting v1.0-18-g44fc1eb";
+ string public codeVersion = "EmiVesting v1.0-39-gbe96add";
 
     //-----------------------------------------------------------------------------------
     // Smart contract Constructor
@@ -151,22 +152,28 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
     function unlockedBalanceOf(address beneficiary) external view returns (uint)
     {
       require(beneficiary != address(0), "Address should not be zero");
+      (uint _totalBalanceReal, uint _lockedBalanceReal) = _getBalance(beneficiary, false);
+      (uint _totalBalanceVirt, uint _lockedBalanceVirt) = _getBalance(beneficiary, true);
 
-      return _getBalance(beneficiary, false, false) - _getBalance(beneficiary, true, false);
+      return _totalBalanceReal + _totalBalanceVirt - _lockedBalanceReal - _lockedBalanceVirt;
     }
 
     function balanceOf(address beneficiary) external override view returns (uint)
     {
       require(beneficiary != address(0), "Address should not be zero");
+      (uint _totalBalanceReal, ) = _getBalance(beneficiary, false);
+      (uint _totalBalanceVirt, ) = _getBalance(beneficiary, true);
 
-      return _getBalance(beneficiary, false, false) + _getBalance(beneficiary, false, true);
+      return _totalBalanceReal + _totalBalanceVirt;
     }
 
     function balanceOfVirtual(address beneficiary) external view returns (uint)
     {
       require(beneficiary != address(0), "Address should not be zero");
 
-      return _getBalance(beneficiary, false, true);
+      (uint _totalBalanceVirt, ) = _getBalance(beneficiary, true);
+
+      return _totalBalanceVirt;
     }
 
     function getCrowdsaleLimit() external override view returns (uint) {
@@ -176,11 +183,11 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
     function freeze(address beneficiary, uint tokens, uint category) external override onlyAdmin
     {
       require(beneficiary != address(0), "Address should not be zero");
-      require(tokens >= 0, "Token amount should be positive non-zero");
+      require(tokens > 0, "Token amount should be positive non-zero");
       require(currentCrowdsaleLimit >= tokens, "Crowdsale tokens limit reached");
       require(category < CATEGORY_COUNT, "Wrong category idx");
 
-      _freeze3(beneficiary, uint32((block.timestamp / WEEK) * WEEK), tokens, uint32(category), false, true);
+      _freezeWithRollup(beneficiary, uint32((block.timestamp / WEEK) * WEEK), tokens, uint32(category), false, true);
 
       _statsTable[beneficiary][category].tokensAcquired += tokens;
       _statsTable[beneficiary][category].tokensMinted += tokens;
@@ -189,15 +196,14 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
     }
 
     // freeze presale tokens from specified date
-    function freeze2(address beneficiary, uint sinceDate, uint tokens, uint category) external onlyAdmin
+    function freezePresale(address beneficiary, uint sinceDate, uint tokens, uint category) external onlyAdmin
     {
       require(beneficiary != address(0), "Address should not be zero");
-      require(sinceDate > 1593561600, "Date must be after token sale start"); // 2020-07-01
       require(tokens > 0, "Token amount should be positive non-zero");
       require(currentCrowdsaleLimit >= tokens, "Crowdsale tokens limit reached");
       require(category < CATEGORY_COUNT, "Wrong category idx");
 
-      _freeze3(beneficiary, uint32((sinceDate / WEEK) * WEEK), tokens, uint32(category), false, true);
+      _freezeWithRollup(beneficiary, uint32((sinceDate / WEEK) * WEEK), tokens, uint32(category), false, true);
 
       _statsTable[beneficiary][category].tokensAcquired += tokens;
       _statsTable[beneficiary][category].tokensMinted += tokens;
@@ -216,7 +222,7 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
       for (uint i = 0; i < beneficiaries.length; i++) {
         require(cct >= tokens[i], "Crowdsale tokens limit reached");
         cct -= tokens[i];
-        _freeze3(beneficiaries[i], uint32((sinceDate[i] / WEEK) * WEEK), tokens[i], uint32(category), false, false);
+        _freezeWithRollup(beneficiaries[i], uint32((sinceDate[i] / WEEK) * WEEK), tokens[i], uint32(category), false, false);
         _statsTable[beneficiaries[i]][category].tokensAcquired += tokens[i];
         _statsTable[beneficiaries[i]][category].tokensMinted += tokens[i];
         emit TokensLocked(beneficiaries[i], tokens[i]);
@@ -230,21 +236,20 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
       require(tokens > 0, "Token amount should be positive non-zero");
       require(category < CATEGORY_COUNT, "Wrong category idx");
 
-      _freeze3(beneficiary, uint32((block.timestamp / WEEK) * WEEK), tokens, uint32(category), true, false);
+      _freezeWithRollup(beneficiary, uint32((block.timestamp / WEEK) * WEEK), tokens, uint32(category), true, false);
 
       _statsTable[beneficiary][category].tokensAcquired += tokens;
       _statsTable[beneficiary][category].tokensAvailableToMint += tokens;
     }
 
     // freeze presale tokens from specified date with crowdsale limit updates
-    function freezeVirtual2(address beneficiary, uint32 sinceDate, uint tokens, uint category) external override onlyAdmin
+    function freezeVirtualWithCrowdsale(address beneficiary, uint32 sinceDate, uint tokens, uint category) external override onlyAdmin
     {
       require(beneficiary != address(0), "Address should not be zero");
-      require(sinceDate > 1593561600, "Date must be after token sale start"); // 2020-07-01
       require(tokens > 0, "Token amount should be positive non-zero");
       require(category < CATEGORY_COUNT, "Wrong category idx");
 
-      _freeze3(beneficiary, uint32((sinceDate / WEEK) * WEEK), tokens, uint32(category), true, true);
+      _freezeWithRollup(beneficiary, uint32((sinceDate / WEEK) * WEEK), tokens, uint32(category), true, true);
 
       _statsTable[beneficiary][category].tokensAcquired += tokens;
       _statsTable[beneficiary][category].tokensAvailableToMint += tokens;
@@ -252,7 +257,9 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
 
     function claim() external returns (bool)
     {
-      uint tokensAvailable = _getBalance(msg.sender, false, false) - _getBalance(msg.sender, true, false);
+      (uint _totalBalance, uint _lockedBalance) = _getBalance(msg.sender, false);
+      
+      uint tokensAvailable = _totalBalance - _lockedBalance;
       require(tokensAvailable > 0, "No unlocked tokens available");
 
       LockRecord[] memory addressLock = _locksTable[msg.sender];
@@ -278,14 +285,27 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
       return IERC20(_token).transfer(msg.sender, tokensAvailable);
     }
 
-    // function changes token address
-    function changeToken(address _newtoken) external onlyAdmin returns (bool)
+    function mint() external
     {
-      require(_newtoken != address(0), "New token cannot be null");
-      emit TokenChanged(_token, _newtoken);
-      _token = _newtoken;
+      // get virtual balance
+      (uint _totalBalanceVirt, ) = _getBalance(msg.sender, true);
+      require(_totalBalanceVirt > 0, "No virtual tokens available");
+      // update locks
+      LockRecord[] memory addressLock = _locksTable[msg.sender];
 
-      return true;
+      for (uint i = 0; i < addressLock.length; i++) {
+        if (_isVirtual(addressLock[i].category)) {
+          uint32 cat = addressLock[i].category & ~VIRTUAL_MASK;
+          uint amt = addressLock[i].amountLocked;
+          _locksTable[msg.sender][i].category = cat;
+          
+          // mint tokens to vesting address
+          IESW(_token).mintClaimed(address(this), amt);
+
+          _statsTable[msg.sender][cat].tokensAvailableToMint -= amt;
+          _statsTable[msg.sender][cat].tokensMinted += amt;
+        }
+      }
     }
     //-----------------------------------------------------------------------------------
     // Locks manipulation
@@ -302,7 +322,7 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
       _locksTable[_beneficiary].push(l);
     }
 
-    function _freeze3(address _beneficiary, uint32 _freezetime, uint _tokens, uint32 category, bool isVirtual, bool updateCS) internal
+    function _freezeWithRollup(address _beneficiary, uint32 _freezetime, uint _tokens, uint32 category, bool isVirtual, bool updateCS) internal
     {      
       LockRecord[] storage lrec = _locksTable[_beneficiary];
       bool recordFound = false;
@@ -312,7 +332,7 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
           recordFound = true;
           lrec[j].amountLocked += _tokens;
           if (updateCS) {
-            require(currentCrowdsaleLimit >= _tokens, "EmiVesting: crowdsale limit exceeded 3");
+            require(currentCrowdsaleLimit >= _tokens, "EmiVesting: crowdsale limit exceeded");
             currentCrowdsaleLimit = currentCrowdsaleLimit.sub(_tokens);
           }
         }
@@ -322,7 +342,7 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
       }
     }
 
-    function _getBalance(address beneficiary, bool locked, bool isVirtual) internal view returns (uint)
+    function _getBalance(address beneficiary, bool isVirtual) internal view returns (uint, uint)
     {
       LockRecord[] memory addressLock = _locksTable[beneficiary];
       uint totalBalance = 0;
@@ -343,7 +363,7 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
         }
       }
 
-      return (locked)?lockedBalance:totalBalance;
+      return (totalBalance, lockedBalance);
     }
 
     function _getLock(address beneficiary, uint32 idx) internal view returns (uint, uint, uint)

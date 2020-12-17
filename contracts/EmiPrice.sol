@@ -13,11 +13,11 @@ contract EmiPrice is Initializable, Priviledgeable {
   address [3] public market;
   address private _DAI;
 
- string public codeVersion = "EmiPrice v1.0-18-g44fc1eb";
+ string public codeVersion = "EmiPrice v1.0-39-gbe96add";
 
-    /**
-     * @dev Upgradeable proxy constructor replacement
-     */
+  /**
+   * @dev Upgradeable proxy constructor replacement
+  */
   function initialize(address _market1, address _market2, address _market3, address _daitoken) public initializer
   {
     require(_market2 != address(0), "Market address cannot be 0");
@@ -32,9 +32,9 @@ contract EmiPrice is Initializable, Priviledgeable {
   }
 
 
-    /**
-     * @dev Return coin prices * 10e5 (to solve rounding problems, this yields 5 meaning digits after decimal point)
-     */
+  /**
+   * @dev Return coin prices * 10e5 (to solve rounding problems, this yields 5 meaning digits after decimal point)
+  */
   function getCoinPrices(address [] calldata _coins, uint8 _market) external view returns(uint[] memory prices) {
     require(_market < market.length, "Wrong market index");
     IUniswapV2Factory _factory = IUniswapV2Factory(market[_market]);

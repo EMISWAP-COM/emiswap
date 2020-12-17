@@ -51,7 +51,7 @@ contract CrowdSale is Initializable, Priviledgeable {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "CrowdSale v1.0-18-g44fc1eb";
+ string public codeVersion = "CrowdSale v1.0-39-gbe96add";
   
   //-----------------------------------------------------------------------------------
   // Smart contract Constructor
@@ -526,11 +526,14 @@ contract CrowdSale is Initializable, Priviledgeable {
   * @param referralInput address of referral
   * @param amount in case isReverse=false amount is ETH value, in case isReverse=true amount is ESW value
   * @param isReverse switch calc mode false - calc from ETH value, true - calc from ESW value
+  * @param slippage - price change value from desired parameter, actual in range 0% - 5%, 5% = 500
   */
-  function buyWithETH(address referralInput, uint256 amount, bool isReverse) 
+  function buyWithETH(address referralInput, uint256 amount, bool isReverse/* , uint256 slippage */) 
     public 
     payable
   {
+    uint256 slippage = 100;
+    //require(slippage <= 500, "Sale:slippage issue");
     require(msg.value > 0 && (!isReverse ? msg.value == amount : true) , "Sale:ETH needed");
     if (!isReverse) {
       require(msg.value == amount, "Sale:ETH needed");
@@ -550,14 +553,14 @@ contract CrowdSale is Initializable, Priviledgeable {
       eswTokenAmount = amount;
       ethTokenAmount = currentTokenAmount;
     }
-    
-    require(eswTokenAmount > 0 &&  ethTokenAmount > 0 && ethTokenAmount == msg.value, "Sale:0 ETH");
+
+    require(eswTokenAmount > 0 &&  ethTokenAmount > 0 && ethTokenAmount.mul(10000 - slippage).div(10000) <= msg.value, "Sale:0 ETH");
     require(eswTokenAmount.mul(105).div(100) <= IESW(_token).currentCrowdsaleLimit(), "Sale:limit exceeded");
     
-    foundationWallet.transfer(ethTokenAmount);
+    foundationWallet.transfer(msg.value);
 
     _sendESWToken(eswTokenAmount);
-    emit Buy(msg.sender, eswTokenAmount, 999, ethTokenAmount, _saveReferrals(referralInput));
+    emit Buy(msg.sender, eswTokenAmount, 999, msg.value, _saveReferrals(referralInput));
   }
   
   /*
@@ -605,6 +608,6 @@ contract CrowdSale is Initializable, Priviledgeable {
   * default payment receive, not supported paramters, so call buyWithETH with 0x0 address with eth value
   */
   receive() external payable {
-    buyWithETH(address(0), msg.value, false);
+    buyWithETH(address(0), msg.value, false/* , 10 */ /** default slippage 0.1% */ );
   }
 }
