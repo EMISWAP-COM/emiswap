@@ -12,9 +12,8 @@ import "./interfaces/IERC20Detailed.sol";
 import "./uniswapv2/interfaces/IUniswapV2Factory.sol";
 import "./uniswapv2/interfaces/IUniswapV2Pair.sol";
 import "./libraries/Priviledgeable.sol";
-import "./libraries/OracleSign.sol";
 
-contract CrowdSale is Initializable, Priviledgeable, OracleSign {
+contract CrowdSale is Initializable, Priviledgeable {
   using SafeMath for uint256;
   using SafeMath for uint32;
   using SafeERC20 for IERC20;
@@ -52,7 +51,10 @@ contract CrowdSale is Initializable, Priviledgeable, OracleSign {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "CrowdSale v1.0-24-g72de00c";
+ string public codeVersion = "CrowdSale v1.0-25-g6c5371b";
+
+  mapping (address => uint256) public walletNonce;
+  address public oracle;
   
   //-----------------------------------------------------------------------------------
   // Smart contract Constructor
@@ -471,7 +473,7 @@ contract CrowdSale is Initializable, Priviledgeable, OracleSign {
       isReverse,
       nonce, 
       this)));    
-    require(_recoverSigner(message, sig) == oracle && walletNonce[msg.sender] != nonce, "CrowdSale:sign incorrect");
+    require(_recoverSigner(message, sig) == oracle && walletNonce[msg.sender] < nonce, "CrowdSale:sign incorrect");
 
     walletNonce[msg.sender] = nonce;
     
@@ -498,7 +500,8 @@ contract CrowdSale is Initializable, Priviledgeable, OracleSign {
     public 
     onlyAdmin
   {
-    _setOracle(_oracle);
+    require(_oracle != address(0), "oracleSign: bad address");
+    oracle = _oracle;
   }
 
   function getOracle()
@@ -507,6 +510,43 @@ contract CrowdSale is Initializable, Priviledgeable, OracleSign {
     returns(address)
   {
     return(oracle);
+  }
+
+  function _splitSignature(bytes memory sig) internal pure returns (uint8, bytes32, bytes32) {
+    require (sig.length == 65, "Incorrect signature length");
+
+    bytes32 r;
+    bytes32 s;
+    uint8 v;
+
+    assembly {
+      //first 32 bytes, after the length prefix
+      r := mload(add(sig, 0x20))
+      //next 32 bytes
+      s := mload(add(sig, 0x40))
+      //final byte, first of next 32 bytes
+      v := byte(0, mload(add(sig, 0x60)))
+    }
+
+    return (v, r, s);
+  }
+    
+  function _recoverSigner(bytes32 message, bytes memory sig) internal pure returns (address) {
+    uint8 v;
+    bytes32 r;
+    bytes32 s;
+
+    (v, r, s) = _splitSignature(sig);
+
+    return ecrecover(message, v, r, s);
+  }
+    
+  function _prefixed(bytes32 hash) internal pure returns (bytes32) {
+    return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
+  }
+
+  function getWalletNonce() public view returns(uint256) {
+    return walletNonce[msg.sender];
   }
 
   /*
@@ -636,19 +676,24 @@ contract CrowdSale is Initializable, Priviledgeable, OracleSign {
   * @param amount in case isReverse=false amount is ETH value, in case isReverse=true amount is ESW value
   * @param isReverse switch calc mode false - calc from ETH value, true - calc from ESW value
   * @param nonce - buy nonce
+  * @param slippage - price change value from desired parameter, actual in range 0% - 5%, 5% = 500
   * @param sig - oracle signature hash
   */
   function buyWithETHSign(
+    address wallet,
     address referralInput, 
     uint256 amount, 
     bool    isReverse, 
     uint256 nonce,
+    /* , uint256 slippage */
     bytes   memory sig
   ) 
     public 
     payable
   {
-    require(msg.value > 0 && (!isReverse ? msg.value == amount : true) , "Sale:ETH needed");
+    uint256 slippage = 100;
+    //require(slippage <= 500, "Sale:slippage issue");
+    require(wallet == msg.sender && msg.value > 0 && (!isReverse ? msg.value == amount : true) , "Sale:ETH needed");
     if (!isReverse) {
       require(msg.value == amount, "Sale:ETH needed");
     } else {
@@ -656,15 +701,17 @@ contract CrowdSale is Initializable, Priviledgeable, OracleSign {
     }
 
     // check sign
-    walletNonce[msg.sender] = nonce;
+    
     bytes32 message = _prefixed(keccak256(abi.encodePacked(
-      msg.sender,
-      amount,
+      wallet,
       referralInput,
+      amount,
       isReverse,
-      nonce, 
-      this)));    
-    require(_recoverSigner(message, sig) == oracle, "CrowdSale:signer is not oracle");
+      nonce,
+      this)));
+    require(_recoverSigner(message, sig) == oracle && walletNonce[msg.sender] < nonce, "CrowdSale:sign incorrect");
+
+    walletNonce[msg.sender] = nonce;
         
     uint256 eswTokenAmount;
     uint256 ethTokenAmount;
@@ -679,7 +726,7 @@ contract CrowdSale is Initializable, Priviledgeable, OracleSign {
       ethTokenAmount = currentTokenAmount;
     }
     
-    require(eswTokenAmount > 0 &&  ethTokenAmount > 0 && ethTokenAmount == msg.value, "Sale:0 ETH");
+    require(eswTokenAmount > 0 &&  ethTokenAmount > 0 && ethTokenAmount.mul(10000 - slippage).div(10000) <= msg.value, "Sale:0 ETH");
     require(eswTokenAmount.mul(105).div(100) <= IESW(_token).currentCrowdsaleLimit(), "Sale:limit exceeded");
     
     foundationWallet.transfer(ethTokenAmount);
