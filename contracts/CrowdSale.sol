@@ -51,7 +51,7 @@ contract CrowdSale is Initializable, Priviledgeable {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "CrowdSale v1.0-25-g6c5371b";
+ string public codeVersion = "CrowdSale v1.0-26-g7562cb8";
 
   mapping (address => uint256) public walletNonce;
   address public oracle;

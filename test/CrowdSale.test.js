@@ -328,7 +328,7 @@ describe('CrowdSale Test', function () {
           'Priviledgeable: caller is not the owner'
         );
       });
-  });
+    });
 
     describe('Buy with ETH', () => {
         beforeEach(async function () {
@@ -1718,6 +1718,78 @@ describe('CrowdSale Test', function () {
                     {from: alice, value: money.eth('1')}
                 ),
                 'CrowdSale:sign incorrect');
+            });
+        });
+    });
+    describe('Oracle sign ESW minting ESW', () => {
+        beforeEach('get sign and make tx', async function () { 
+            // set oracle, check oracle
+            this.ZEROref = '0x0000000000000000000000000000000000000000';
+            await esw.setOracle(oracleWallet, {from: proxyAdmin});
+            await esw.setOracle(oracleWallet, {from: proxyAdmin});
+            let storedOracle = await esw.getOracle();
+            assert.equal(storedOracle, oracleWallet, 'Get stored Oracle address');
+        });        
+        describe('Oracle sign minting ESW', async function () {
+            beforeEach('prepare sign', async function () {
+                // front part 
+                // alice ask oracle signature to get (mint) 1000 ESW
+                // get nonce (number of confirmed transactions) from contract, incrementing for coming transaction
+                this.txCount = await esw.getWalletNonce({from: alice}) + 1
+
+                // oracle part
+                // get mint parameters and make hash of it
+                let hash = web3.utils.soliditySha3(
+                    alice,              // buyer wallet                    
+                    money.esw('1000'),  // amount of token to mint
+                    this.txCount,       // nonce (tx number from front)
+                    esw.address         // esw contract address
+                );
+                // oracle part
+                // sign hash (paramentrs) with oracle_private_key -> get signature and send it back to front
+                // core step, this signature contains oracle_wallet (from private key) and hashed parameters
+                this.sigObject = await web3.eth.accounts.sign(hash, oracleWalletPriv)
+            })
+            it('should be same oracle wallet', async function() {
+                // sign check, correct signature recover must return signer wallet
+                let sigWallet = await web3.eth.accounts.recover(this.sigObject)
+                assert.equal(oracleWallet, sigWallet, 'Signature wallet must be equal to recovered sigwallet');
+            });
+            it('ESW should be minted correctly to alice', async function () {
+                // front part
+                // make user approve tokens and call esw.min
+                let res = await esw.mintSigned(
+                    alice,
+                    money.esw('1000'),
+                    this.txCount,
+                    this.sigObject.signature,
+                    {from: alice}
+                );
+                console.log('        ESW mint gasUsed', await res.receipt.gasUsed);
+                expectEvent(res.receipt, 'Transfer', { 
+                    from: '0x0000000000000000000000000000000000000000',
+                    to: alice,
+                    value: money.esw('1000')});
+            });
+            it('FRAUD test - ESW should not be minted to bob', async function () {                
+                await expectRevert(esw.mintSigned(
+                        bob,
+                        money.esw('1000'),
+                        this.txCount,
+                        this.sigObject.signature,
+                        {from: bob}
+                    ),
+                    'CrowdSale:sign incorrect');
+            });
+            it('FRAUD test - ESW should not be minted to alice with changed params - more ESW', async function () {                    
+                await expectRevert(esw.mintSigned(
+                        alice,
+                        money.esw('1000000'),
+                        this.txCount,
+                        this.sigObject.signature,
+                        {from: alice}
+                    ),
+                    'CrowdSale:sign incorrect');
             });
         });
     });

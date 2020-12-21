@@ -68,6 +68,14 @@ contract ProxiedERC20 is Context, IERC20 {
   }
 
   /**
+   * @dev Updates name and symbol of the token.
+   */
+  function _updateTokenName(string memory newName, string memory newSymbol) internal {
+    _name = newName;
+    _symbol = newSymbol;
+  }
+
+  /**
    * @dev Returns the name of the token.
    */
   function name() public view returns (string memory) {
