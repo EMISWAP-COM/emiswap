@@ -17,4 +17,6 @@ interface IESW {
   function mintAndFreeze(address recipient, uint256 amount, uint256 category) external;
   function mintVirtualAndFreeze(address recipient, uint256 amount, uint256 category) external;
   function mintVirtualAndFreezePresale(address recipient, uint32 sinceDate, uint256 amount, uint256 category) external;
+  function mintClaimed(address recipient, uint256 amount) external;
+  function burn(address account, uint256 amount) external;
 }
