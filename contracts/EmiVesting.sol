@@ -316,7 +316,7 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
         uint totalBalance = lrec.amountLocked - (periodAmount * periodsWithdrawn);
         IESW(_token).burn(address(this), totalBalance);
       }
-      delete lrec;
+      delete _locksTable[_beneficiary][idx];
     }
 
     function _freeze(address _beneficiary, uint32 _freezetime, uint _tokens, uint32 category, bool isVirtual, bool updateCS) internal
