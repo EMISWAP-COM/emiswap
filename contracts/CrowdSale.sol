@@ -51,7 +51,10 @@ contract CrowdSale is Initializable, Priviledgeable {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "CrowdSale v1.0-18-g44fc1eb";
+ string public codeVersion = "CrowdSale v1.0-26-g7562cb8";
+
+  mapping (address => uint256) public walletNonce;
+  address public oracle;
   
   //-----------------------------------------------------------------------------------
   // Smart contract Constructor
@@ -439,6 +442,114 @@ contract CrowdSale is Initializable, Priviledgeable {
   }
 
   /*
+  * Buy ESW for tokens, with oracle sign
+  * @param coinAddress - payment token address
+  * @param amount - payment token amount (isReverse = false), ESW token amount (isReverse = true),
+  * @param referralInput - referrral address
+  * @param isReverse - 'false' for view from payment token to ESW amount, 'true' for view from ESW amount to payment token amount
+  * @param nonce - buy nonce
+  * @param sig - oracle signature hash
+  */
+  function buySigned(
+    address coinAddress, 
+    uint256 amount, 
+    address referralInput,
+    bool    isReverse, 
+    uint256 nonce,
+    bytes   memory sig
+  )
+    public    
+  {
+    require(amount > 0, "Sale:amount needed");
+    require(coinAddress == _coins[coinIndex[coinAddress]].token, "Sale:Coin not allowed");
+    require(_coins[coinIndex[coinAddress]].status != 0, "Sale:Coin not active");    
+
+    // check sign    
+    bytes32 message = _prefixed(keccak256(abi.encodePacked(
+      msg.sender, 
+      coinAddress, 
+      amount,
+      referralInput,
+      isReverse,
+      nonce, 
+      this)));    
+    require(_recoverSigner(message, sig) == oracle && walletNonce[msg.sender] < nonce, "CrowdSale:sign incorrect");
+
+    walletNonce[msg.sender] = nonce;
+    
+    (uint256 currentTokenAmount, uint16 coinId,) = buyView(coinAddress, amount, isReverse);
+
+    require(currentTokenAmount > 0, "Sale:0 ESW");
+
+    uint256 eswCurrentTokenAmount;
+    uint256 paymentTokenAmount;
+    if (!isReverse) {
+      eswCurrentTokenAmount = currentTokenAmount;
+      paymentTokenAmount = amount;
+    } else {
+      eswCurrentTokenAmount = amount;
+      paymentTokenAmount = currentTokenAmount;
+    }
+
+    require(eswCurrentTokenAmount.mul(105).div(100) <= IESW(_token).currentCrowdsaleLimit(), "Sale:limit exceeded");
+    IERC20(coinAddress).safeTransferFrom(msg.sender, foundationWallet, paymentTokenAmount);
+    emit Buy(msg.sender, eswCurrentTokenAmount, coinId, paymentTokenAmount, _saveReferrals(referralInput));
+  }
+
+  function setOracle(address _oracle) 
+    public 
+    onlyAdmin
+  {
+    require(_oracle != address(0), "oracleSign: bad address");
+    oracle = _oracle;
+  }
+
+  function getOracle()
+    public
+    view
+    returns(address)
+  {
+    return(oracle);
+  }
+
+  function _splitSignature(bytes memory sig) internal pure returns (uint8, bytes32, bytes32) {
+    require (sig.length == 65, "Incorrect signature length");
+
+    bytes32 r;
+    bytes32 s;
+    uint8 v;
+
+    assembly {
+      //first 32 bytes, after the length prefix
+      r := mload(add(sig, 0x20))
+      //next 32 bytes
+      s := mload(add(sig, 0x40))
+      //final byte, first of next 32 bytes
+      v := byte(0, mload(add(sig, 0x60)))
+    }
+
+    return (v, r, s);
+  }
+    
+  function _recoverSigner(bytes32 message, bytes memory sig) internal pure returns (address) {
+    uint8 v;
+    bytes32 r;
+    bytes32 s;
+
+    (v, r, s) = _splitSignature(sig);
+
+    return ecrecover(message, v, r, s);
+  }
+    
+  function _prefixed(bytes32 hash) internal pure returns (bytes32) {
+    return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
+  }
+
+  function getWalletNonce() public view returns(uint256) {
+    return walletNonce[msg.sender];
+  }
+
+  /*
   * Rate input amount in base token (DAI) value with market rate
   * @param amountIn - input token amount
   * @param reserveIn - reserve of payment token
@@ -557,6 +668,69 @@ contract CrowdSale is Initializable, Priviledgeable {
     foundationWallet.transfer(ethTokenAmount);
 
     _sendESWToken(eswTokenAmount);
+    emit Buy(msg.sender, eswTokenAmount, 999, ethTokenAmount, _saveReferrals(referralInput));
+  }
+
+  /*
+  * @param referralInput address of referral
+  * @param amount in case isReverse=false amount is ETH value, in case isReverse=true amount is ESW value
+  * @param isReverse switch calc mode false - calc from ETH value, true - calc from ESW value
+  * @param nonce - buy nonce
+  * @param slippage - price change value from desired parameter, actual in range 0% - 5%, 5% = 500
+  * @param sig - oracle signature hash
+  */
+  function buyWithETHSign(
+    address wallet,
+    address referralInput, 
+    uint256 amount, 
+    bool    isReverse, 
+    uint256 nonce,
+    /* , uint256 slippage */
+    bytes   memory sig
+  ) 
+    public 
+    payable
+  {
+    uint256 slippage = 100;
+    //require(slippage <= 500, "Sale:slippage issue");
+    require(wallet == msg.sender && msg.value > 0 && (!isReverse ? msg.value == amount : true) , "Sale:ETH needed");
+    if (!isReverse) {
+      require(msg.value == amount, "Sale:ETH needed");
+    } else {
+      require(amount > 0, "Sale:incorrect amount");
+    }
+
+    // check sign
+    
+    bytes32 message = _prefixed(keccak256(abi.encodePacked(
+      wallet,
+      referralInput,
+      amount,
+      isReverse,
+      nonce,
+      this)));
+    require(_recoverSigner(message, sig) == oracle && walletNonce[msg.sender] < nonce, "CrowdSale:sign incorrect");
+
+    walletNonce[msg.sender] = nonce;
+        
+    uint256 eswTokenAmount;
+    uint256 ethTokenAmount;
+    
+    (uint256 currentTokenAmount, ) = buyWithETHView( (!isReverse ? msg.value : amount) , isReverse);
+
+    if (!isReverse) {
+      eswTokenAmount = currentTokenAmount;
+      ethTokenAmount = msg.value;
+    } else {
+      eswTokenAmount = amount;
+      ethTokenAmount = currentTokenAmount;
+    }
+    
+    require(eswTokenAmount > 0 &&  ethTokenAmount > 0 && ethTokenAmount.mul(10000 - slippage).div(10000) <= msg.value, "Sale:0 ETH");
+    require(eswTokenAmount.mul(105).div(100) <= IESW(_token).currentCrowdsaleLimit(), "Sale:limit exceeded");
+    
+    foundationWallet.transfer(ethTokenAmount);
+    
     emit Buy(msg.sender, eswTokenAmount, 999, ethTokenAmount, _saveReferrals(referralInput));
   }
   

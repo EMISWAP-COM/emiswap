@@ -1,10 +1,10 @@
 {
-    "name": "@1inch/mooniswap",
+    "name": "@emiswap-com/emiswap",
     "version": "0.0.1",
     "description": "",
     "repository": {
         "type": "git",
-        "url": "git@github.com:CryptoManiacsZone/mooniswap.git"
+        "url": "git@github.com:EMISWAP-COM/emiswap.git"
     },
     "license": "MIT",
     "dependencies": {
@@ -64,8 +64,10 @@
         "deploy_crowdsale_rinkeby": "truffle migrate --network rinkeby --f 3 --to 3",
         "deploy_dex_kovan": "truffle migrate --network kovan --f 1 --to 1",
         "deploy_dex_kovan2": "truffle migrate --network kovan --f 2 --to 2",
+        "deploy_dex_kovan4": "truffle migrate --network kovan --f 4 --to 4",
         "deploy_dex_local": "truffle migrate --network local --f 1 --to 1",
         "deploy_dex_local2": "truffle migrate --network local --f 2 --to 2",
+        "deploy_dex_local4": "truffle migrate --network local --f 4 --to 4",
         "test2": "truffle test --stacktrace",
         "coverage": "truffle run coverage",
         "coveralls": "truffle run coverage && cat coverage/lcov.info | coveralls",
