@@ -79,8 +79,8 @@ v WBTC   (8)
 */
 
 describe('CrowdSale Test', function () {
-    const [    TestOwner,     alice,     bob,     clarc,     dave,     eve,     foundation,     team,     proxyAdmin,     presaleAdmin,     george,     henry,     ivan,     oracleWallet] = accounts;
-    const [TestOwnerPriv, alicePriv, bobPriv, clarcPriv, davePriv, evePriv, foundationPriv, teamPriv, proxyAdminPriv, presaleAdminPriv, georgePriv, henryPriv, ivanPriv, oracleWalletPriv] = privateKeys;
+    const [    TestOwner,     alice,     bob,     clarc,     dave,     eve,     foundation,     team,     proxyAdmin,     presaleAdmin,     george,     henry,     ivan,     oracleWallet,     RefAdmin] = accounts;
+    const [TestOwnerPriv, alicePriv, bobPriv, clarcPriv, davePriv, evePriv, foundationPriv, teamPriv, proxyAdminPriv, presaleAdminPriv, georgePriv, henryPriv, ivanPriv, oracleWalletPriv, RefAdminPriv] = privateKeys;
     const RefDefault = "0xdF3242dE305d033Bb87334169faBBf3b7d3D96c2";
 
     beforeEach(async function () {
@@ -124,15 +124,26 @@ describe('CrowdSale Test', function () {
         await esw.setVesting(this.emiVest.address, {from: proxyAdmin});
         
         let initDataCrowdSale = this.crowdSaleImpl.contract.methods.initialize(
-            esw.address, uniswapFactory.address, ref.address, weth.address, foundation, team ).encodeABI();
+            esw.address, uniswapFactory.address, ref.address, weth.address, foundation, team).encodeABI();
 
         let crowdSale_proxy = await Proxy.new(this.crowdSaleImpl.address, this.emiProxyAdmin.address, initDataCrowdSale, {from: proxyAdmin});
         crowdSale = await CrowdSale.at(crowdSale_proxy.address);
 
         // Set new crowdsale admin
-        crowdSale.addAdmin(presaleAdmin, {from: proxyAdmin});
+        await crowdSale.addAdmin(presaleAdmin, {from: proxyAdmin});
 
-        await esw.setMintLimit(crowdSale.address, money.eth('40000000'), {from: proxyAdmin});
+        /* await crowdSale.stopCrowdSale(true, {from: proxyAdmin});
+        await crowdSale.stopCrowdSale(false, {from: proxyAdmin}); */
+
+        // Set crowdsale poolsize
+        await crowdSale.setPoolsize(money.esw('40000000'), {from: proxyAdmin});
+
+        await esw.setMintLimit(crowdSale.address, money.esw('40000000'), {from: proxyAdmin});
+
+        // Set RefAdmin and grant crowdsale to add referrals
+        await ref.setAdminOnce({from: RefAdmin});
+        await ref.grantRef(crowdSale.address, {from: RefAdmin});
+        await ref.grantRef(RefAdmin, {from: RefAdmin});
         
         /* USDX - USDZ pair (DAI - USDC) */
         await uniswapFactory.createPair(usdx.address, usdz.address);
@@ -177,7 +188,7 @@ describe('CrowdSale Test', function () {
         await crowdSale.fetchCoin(usdx.address, 1100, 1, {from: proxyAdmin}); // DAI always first, 1 ESW = 0.11 DAI, 1 DAI=1/0.11=9.090909091 ESW
         await crowdSale.fetchCoin(usdy.address, 2750, 1, {from: proxyAdmin}); // EMRX = 0.4 DAI, 1 DAI = 1/0.4 EMRX = 2.5 EMRX, 1 ESW = 0.11*2.5 EMRX = 0.275EMRX, 1 EMRX=1/0.275=3.636363636 ESW
         await crowdSale.fetchCoin(usdz.address, 0, 3, {from: proxyAdmin});    // USDC, rate from uniswap
-        await crowdSale.fetchCoin(wbtc.address, 0, 3, {from: proxyAdmin});    // WBTC, rate from uniswap        
+        await crowdSale.fetchCoin(wbtc.address, 0, 3, {from: proxyAdmin});    // WBTC, rate from uniswap
 
         // coins to wallets
         await usdz.transfer(alice, money.usdc('10'));
@@ -274,18 +285,10 @@ describe('CrowdSale Test', function () {
         let henryBal = '123987654321000000000';
         let ivanBal = '124654965465465000000';
         let tokens = [georgeBal, henryBal, ivanBal];
-        let sinceDates = ['1601424000', '1598918400', '1599004800'];
+        let sinceDates = ['1601424000', '1598918400', '1599004800'];                
 
-        await crowdSale.presaleBulkLoad(beneficiaries, tokens, sinceDates, {from: presaleAdmin});
-
-        //let teamBalanceAfter =  new BN(georgeBal).add( new BN(henryBal)).add( new BN(ivanBal)).mul(new BN('1.05')).toString();
-        let teamBalanceAfter =  (new BN(georgeBal).add( new BN(henryBal)).add( new BN(ivanBal))).mul(new BN('105')).div(new BN('100')).toString();
-        let foundationBalanceAfter =  (new BN(georgeBal).add( new BN(henryBal)).add( new BN(ivanBal))).mul(new BN('5')).div(new BN('100')).toString();
-        //console.log('team wallet ESW', (await esw.balanceOf2(team)).toString(), teamBalanceAfter );
-        //console.log('foundation wallet ESW', (await esw.balanceOf2(foundation)).toString(), foundationBalanceAfter );
-        assert.equal(georgeBal, (await esw.balanceOf2(george)).toString(), 'George ESW balance must be ', georgeBal);
-        assert.equal((await esw.balanceOf2(team)).toString(), teamBalanceAfter, 'team balance must be ' + teamBalanceAfter);
-        assert.equal((await esw.balanceOf2(foundation)).toString(), foundationBalanceAfter, 'foundation balance must be ' + foundationBalanceAfter);
+        let tx = await crowdSale.presaleBulkLoad(beneficiaries, tokens, sinceDates, {from: presaleAdmin});
+        expectEvent(tx.receipt, 'Buy');
       });
       it('should be working fine for small value presales', async function () {
         let beneficiaries = [george, henry, ivan];
@@ -295,9 +298,8 @@ describe('CrowdSale Test', function () {
         let tokens = [georgeBal, henryBal, ivanBal];
         console.log('tokens', tokens);
         let sinceDates = ['1601424000', '1598918400', '1599004800'];
-        await crowdSale.presaleBulkLoad(beneficiaries, tokens, sinceDates, {from: presaleAdmin});
-        console.log('team wallet ESW', (await esw.balanceOf2(team)).toString());
-        assert.equal(georgeBal, (await esw.balanceOf2(george)).toString(), 'George ESW balance must be', georgeBal);
+        let tx = await crowdSale.presaleBulkLoad(beneficiaries, tokens, sinceDates, {from: presaleAdmin});
+        expectEvent(tx.receipt, 'Buy');
       });
       it('should be working for exact mintLimit in loading presales', async function () {
         console.log('team wallet ESW', (await esw.balanceOf2(team)).toString())
@@ -315,7 +317,7 @@ describe('CrowdSale Test', function () {
         let sinceDates = ['1601424000', '1598918400', '1599004800'];
         await expectRevert(
           crowdSale.presaleBulkLoad(beneficiaries, tokens, sinceDates, {from: presaleAdmin}),
-          'EmiVesting: crowdsale limit exceeded'
+          'SafeMath: subtraction overflow'
         );
         console.log('team wallet ESW', (await esw.balanceOf2(team)).toString(), 'george wallet ESW', (await esw.balanceOf2(george)).toString(), 'must be 0');
       });
@@ -328,7 +330,7 @@ describe('CrowdSale Test', function () {
           'Priviledgeable: caller is not the owner'
         );
       });
-    });
+  });
 
     describe('Buy with ETH', () => {
         beforeEach(async function () {
@@ -366,6 +368,13 @@ describe('CrowdSale Test', function () {
             this.isPreview = true;
             await expectRevert(
                 crowdSale.buyWithETH(alice, money.esw('38095238.095238096'), true, { from: bob, value: money.eth('10476.19047619')}),                
+                'Sale:0 ETH'
+            );
+        });
+        it('buyWithETHReverse: should not buy ESW for ETH with slippage > 1%', async function () {
+            this.isPreview = true;
+            await expectRevert(
+                crowdSale.buyWithETH(alice, money.esw('7071'), true, { from: bob, value: money.eth('1.925')}),
                 'Sale:0 ETH'
             );
         });
@@ -408,11 +417,11 @@ describe('CrowdSale Test', function () {
                 teamBalance.toString(), "buyer+foundation value equal to team")
         });
         it('should mint an equal value of esw both to a buyer and owner with 1-lv referral', async function () {
-            await ref.addReferral(bob, clarc);
+            await ref.addReferral(bob, clarc, {from: RefAdmin});
             let tx = await crowdSale.sendTransaction({ from: bob, value: this.BuyWithETHTest.WEIValue });
             const BuyerBalance = await esw.balanceOf2(bob);
             const Ref1Balance = await esw.balanceOf2(clarc);
-
+            
             console.log('Clarc as 1 level referral received 5%', (Ref1Balance / this.BuyWithETHTest.Decimals).toString(), 'ESW', 'gas used', await tx.receipt.gasUsed);
             assert.equal('0', new BN(Ref1Balance).toString(), '1-lv referral must be 0.05% of buyer\'s');
         });
@@ -437,26 +446,63 @@ describe('CrowdSale Test', function () {
             console.log('Clarc as 1 level referral received 5%', (Ref1Balance / this.BuyWithETHTest.Decimals).toString(), 'ESW', 'gas used', await tx.receipt.gasUsed);
             assert.equal('0', new BN(Ref1Balance).toString(), '1-lv referral must be 0.05% of buyer\'s');
         });
-        it('buyWithETH exact ESW, expect revert of buying 7000 esw both for 1.92 ETH', async function () { // 7000 * 0.11 / 400 = 1.925
+        it('buyWithETH exact ESW, should mint 7070 esw to buyer and get only 1.925 ETH from buyer (and price change up 1%)', async function () { // 7000+1% 7070 * 0.11 / 400 = 1.94425-1% = 1.9248075
+            let tx = await crowdSale.buyWithETH(clarc, money.esw('7010'), true, { from: bob, value: money.eth('1.925') });
+            const BuyerBalance = await esw.balanceOf2(bob);
+            const Ref1Balance = await esw.balanceOf2(clarc);
+
+            console.log('Clarc as 1 level referral received 5%', (Ref1Balance / this.BuyWithETHTest.Decimals).toString(), 'ESW', 'gas used', await tx.receipt.gasUsed);
+            assert.equal('0', new BN(Ref1Balance).toString(), '1-lv referral must be 0.05% of buyer\'s');
+        });
+        it('buyWithETH exact ESW, should mint 6900 esw to buyer and get only 1.925 ETH from buyer (and price change down)', async function () { // 6900 * 0.11 / 400 = 1.8975
+            let log1 = (await crowdSale.buyWithETHView(money.esw('6900'), true, { from: bob }))[0].toString();
+            console.log('log1', log1);
+            let tx = await crowdSale.buyWithETH(clarc, money.esw('6900'), true, { from: bob, value: money.eth('1.925') });
+            const BuyerBalance = await esw.balanceOf2(bob);
+            const Ref1Balance = await esw.balanceOf2(clarc);
+
+            console.log('Clarc as 1 level referral received 5%', (Ref1Balance / this.BuyWithETHTest.Decimals).toString(), 'ESW', 'gas used', await tx.receipt.gasUsed);
+            assert.equal('0', new BN(Ref1Balance).toString(), '1-lv referral must be 0.05% of buyer\'s');
+        });
+        it('buyWithETH exact ESW, expect revert of buying 7071 esw for 1.925 ETH and price move > 1%', async function () { // 7000+1%=7070, 7071 * 0.11 / 400 = 1.944525-1% = 1.92507975
             this.isPreview = true;
             await expectRevert(
-                crowdSale.buyWithETH(clarc, money.esw('7000'), true, { from: bob, value: money.eth('1.92') }),
+                crowdSale.buyWithETH(clarc, money.esw('7071'), true, { from: bob, value: money.eth('1.925') }),
                 'Sale:0 ETH'
             );
         });
-        it('buyWithETH exact ESW, expect revert of buying 7000 esw both for ZERO ETH', async function () { // 7000 * 0.11 / 400 = 1.925
+        it('buyWithETH exact ESW, expect revert of buying 7000 esw for 1.90 ETH', async function () { // 7000 * 0.11 / 400 = 1.925 -1% = 1.90575
+            this.isPreview = true;
+            await expectRevert(
+                crowdSale.buyWithETH(clarc, money.esw('7000'), true, { from: bob, value: money.eth('1.90') }),
+                'Sale:0 ETH'
+            );
+        });
+        it('buyWithETH exact ESW, expect revert of buying 7000 esw for ZERO ETH', async function () { // 7000 * 0.11 / 400 = 1.925
             this.isPreview = true;
             await expectRevert(
                 crowdSale.buyWithETH(clarc, money.esw('7000'), true, { from: bob, value: money.eth('0') }),
                 'Sale:ETH needed'
             );
         });
-        it('buyWithETH exact ESW, expect revert of buying 7000 esw both for 1.926 ETH', async function () { // 7000 * 0.11 / 400 = 1.925
+        it('buyWithETH exact ESW, expect revert of buying 7000 esw for not sufficient ETH (less ETH < 1%)', async function () { // 7000*0.11/400=1.925-1%=1.90575
             this.isPreview = true;
             await expectRevert(
-                crowdSale.buyWithETH(clarc, money.esw('7000'), true, { from: bob, value: money.eth('1.926') }),
+                crowdSale.buyWithETH(clarc, money.esw('7000'), true, { from: bob, value: money.eth('1.90574') }),
                 'Sale:0 ETH'
             );
+        });
+        it('buyWithETH exact ESW, expect of buying 7000 esw for less ETH by =1% 1.90575 ETH', async function () { // 7000 * 0.11 / 400 = 1.925 - 1% = 1.90575
+            this.isPreview = true;
+            await crowdSale.buyWithETH(clarc, money.esw('7000'), true, { from: bob, value: money.eth('1.90575') })
+            const BuyerBalance = await esw.balanceOf2(bob);
+            assert.equal(BuyerBalance, money.esw('0'), 'buyer must get esw 7000');
+        });
+        it('buyWithETH exact ESW, expect of buying 7000 esw for 1.9250000001 ETH', async function () { // 7000 * 0.11 / 400 = 1.925
+            this.isPreview = true;
+            await crowdSale.buyWithETH(clarc, money.esw('7000'), true, { from: bob, value: money.eth('1.9250000001') })
+            const BuyerBalance = await esw.balanceOf2(bob);
+            assert.equal(BuyerBalance, money.esw('0'), 'buyer must get esw 7000');
         });
         it('buyWithETH, should mint an equal value of esw both to a buyer and owner with 1-lv referral', async function () {
             let tx = await crowdSale.buyWithETH(clarc, this.BuyWithETHTest.WEIValue, false, { from: bob, value: this.BuyWithETHTest.WEIValue });
@@ -475,8 +521,8 @@ describe('CrowdSale Test', function () {
             assert.equal('0', new BN(Ref1Balance).toString(), '1-lv referral must be 0.05% of buyer\'s');
         });
         it('should mint an equal value of esw both to a buyer and owner with 2-lv referral', async function () {
-            await ref.addReferral(bob, clarc);
-            await ref.addReferral(clarc, dave);
+            await ref.addReferral(bob, clarc, {from: RefAdmin});
+            await ref.addReferral(clarc, dave, {from: RefAdmin});
             let tx = await crowdSale.sendTransaction({ from: bob, value: this.BuyWithETHTest.WEIValue });
             const BuyerBalance = await esw.balanceOf2(bob);
             const Ref1Balance = await esw.balanceOf2(clarc);
@@ -488,7 +534,7 @@ describe('CrowdSale Test', function () {
             assert.equal('0', new BN(Ref2Balance).toString(), '2-lv referral must be 0.03% of buyer\'s');
         });
         it('buyWithETH, should mint an equal value of esw both to a buyer and owner with 2-lv referral', async function () {
-            await ref.addReferral(clarc, dave);
+            await ref.addReferral(clarc, dave, {from: RefAdmin});
             let tx = await crowdSale.buyWithETH(clarc, this.BuyWithETHTest.WEIValue, false, { from: bob, value: this.BuyWithETHTest.WEIValue });
             const BuyerBalance = await esw.balanceOf2(bob);
             const Ref1Balance = await esw.balanceOf2(clarc);
@@ -500,7 +546,7 @@ describe('CrowdSale Test', function () {
             assert.equal('0', new BN(Ref2Balance).toString(), '2-lv referral must be 0.03% of buyer\'s');
         });
         it('should mint an equal value of esw both to a buyer and owner with 2-lv referral', async function () {
-            await ref.addReferral(clarc, dave);
+            await ref.addReferral(clarc, dave, {from: RefAdmin});
             let tx = await crowdSale.buyWithETH(clarc, this.BuyWithETHTest.WEIValue, false, { from: bob, value: this.BuyWithETHTest.WEIValue });
             const BuyerBalance = await esw.balanceOf2(bob);
             const Ref1Balance = await esw.balanceOf2(clarc);
@@ -512,9 +558,9 @@ describe('CrowdSale Test', function () {
             assert.equal('0', new BN(Ref2Balance).toString(), '2-lv referral must be 0.03% of buyer\'s');
         });
         it('should mint an equal value of esw both to a buyer and owner with 3-lv referral', async function () {
-            await ref.addReferral(bob, clarc);
-            await ref.addReferral(clarc, dave);
-            await ref.addReferral(dave, eve);
+            await ref.addReferral(bob, clarc, {from: RefAdmin});
+            await ref.addReferral(clarc, dave, {from: RefAdmin});
+            await ref.addReferral(dave, eve, {from: RefAdmin});
             let tx = await crowdSale.sendTransaction({ from: bob, value: this.BuyWithETHTest.WEIValue });
             const BuyerBalance = await esw.balanceOf2(bob);
             const Ref1Balance = await esw.balanceOf2(clarc);
@@ -529,8 +575,8 @@ describe('CrowdSale Test', function () {
             assert.equal('0', new BN(Ref3Balance).toString(), '3-lv referral must be 0.01% of buyer\'s');
         });
         it('buyWithETH, should mint an equal value of esw both to a buyer and owner with 3-lv referral', async function () {
-            await ref.addReferral(clarc, dave);
-            await ref.addReferral(dave, eve);
+            await ref.addReferral(clarc, dave, {from: RefAdmin});
+            await ref.addReferral(dave, eve, {from: RefAdmin});
             let tx = await crowdSale.buyWithETH(clarc, this.BuyWithETHTest.WEIValue, false, { from: bob, value: this.BuyWithETHTest.WEIValue });
             const BuyerBalance = await esw.balanceOf2(bob);
             const Ref1Balance = await esw.balanceOf2(clarc);
@@ -545,8 +591,8 @@ describe('CrowdSale Test', function () {
             assert.equal('0', new BN(Ref3Balance).toString(), '3-lv referral must be 0.01% of buyer\'s');
         });
         it('buyWithETH, should mint exact 70000 esw both to a buyer and owner with 3-lv referral', async function () { // 70000 * 0.11 / 400 = 19.25
-            await ref.addReferral(clarc, dave);
-            await ref.addReferral(dave, eve);            
+            await ref.addReferral(clarc, dave, {from: RefAdmin});
+            await ref.addReferral(dave, eve, {from: RefAdmin});
             let neededETH = (await crowdSale.buyWithETHView(money.esw('70000'), true, { from: bob }))[0];
             this.BuyWithETHTest.WEIValue = neededETH
             let tx = await crowdSale.buyWithETH(clarc, money.esw('70000'), true, { from: bob, value: neededETH });
@@ -626,7 +672,7 @@ describe('CrowdSale Test', function () {
             await crowdSale.buy(usdx.address, money.dai('2095238'), '0x0000000000000000000000000000000000000000', false, { from: alice });
             assert.equal(
                 new BN(await esw.balanceOf2(alice)).add(new BN(await esw.balanceOf2(foundation))).add(new BN(await esw.balanceOf2(RefDefault))).toString(),
-                '19047618181818181818181818', "buyer+foundation value equal to team")
+                '0', "buyer+foundation value equal to team")
         });
         it('should emit Event to a buyer', async function () {
             await usdx.transfer(alice, money.usdx('2095238'));
@@ -656,7 +702,7 @@ describe('CrowdSale Test', function () {
             console.log('Bought exact ESW 19047618', (await esw.balanceOf2(alice)).toString());
             assert.equal(
                 new BN(await esw.balanceOf2(alice)).add(new BN(await esw.balanceOf2(foundation))).add(new BN(await esw.balanceOf2(RefDefault))).toString(),
-                '19047618000000000000000000', "buyer+foundation value equal to team")
+                '0', "buyer+foundation value equal to team")
         });
         it('should revert for buy 38095240 ESW ', async function () { // 38095240 * 1.05 (=40000002) > 40000000
             this.isPreview = true;
@@ -714,7 +760,7 @@ describe('CrowdSale Test', function () {
             assert.equal('0', new BN(Ref1Balance).toString(), '1-lv referral must be 0.05% of buyer\'s');
         });
         it('should mint an equal value of esw both to a buyer and owner with 2-lv referral', async function () {
-            await ref.addReferral(clarc, dave);
+            await ref.addReferral(clarc, dave, {from: RefAdmin});
             await crowdSale.buy(usdx.address, this.BuyWithUSDX.USDXValue, clarc, false, { from: alice });
       
             const BuyerBalance = await esw.balanceOf2(alice);
@@ -727,8 +773,8 @@ describe('CrowdSale Test', function () {
             assert.equal('0', new BN(Ref2Balance).toString(), '2-lv referral must be 0.03% of buyer\'s');
         });
         it('should mint an equal value of esw both to a buyer and owner with 3-lv referral', async function () {
-            await ref.addReferral(clarc, dave);
-            await ref.addReferral(dave, eve);
+            await ref.addReferral(clarc, dave, {from: RefAdmin});
+            await ref.addReferral(dave, eve, {from: RefAdmin});
             await crowdSale.buy(usdx.address, this.BuyWithUSDX.USDXValue, clarc, false, { from: alice });
       
             const BuyerBalance = await esw.balanceOf2(alice);
@@ -744,8 +790,8 @@ describe('CrowdSale Test', function () {
             assert.equal('0', new BN(Ref3Balance).toString(), '3-lv referral must be 0.01% of buyer\'s');
         });
         it('Buy exact ESW should mint an equal value of esw both to a buyer and owner with 3-lv referral', async function () {
-            await ref.addReferral(clarc, dave);
-            await ref.addReferral(dave, eve);
+            await ref.addReferral(clarc, dave, {from: RefAdmin});
+            await ref.addReferral(dave, eve, {from: RefAdmin});
             await usdx.transfer(alice, money.usdx('121'));
             await usdx.approve(crowdSale.address, money.usdx('121'), { from: alice });
             await crowdSale.buy(usdx.address, money.esw('1100'), clarc, true, { from: alice });
@@ -756,7 +802,7 @@ describe('CrowdSale Test', function () {
             const Ref3Balance = await esw.balanceOf2(eve);
             
             console.log('Alice bought', BuyerBalance.toString(), 'ESW for', (await usdx.balanceOf(foundation)).toString(), 'DAI')
-            assert.equal(BuyerBalance.toString(), money.esw('1100').toString(), 'Alice bought 1100 ESW for DAI');
+            assert.equal(BuyerBalance.toString(), money.esw('0').toString(), 'Alice bought 1100 ESW for DAI');
             assert.equal((await usdx.balanceOf(foundation)).toString(), money.usdx('121').toString(), 'Alice bought ESW for 121 DAI');
             console.log('Clarc as 1 level referral received 5%', (Ref1Balance / this.BuyWithUSDX.Decimals).toString(), 'ESW');
             assert.equal('0', new BN(Ref1Balance).toString(), '1-lv referral must be 0.05% of buyer\'s');
@@ -828,7 +874,7 @@ describe('CrowdSale Test', function () {
             assert.equal('0', new BN(Ref1Balance).toString(), '1-lv referral must be 0.05% of buyer\'s');
         });
         it('should mint an equal value of esw both to a buyer and owner with 2-lv referral', async function () {
-            await ref.addReferral(clarc, dave);
+            await ref.addReferral(clarc, dave, {from: RefAdmin});
             await crowdSale.buy(usdy.address, this.BuyWithUSDYTest.USDYValue, clarc, false, { from: alice });
       
             const BuyerBalance = await esw.balanceOf2(alice);
@@ -841,8 +887,8 @@ describe('CrowdSale Test', function () {
             assert.equal('0', new BN(Ref2Balance).toString(), '2-lv referral must be 0.03% of buyer\'s');
         });
         it('should mint an equal value of esw both to a buyer and owner with 3-lv referral', async function () {
-            await ref.addReferral(clarc, dave);
-            await ref.addReferral(dave, eve);
+            await ref.addReferral(clarc, dave, {from: RefAdmin});
+            await ref.addReferral(dave, eve, {from: RefAdmin});
             await crowdSale.buy(usdy.address, this.BuyWithUSDYTest.USDYValue, clarc, false, { from: alice });
       
             const BuyerBalance = await esw.balanceOf2(alice);
@@ -925,13 +971,13 @@ describe('CrowdSale Test', function () {
       
             const BuyerBalance = await esw.balanceOf2(alice);
             const Ref1Balance = await esw.balanceOf2(clarc);
-            assert.equal(BuyerBalance.toString(), money.esw('100'), 'Alice bought 100 ESW for USDC');
+            assert.equal(BuyerBalance.toString(), /* money.esw('100') */0, 'Alice bought 100 ESW for USDC');
             assert.equal((await usdz.balanceOf(foundation)).toString(), money.usdc('11.11').toString(), 'Alice bought ESW for');
             console.log('Clarc as 1 level referral received 5%', (Ref1Balance / this.BuyWithUSDZTest.Decimals).toString(), 'ESW', 'gas used', await tx.receipt.gasUsed);
             assert.equal('0', new BN(Ref1Balance).toString(), '1-lv referral must be 0.05% of buyer\'s');
         });
         it('should mint an equal value of esw both to a buyer and owner with 2-lv referral', async function () {
-            await ref.addReferral(clarc, dave);
+            await ref.addReferral(clarc, dave, {from: RefAdmin});
             await crowdSale.buy(usdz.address, this.BuyWithUSDZTest.USDZValue, clarc, false, { from: alice });
       
             const BuyerBalance = await esw.balanceOf2(alice);
@@ -944,8 +990,8 @@ describe('CrowdSale Test', function () {
             assert.equal('0', new BN(Ref2Balance).toString(), '2-lv referral must be 0.03% of buyer\'s');
         });
         it('should mint an equal value of esw both to a buyer and owner with 3-lv referral', async function () {
-            await ref.addReferral(clarc, dave);
-            await ref.addReferral(dave, eve);
+            await ref.addReferral(clarc, dave, {from: RefAdmin});
+            await ref.addReferral(dave, eve, {from: RefAdmin});
             await crowdSale.buy(usdz.address, this.BuyWithUSDZTest.USDZValue, clarc, false, { from: alice });
       
             const BuyerBalance = await esw.balanceOf2(alice);
@@ -1037,7 +1083,7 @@ describe('CrowdSale Test', function () {
                 { account: alice, amount: '91818181818181818181818', coinId: '3', coinAmount: this.BuyWithWBTCTest.WBTCValue, referral: clarc});
         });
         it('should mint an equal value of esw both to a buyer and owner with 2-lv referral', async function () {
-            await ref.addReferral(clarc, dave);
+            await ref.addReferral(clarc, dave, {from: RefAdmin});
             await crowdSale.buy(wbtc.address, this.BuyWithWBTCTest.WBTCValue, clarc, false, { from: alice });
       
             const BuyerBalance = await esw.balanceOf2(alice);
@@ -1050,8 +1096,8 @@ describe('CrowdSale Test', function () {
             assert.equal('0', new BN(Ref2Balance).toString(), '2-lv referral must be 0.03% of buyer\'s');
         });
         it('should mint an equal value of esw both to a buyer and owner with 3-lv referral', async function () {
-            await ref.addReferral(clarc, dave);
-            await ref.addReferral(dave, eve);
+            await ref.addReferral(clarc, dave, {from: RefAdmin});
+            await ref.addReferral(dave, eve, {from: RefAdmin});
             await crowdSale.buy(wbtc.address, this.BuyWithWBTCTest.WBTCValue, clarc, false, { from: alice });
       
             const BuyerBalance = await esw.balanceOf2(alice);
@@ -1127,598 +1173,6 @@ describe('CrowdSale Test', function () {
               '0', 
               new BN (await esw.balanceOf2(team)).toString(), 
               "buyer+foundation value equal to team")
-        });
-    });
-    describe('Oracle sign sale for tokens buy exact ESW', () => {
-        beforeEach('get sign and make tx', async function () { 
-            // set oracle, check oracle
-            this.ZEROref = '0x0000000000000000000000000000000000000000';
-            await crowdSale.setOracle(oracleWallet, {from: proxyAdmin});
-            let storedOracle = await crowdSale.getOracle();
-            assert.equal(storedOracle, oracleWallet, 'Get stored Oracle address');
-        });        
-        describe('Oracle sign sale for DAI tokens buy exact ESW', async function () {
-            beforeEach('prepare sign', async function () {
-                // front part 
-                // alice ask oracle signature to buy 100 ESW
-                // get nonce (number of confirmed transactions) from contract, incrementing for coming transaction
-                this.txCount = await crowdSale.getWalletNonce({from: alice}) + 1
-
-                // oracle part
-                // get purchase parameters and make hash of it
-                let hash = web3.utils.soliditySha3(
-                    alice,              // buyer wallet
-                    usdx.address,       // token to spend
-                    money.esw('1000'),  // if buy_kind == true -> ESW amount to buy if buy_kind == false -> amount of token to spend
-                    this.ZEROref,       // referral wallet
-                    true,               // buy_kind (true - exact ESW to purchase, false - exact token to spend)
-                    this.txCount,       // nonce (tx number from front)
-                    crowdSale.address   // crowdSale contract address
-                );
-                // oracle part
-                // sign hash (paramentrs) with oracle_private_key -> get signature and send it back to front
-                // core step, this signature contains oracle_wallet (from private key) and hashed parameters
-                this.sigObject = await web3.eth.accounts.sign(hash, oracleWalletPriv)
-            })
-            it('should be same oracle wallet', async function() {
-                // sign check, correct signature recover must return signer wallet
-                let sigWallet = await web3.eth.accounts.recover(this.sigObject)
-                assert.equal(oracleWallet, sigWallet, 'Signature wallet must be equal to recovered sigwallet');
-            });
-            it('ESW should be sold correctly to alice', async function () {
-                // front part
-                // make user approve tokens and call crowdSale.buySigned
-                try {
-                    await usdx.transfer(alice, money.usdx('10000'));
-                    await usdx.approve(crowdSale.address, money.usdx('10000'), { from: alice });
-                    let res = await crowdSale.buySigned(
-                        usdx.address, 
-                        money.esw('1000'), 
-                        this.ZEROref, 
-                        true, 
-                        this.txCount,
-                        this.sigObject.signature, 
-                        {from: alice}
-                    );
-                    console.log('        buySigned gasUsed', await res.receipt.gasUsed);
-                    expectEvent(res.receipt, 'Buy', { 
-                        account: alice, 
-                        amount: money.esw('1000'), 
-                        coinId: '0', 
-                        coinAmount: money.usdx('110'),
-                        referral: this.ZEROref                });
-                }  catch (error) {
-                    console.log(error)
-                }
-            });
-            it('FRAUD test - ESW should not be sold to bob', async function () {
-                try {
-                    await usdx.transfer(bob, money.usdx('10000'));
-                    await usdx.approve(crowdSale.address, money.usdx('10000'), { from: bob });
-                    await expectRevert(crowdSale.buySigned(
-                        usdx.address, 
-                        money.esw('1000'), 
-                        this.ZEROref, 
-                        true, 
-                        this.txCount,
-                        this.sigObject.signature, 
-                        {from: bob}
-                        ),
-                        'CrowdSale:sign incorrect');
-                }  catch (error) {
-                    console.log(error)
-                }
-            });
-            it('FRAUD test - ESW should not be sold to alice with changed params - more ESW', async function () {
-                try {
-                    await usdx.transfer(alice, money.usdx('10000'));
-                    await usdx.approve(crowdSale.address, money.usdx('10000'), { from: alice });
-                    await expectRevert(crowdSale.buySigned(
-                        usdx.address, 
-                        money.esw('10000'),
-                        this.ZEROref, 
-                        true, 
-                        this.txCount,
-                        this.sigObject.signature, 
-                        {from: alice}
-                        ),
-                        'CrowdSale:sign incorrect');
-                }  catch (error) {
-                    console.log(error)
-                }
-            });
-        })
-        describe('Oracle sign sale ESW for exact DAI tokens', async function () {
-            beforeEach('prepare sign', async function () {                
-                // get nonce (number of confirmed transactions) from contract, incrementing for coming transaction
-                this.txCount = await crowdSale.getWalletNonce({from: alice}) + 1
-
-                // get purchase parameters and make hash of it
-                let hash = web3.utils.soliditySha3(
-                    alice,              // buyer wallet
-                    usdx.address,       // token to spend
-                    money.usdx('1100'),  // if buy_kind == true -> ESW amount to buy if buy_kind == false -> amount of token to spend
-                    this.ZEROref,       // referral wallet
-                    false,               // buy_kind (true - exact ESW to purchase, false - exact token to spend)
-                    this.txCount,       // nonce (tx number from front)
-                    crowdSale.address   // crowdSale contract address
-                );
-                
-                // sign hash (paramentrs) with oracle_private_key -> get signature and send it back to front
-                this.sigObject = await web3.eth.accounts.sign(hash, oracleWalletPriv)
-            })
-            it('should be same oracle wallet', async function() {
-                // sign check, correct signature recover must return signer wallet
-                let sigWallet = await web3.eth.accounts.recover(this.sigObject)
-                assert.equal(oracleWallet, sigWallet, 'Signature wallet must be equal to recovered sigwallet');
-            });
-            it('ESW should be sold correctly to alice', async function () {
-                // front part
-                // make user approve tokens and call crowdSale.buySigned
-                try {
-                    await usdx.transfer(alice, money.usdx('10000'));
-                    await usdx.approve(crowdSale.address, money.usdx('10000'), { from: alice });
-                    let res = await crowdSale.buySigned(
-                        usdx.address, 
-                        money.usdx('1100'),
-                        this.ZEROref, 
-                        false, 
-                        this.txCount,
-                        this.sigObject.signature, 
-                        {from: alice}
-                    );
-                    console.log('        buySigned gasUsed', await res.receipt.gasUsed);
-                    expectEvent(res.receipt, 'Buy', { 
-                        account: alice, 
-                        amount: money.esw('10000'),
-                        coinId: '0', 
-                        coinAmount: money.usdx('1100'),
-                        referral: this.ZEROref                });
-                }  catch (error) {
-                    console.log(error)
-                }
-            });
-            it('FRAUD test - ESW should not be sold to bob', async function () {
-                try {
-                    await usdx.transfer(bob, money.usdx('10000'));
-                    await usdx.approve(crowdSale.address, money.usdx('10000'), { from: bob });
-                    await expectRevert(crowdSale.buySigned(
-                        usdx.address, 
-                        money.usdx('1100'),
-                        this.ZEROref, 
-                        false, 
-                        this.txCount,
-                        this.sigObject.signature, 
-                        {from: bob} ),
-                        'CrowdSale:sign incorrect');
-                }  catch (error) {
-                    console.log(error)
-                }
-            });
-            it('FRAUD test - ESW should not be sold to alice with changed params - more ESW', async function () {
-                try {
-                    await usdx.transfer(alice, money.usdx('10000'));
-                    await usdx.approve(crowdSale.address, money.usdx('10000'), { from: alice });
-                    await expectRevert(crowdSale.buySigned(
-                        usdx.address, 
-                        money.usdx('110'),
-                        this.ZEROref, 
-                        false, 
-                        this.txCount,
-                        this.sigObject.signature, 
-                        {from: bob} ),
-                        'CrowdSale:sign incorrect');
-                }  catch (error) {
-                    console.log(error)
-                }
-            });
-        })
-        describe('Oracle sign sale for WBTC tokens buy exact ESW', async function () {
-            beforeEach('prepare sign', async function () {
-                // front part 
-                // alice ask oracle signature to buy 100 ESW
-                // get nonce (number of confirmed transactions) from contract, incrementing for coming transaction
-                this.txCount = await crowdSale.getWalletNonce({from: alice}) + 1
-
-                // oracle part
-                // get purchase parameters and make hash of it
-                let hash = web3.utils.soliditySha3(
-                    alice,              // buyer wallet
-                    wbtc.address,       // token to spend
-                    money.esw('1000'),  // if buy_kind == true -> ESW amount to buy if buy_kind == false -> amount of token to spend
-                    this.ZEROref,       // referral wallet
-                    true,               // buy_kind (true - exact ESW to purchase, false - exact token to spend)
-                    this.txCount,       // nonce (tx number from front)
-                    crowdSale.address   // crowdSale contract address
-                );
-                // oracle part
-                // sign hash (paramentrs) with oracle_private_key -> get signature and send it back to front
-                // core step, this signature contains oracle_wallet (from private key) and hashed parameters
-                this.sigObject = await web3.eth.accounts.sign(hash, oracleWalletPriv)
-            })
-            it('should be same oracle wallet', async function() {
-                // sign check, correct signature recover must return signer wallet
-                let sigWallet = await web3.eth.accounts.recover(this.sigObject)
-                assert.equal(oracleWallet, sigWallet, 'Signature wallet must be equal to recovered sigwallet');
-            });
-            it('ESW should be sold correctly to alice', async function () {
-                // front part
-                // make user approve tokens and call crowdSale.buySigned
-                try {
-                    await wbtc.transfer(alice, money.wbtc('100'));
-                    await wbtc.approve(crowdSale.address, money.wbtc('100'), { from: alice });
-                    let res = await crowdSale.buySigned(
-                        wbtc.address, 
-                        money.esw('1000'), 
-                        this.ZEROref, 
-                        true, 
-                        this.txCount,
-                        this.sigObject.signature, 
-                        {from: alice}
-                    );
-                    console.log('        buySigned gasUsed', await res.receipt.gasUsed);
-                    expectEvent(res.receipt, 'Buy', { 
-                        account: alice, 
-                        amount: money.esw('1000'), 
-                        coinId: '3', 
-                        coinAmount: money.wbtc('0.01089108'),
-                        referral: this.ZEROref                });
-                }  catch (error) {
-                    console.log(error)
-                }
-            });
-            it('ESW should be sold to alice only one for one signature and not sold again with the same signature', async function () {
-                // front part
-                // make user approve tokens and call crowdSale.buySigned
-                try {
-                    await wbtc.transfer(alice, money.wbtc('100'));
-                    await wbtc.approve(crowdSale.address, money.wbtc('100'), { from: alice });
-                    let res = await crowdSale.buySigned(
-                        wbtc.address, 
-                        money.esw('1000'), 
-                        this.ZEROref, 
-                        true, 
-                        this.txCount,
-                        this.sigObject.signature, 
-                        {from: alice}
-                    );
-                    console.log('        buySigned first time, gasUsed', await res.receipt.gasUsed);
-                    expectEvent(res.receipt, 'Buy', { 
-                        account: alice, 
-                        amount: money.esw('1000'), 
-                        coinId: '3', 
-                        coinAmount: money.wbtc('0.01089108'),
-                        referral: this.ZEROref                });
-                }  catch (error) {
-                    console.log(error)
-                }
-
-                try {
-                    await wbtc.transfer(alice, money.wbtc('100'));
-                    await wbtc.approve(crowdSale.address, money.wbtc('100'), { from: alice });
-                    await expectRevert(crowdSale.buySigned(
-                        wbtc.address, 
-                        money.esw('1000'), 
-                        this.ZEROref, 
-                        true, 
-                        this.txCount,
-                        this.sigObject.signature, 
-                        {from: alice}),
-                        'CrowdSale:sign incorrect');
-                }  catch (error) {
-                    console.log(error)
-                }
-            });
-            it('FRAUD test - ESW should not be sold to bob', async function () {
-                try {
-                    await usdx.transfer(bob, money.wbtc('100'));
-                    await usdx.approve(crowdSale.address, money.wbtc('100'), { from: bob });
-                    await expectRevert(crowdSale.buySigned(
-                        wbtc.address, 
-                        money.esw('1000'), 
-                        this.ZEROref, 
-                        true, 
-                        this.txCount,
-                        this.sigObject.signature, 
-                        {from: bob}
-                        ),
-                        'CrowdSale:sign incorrect');
-                }  catch (error) {
-                    console.log(error)
-                }
-            });
-            it('FRAUD test - ESW should not be sold to alice with changed params - more ESW', async function () {
-                try {
-                    await wbtc.transfer(alice, money.wbtc('100'));
-                    await wbtc.approve(crowdSale.address, money.wbtc('100'), { from: alice });
-                    await expectRevert(crowdSale.buySigned(
-                        wbtc.address, 
-                        money.esw('10000'),
-                        this.ZEROref, 
-                        true, 
-                        this.txCount,
-                        this.sigObject.signature, 
-                        {from: alice}
-                        ),
-                        'CrowdSale:sign incorrect');
-                }  catch (error) {
-                    console.log(error)
-                }
-            });
-            it('FRAUD test - ESW should not be sold to alice with changed params - changed token', async function () {
-                try {
-                    await usdz.transfer(alice, money.wbtc('10000'));
-                    await usdz.approve(crowdSale.address, money.wbtc('10000'), { from: alice });
-                    await expectRevert(crowdSale.buySigned(
-                        usdz.address, 
-                        money.esw('10000'),
-                        this.ZEROref, 
-                        true, 
-                        this.txCount,
-                        this.sigObject.signature, 
-                        {from: alice}
-                        ),
-                        'CrowdSale:sign incorrect');
-                }  catch (error) {
-                    console.log(error)
-                }
-            });
-            it('FRAUD test - ESW should not be sold to alice with changed params - changed referral -> bob', async function () {
-                try {
-                    await wbtc.transfer(alice, money.wbtc('100'));
-                    await wbtc.approve(crowdSale.address, money.wbtc('100'), { from: alice });
-                    await expectRevert(crowdSale.buySigned(
-                        wbtc.address, 
-                        money.esw('10000'),
-                        bob,
-                        true, 
-                        this.txCount,
-                        this.sigObject.signature, 
-                        {from: alice}
-                        ),
-                        'CrowdSale:sign incorrect');
-                }  catch (error) {
-                    console.log(error)
-                }
-            });
-        })
-        describe('Oracle sign sale for ETH buy exact ESW', async function () {
-            beforeEach('prepare sign', async function () {
-                // front part 
-                // alice ask oracle signature to buy 100 ESW
-                // get nonce (number of confirmed transactions) from contract, incrementing for coming transaction
-                this.txCount = await crowdSale.getWalletNonce({from: alice}) + 1;
-
-                // oracle part
-                // get purchase parameters and make hash of it
-                let hash = web3.utils.soliditySha3(
-                    alice,
-                    this.ZEROref,       // referral wallet
-                    money.esw('1000'),  // if buy_kind == true -> ESW amount to buy if buy_kind == false -> amount of token to spend
-                    true,               // buy_kind (true - exact ESW to purchase, false - exact token to spend)
-                    this.txCount,       // nonce (tx number from front)
-                    crowdSale.address   // crowdSale contract address
-                );
-                // oracle part
-                // sign hash (paramentrs) with oracle_private_key -> get signature and send it back to front
-                // core step, this signature contains oracle_wallet (from private key) and hashed parameters
-                this.sigObject = await web3.eth.accounts.sign(hash, oracleWalletPriv)
-            })
-            it('should be same oracle wallet', async function() {
-                // sign check, correct signature recover must return signer wallet
-                let sigWallet = await web3.eth.accounts.recover(this.sigObject)
-                assert.equal(oracleWallet, sigWallet, 'Signature wallet must be equal to recovered sigwallet');
-            });
-            it('ESW should be sold correctly to alice', async function () { // 1000ESW * 0.11 DAI/ESW / 400DAI/ETH = 0.275 ETH
-                // front part
-                // make user approve tokens and call crowdSale.buySigned                
-                let res = await crowdSale.buyWithETHSign(
-                    alice,
-                    this.ZEROref,
-                    money.esw('1000'), 
-                    true, 
-                    this.txCount,
-                    this.sigObject.signature,
-                    {from: alice, value: money.eth('0.275')}
-                );
-                console.log('        buySigned gasUsed', await res.receipt.gasUsed);
-                expectEvent(res.receipt, 'Buy', {
-                    account: alice, 
-                    amount: money.esw('1000'), 
-                    coinId: '999', 
-                    coinAmount: money.eth('0.275'),
-                    referral: this.ZEROref});
-            });
-            it('FRAUD test - ESW should not be sold to bob', async function () {                
-                await expectRevert(crowdSale.buyWithETHSign(
-                        bob,
-                        this.ZEROref,
-                        money.esw('1000'), 
-                        true, 
-                        this.txCount,
-                        this.sigObject.signature,
-                        {from: bob, value: money.eth('0.275')}
-                    ),
-                    'CrowdSale:sign incorrect');
-            });
-            it('FRAUD test - ESW should not be sold to alice with changed params - more ESW', async function () {
-                await expectRevert(crowdSale.buyWithETHSign(
-                    alice,
-                    this.ZEROref,
-                    money.esw('100000'), 
-                    true, 
-                    this.txCount,
-                    this.sigObject.signature,
-                    {from: alice, value: money.eth('0.275')}
-                ),
-                'CrowdSale:sign incorrect');
-            });
-            it('FRAUD test - ESW should not be sold to alice with changed params - changed ETH value', async function () {
-                await expectRevert(crowdSale.buyWithETHSign(
-                    alice,
-                    this.ZEROref,
-                    money.esw('1000'), 
-                    true, 
-                    this.txCount,
-                    this.sigObject.signature,
-                    {from: alice, value: money.eth('0.075')}
-                ),
-                'Sale:0 ETH');
-            });
-            it('FRAUD test - ESW should not be sold to alice with changed params - changed referral -> bob', async function () {            
-                await expectRevert(crowdSale.buyWithETHSign(
-                    alice,
-                    bob,
-                    money.esw('1000'), 
-                    true, 
-                    this.txCount,
-                    this.sigObject.signature,
-                    {from: alice, value: money.eth('0.275')}
-                ),
-                'CrowdSale:sign incorrect');
-            });
-        });
-        describe('Oracle sign sale for ETH buy exact ETH', async function () {
-            beforeEach('prepare sign', async function () {
-                // front part 
-                // alice ask oracle signature to buy 100 ESW
-                // get nonce (number of confirmed transactions) from contract, incrementing for coming transaction
-                this.txCount = await crowdSale.getWalletNonce({from: alice}) + 1;
-
-                // oracle part
-                // get purchase parameters and make hash of it
-                let hash = web3.utils.soliditySha3(
-                    alice,
-                    this.ZEROref,       // referral wallet
-                    money.ether('1'),   // if buy_kind == true -> ESW amount to buy if buy_kind == false -> amount of ETH to spend
-                    false,              // buy_kind (true - exact ESW to purchase, false - exact token to spend)
-                    this.txCount,       // nonce (tx number from front)
-                    crowdSale.address   // crowdSale contract address
-                );
-                // oracle part
-                // sign hash (paramentrs) with oracle_private_key -> get signature and send it back to front
-                // core step, this signature contains oracle_wallet (from private key) and hashed parameters
-                this.sigObject = await web3.eth.accounts.sign(hash, oracleWalletPriv)
-            })
-            it('should be same oracle wallet', async function() {
-                // sign check, correct signature recover must return signer wallet
-                let sigWallet = await web3.eth.accounts.recover(this.sigObject)
-                assert.equal(oracleWallet, sigWallet, 'Signature wallet must be equal to recovered sigwallet');
-            });
-            it('ESW should be sold correctly to alice', async function () { // 1000ESW * 0.11 DAI/ESW / 400DAI/ETH = 0.275 ETH
-                // front part
-                // make user approve tokens and call crowdSale.buySigned
-
-                let res = await crowdSale.buyWithETHSign(
-                    alice,
-                    this.ZEROref,
-                    money.ether('1'), 
-                    false, 
-                    this.txCount,
-                    this.sigObject.signature,
-                    {from: alice, value: money.eth('1')}
-                );
-                console.log('        buySigned gasUsed', await res.receipt.gasUsed);
-                expectEvent(res.receipt, 'Buy', {
-                    account: alice, 
-                    amount: money.esw('3636.363636363636363636'),
-                    coinId: '999', 
-                    coinAmount: money.eth('1'),
-                    referral: this.ZEROref});
-            });
-            it('FRAUD ESW should be sold correctly to alice only once ', async function () {
-                await crowdSale.buyWithETHSign(
-                    alice,
-                    this.ZEROref,
-                    money.ether('1'), 
-                    false, 
-                    this.txCount,
-                    this.sigObject.signature,
-                    {from: alice, value: money.eth('1')}
-                );
-                await expectRevert(crowdSale.buyWithETHSign(
-                    alice,
-                    this.ZEROref,
-                    money.ether('1'), 
-                    false, 
-                    this.txCount,
-                    this.sigObject.signature,
-                    {from: alice, value: money.eth('1')}
-                ),
-                'CrowdSale:sign incorrect');
-            });
-            it('FRAUD test - ESW should not be sold to bob', async function () {                
-                await expectRevert(crowdSale.buyWithETHSign(
-                        bob,
-                        this.ZEROref,
-                        money.ether('1'), 
-                        false, 
-                        this.txCount,
-                        this.sigObject.signature,
-                        {from: bob, value: money.eth('1')}
-                    ),
-                    'CrowdSale:sign incorrect');
-            });
-            it('FRAUD test - ESW should not be sold to bob', async function () {                
-                await expectRevert(crowdSale.buyWithETHSign(
-                        alice,
-                        this.ZEROref,
-                        money.ether('1'), 
-                        false, 
-                        this.txCount + 1,
-                        this.sigObject.signature,
-                        {from: alice, value: money.eth('1')}
-                    ),
-                    'CrowdSale:sign incorrect');
-            });
-            it('FRAUD test - ESW should not be sold to alice with changed params - less ETH', async function () {
-                await expectRevert(crowdSale.buyWithETHSign(
-                    alice,
-                    this.ZEROref,
-                    money.ether('0.5'), 
-                    false, 
-                    this.txCount,
-                    this.sigObject.signature,
-                    {from: alice, value: money.eth('0.5')}
-                ),
-                'CrowdSale:sign incorrect');
-            });
-            it('FRAUD test - ESW should not be sold to alice with changed params - more ETH', async function () {
-                await expectRevert(crowdSale.buyWithETHSign(
-                    alice,
-                    this.ZEROref,
-                    money.ether('1.5'),
-                    false, 
-                    this.txCount,
-                    this.sigObject.signature,
-                    {from: alice, value: money.eth('1.5')}
-                ),
-                'CrowdSale:sign incorrect');
-            });
-            it('FRAUD test - ESW should not be sold to alice with changed params - changed ETH value', async function () {
-                await expectRevert(crowdSale.buyWithETHSign(
-                    alice,
-                    this.ZEROref,
-                    money.ether('1'),
-                    false, 
-                    this.txCount,
-                    this.sigObject.signature,
-                    {from: alice, value: money.eth('0.075')}
-                ),
-                'Sale:ETH needed');
-            });
-            it('FRAUD test - ESW should not be sold to alice with changed params - changed referral -> bob', async function () {            
-                await expectRevert(crowdSale.buyWithETHSign(
-                    alice,
-                    bob,
-                    money.ether('1'),
-                    false, 
-                    this.txCount,
-                    this.sigObject.signature,
-                    {from: alice, value: money.eth('1')}
-                ),
-                'CrowdSale:sign incorrect');
-            });
         });
     });
     describe('Oracle sign ESW minting ESW', () => {

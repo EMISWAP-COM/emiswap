@@ -3,6 +3,7 @@ const { expect, assert } = require('chai');
 
 const { contract } = require('./twrapper');
 
+const { BN } = web3.utils;
 const money = {
     ether,
     eth: ether,
@@ -10,7 +11,7 @@ const money = {
     oneWei: ether('0').addn(1),
     weth: ether,
     dai: ether,
-    usdc: (value) => ether(value).divn(1e12),
+    usdc: (value) => ether(value).div(new BN (1e12))
 };
 
 async function trackReceivedToken (token, wallet, txPromise) {
@@ -51,7 +52,7 @@ const Token = contract.fromArtifact('TokenMock');
 const TokenWETH = contract.fromArtifact('MockWETH');
 
 describe('EmiRouter', function () {
-    const [_owner, wallet1, wallet2] = accounts;
+    const [_owner, wallet1, wallet2, wallet3, vaultWallet] = accounts;
     beforeEach(async function () {
         //await commonTestStarter(accounts, this);
         this.factory = await EmiFactory.new();
@@ -61,7 +62,7 @@ describe('EmiRouter', function () {
         await this.factory.setFee(     money.weth('0.0030'), {from: _owner});
         //await this.factory.setAdminGrant(_owner, false);
         await this.factory.setFeeVault(money.weth('0.0005'), {from: _owner});
-        await this.factory.setaddressVault(wallet1, {from: _owner});
+        await this.factory.setaddressVault(vaultWallet, {from: _owner});
 
 
         this.DAI = await Token.new('DAI', 'DAI', 18);
@@ -82,8 +83,16 @@ describe('EmiRouter', function () {
 
         await this.DAI.approve(this.router.address, money.dai('800'), { from: wallet2 });
         await this.WETH.approve(this.router.address, money.weth('2'), { from: wallet2 });
+
+        // Set 1 mln pool
+        await this.DAI.mint(wallet3, money.dai('2000000'));
+        await this.USDC.mint(wallet3, money.usdc('1000000'));
+        await this.DAI.approve(this.router.address, money.dai('2000000'), { from: wallet3 });
+        await this.USDC.approve(this.router.address, money.usdc('1000000'), { from: wallet3 });
+        console.log('balance USDC', (await this.USDC.balanceOf(wallet3)).div(money.usdc('1')).toString());
+        console.log('balance DAI ', (await this.DAI.balanceOf(wallet3)).div(money.dai('1')).toString());
     });
-    describe('Creation, swap and remove liquidity in ERC-20 - ERC-20', async function () {
+    describe.skip('Creation, swap and remove liquidity in ERC-20 - ERC-20', async function () {
         beforeEach(async function () {
             let res = await this.router.addLiquidity(
                 this.WETH.address, 
@@ -178,7 +187,7 @@ describe('EmiRouter', function () {
             expect(WETHfirstdeposite).to.be.bignumber.above(money.weth('1'));
         });
     });
-    describe('Creation, swap and remove liquidity in raw-ETH - ERC-20', async function () {
+    describe.skip('Creation, swap and remove liquidity in raw-ETH - ERC-20', async function () {
         beforeEach(async function () {
             let res = await this.router.addLiquidityETH(
                 this.DAI.address,            
@@ -286,6 +295,56 @@ describe('EmiRouter', function () {
             expect(liquidity).to.be.bignumber.equal(money.zero);
             expect(DAIseconddeposite).to.be.bignumber.above(money.dai('400'));
             expect(WETHfirstdeposite).to.be.bignumber.above(money.weth('1'));
+        })
+    });
+    describe('Creation, swap and remove 1 mln pool DAI-USDC', async function () {
+        //beforeEach(async function () {
+        it('Make 1 mln pool, swap it, remove liquidity', async function () {
+            let res = await this.router.addLiquidity(
+                this.USDC.address,
+                this.DAI.address,
+                money.usdc('1000000'),
+                money.dai( '1000000'),
+                money.zero,
+                money.zero,
+                { from: wallet3 });
+
+            this.emiswap = await this.factory.pools(this.USDC.address, this.DAI.address);
+            this.LPtoken = await new Token(this.emiswap);
+            const liquidity = await this.router.getLiquidity(this.USDC.address, this.DAI.address, { from: wallet3 });
+            expect(liquidity).to.be.bignumber.equal(money.dai('1000000'));
+            console.log('//////////////////////////////////// SWAP ///////////////');
+            console.log('balance LP  ', (liquidity).div(money.ether('1')).toString());
+            console.log("First pair creation with liquidity , gasUsed =", res.receipt.gasUsed);
+
+            await this.router.swapExactTokensForTokens(
+                money.dai('1000000'),
+                money.usdc('0'),
+                [this.DAI.address, this.USDC.address],
+                wallet3,
+                constants.ZERO_ADDRESS,
+                { from: wallet3 }
+            )
+            console.log('POOL balance USDC', (await this.USDC.balanceOf(this.emiswap)).div(money.usdc('1')).toString());
+            console.log('POOL balance DAI ', (await this.DAI.balanceOf(this.emiswap)).div(money.dai('1')).toString());
+            console.log('balance USDC', (await this.USDC.balanceOf(wallet3)).div(money.usdc('1')).toString());
+            console.log('balance DAI ', (await this.DAI.balanceOf(wallet3)).div(money.dai('1')).toString());
+
+            console.log('//////////////////////////////////// REMOVE LP ///////////////');
+
+            await this.LPtoken.approve(this.router.address, liquidity, { from: wallet3 });
+            await this.router.removeLiquidity(
+                this.USDC.address, 
+                this.DAI.address,
+                liquidity,
+                money.zero,
+                money.zero,
+                { from: wallet3 });
+
+            console.log('balance USDC', (await this.USDC.balanceOf(wallet3)).div(money.usdc('1')).toString());
+            console.log('balance DAI ', (await this.DAI.balanceOf(wallet3)).div(money.dai('1')).toString());
+            console.log('vault balance DAI ', (await this.DAI.balanceOf(vaultWallet)).toString());
+            console.log('vault balance USDC', (await this.USDC.balanceOf(vaultWallet)).div(money.usdc('1')).toString());
         })
     });
 });

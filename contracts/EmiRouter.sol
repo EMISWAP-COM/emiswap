@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 
 pragma solidity ^0.6.0;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -15,15 +16,70 @@ contract EmiRouter {
   address public immutable factory;
   address public immutable WETH;
 
+  struct PoolData {
+    IEmiswap pool;
+    uint256 balanceA;
+    uint256 balanceB;
+  }
+
   event Log(uint256 a, uint256 b);
 
-  constructor(address _factory, address _WETH) public {
+  constructor(address _factory, address _wEth) public {
     factory = _factory;
-    WETH = _WETH;
+    WETH = _wEth;
   }
 
   receive() external payable {
     assert(msg.sender == WETH); // only accept ETH via fallback from the WETH contract
+  }
+
+  // **** Pool Info ****
+  
+  
+  function tokenToIERC(IERC20 _token) public view returns (IERC20) {
+      return(address(_token) == address(0) ? IERC20(WETH) : _token);
+  }
+
+  function getPoolDataList(IERC20[] memory tokenAList, IERC20[] memory tokenBList) public view returns (PoolData[] memory dataList ) {
+    if (tokenAList.length > 0 && tokenAList.length == tokenBList.length) {
+      dataList = new PoolData[](tokenAList.length);
+      for(uint256 i=0; i<tokenAList.length; i++){
+        if (address( IEmiswapRegistry(address(factory)).pools( tokenToIERC( tokenAList[i] ), tokenToIERC( tokenBList[i] ) ) ) != address(0) ) {
+          dataList[i].pool = IEmiswapRegistry(address(factory)).pools(
+            tokenToIERC( tokenAList[i] ), 
+            tokenToIERC( tokenBList[i] ));
+          dataList[i].balanceA = IEmiswap(address(dataList[i].pool)).getBalanceForAddition(tokenToIERC( tokenAList[i] ));
+          dataList[i].balanceB = IEmiswap(address(dataList[i].pool)).getBalanceForAddition(tokenToIERC( tokenBList[i] ));
+        }
+      }
+    } else {
+        dataList = new PoolData[](1);
+    }
+  }
+  
+  function getReservesByPool(address pool) public view returns (uint256 _reserve0, uint256 _reserve1) {
+    _reserve0 = IEmiswap( pool ).getBalanceForAddition( IEmiswap( pool ).tokens(0) );
+    _reserve1 = IEmiswap( pool ).getBalanceForAddition( IEmiswap( pool ).tokens(1) );
+  }
+    
+  function getReserves(IERC20 token0, IERC20 token1 ) public view returns (uint256 _reserve0, uint256 _reserve1) {
+    if (address( IEmiswapRegistry(address(factory)).pools(tokenToIERC( token0 ), tokenToIERC( token1 )) ) != address(0) ) {
+      _reserve0 = IEmiswapRegistry(address(factory)).pools( tokenToIERC( token0 ), tokenToIERC( token1 ) ).getBalanceForAddition( tokenToIERC( token0 ) );
+      _reserve1 = IEmiswapRegistry(address(factory)).pools( tokenToIERC( token0 ), tokenToIERC( token1 ) ).getBalanceForAddition( tokenToIERC( token1 ) );
+    }
+  }
+
+  function getExpectedReturn(IERC20 fromToken, IERC20 destToken, uint256 amount) public view returns (uint256 returnAmount, uint256[] memory distribution) {
+    address[] memory path;
+    path = new address[](2);
+    path[0] = address(tokenToIERC( fromToken) );
+    path[1] = address(tokenToIERC( destToken) );
+    
+    returnAmount = getAmountsOut(amount, path)[1];
+    uint256[] memory _distribution;
+    _distribution = new uint256[](34);
+    _distribution[12] = 1;
+    distribution = _distribution;
   }
 
   // **** Liquidity ****

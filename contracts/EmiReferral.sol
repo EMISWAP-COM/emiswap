@@ -11,7 +11,48 @@ contract EmiReferral is Initializable {
 
   mapping(address => address) public referrals;
 
- string public codeVersion = "EmiReferral v1.0-26-g7562cb8";
+  // !!!In updates to contracts set new variables strictly below this line!!!
+  //-----------------------------------------------------------------------------------
+
+ string public codeVersion = "EmiReferral v1.0-27-g6e09c30";
+
+  mapping(address => bool) private _refGranted;
+  mapping(address => bool) private _adminTable;
+  bool private _oneRun; // default false
+
+  modifier onlyOneRun() {
+    require(!_oneRun, "Referral: only once");
+    _;
+  }
+  
+  modifier onlyAdmin() {
+    require(_adminTable[msg.sender], "Referral: caller is not admin");
+    _;
+  }
+
+  modifier refGranted() {
+    require(_refGranted[msg.sender], "Referral: caller is not alowed");
+    _;
+  }
+
+  // Admin funcitons
+
+  function grantRef(address _newIssuer) public onlyAdmin {
+    require(_newIssuer != address(0), "Referral: Zero address");
+    _refGranted[_newIssuer] = true;
+  }
+
+  function revokeRef(address _revokeIssuer) public onlyAdmin {
+    require(_revokeIssuer != address(0), "Referral: Zero address");
+    if (_refGranted[_revokeIssuer]) {
+      _refGranted[_revokeIssuer] = false;
+    }
+  }
+
+  function setAdminOnce() public onlyOneRun {
+    _adminTable[msg.sender] = true;
+    _oneRun = true;
+  }
 
   function initialize() public initializer
   {
@@ -20,15 +61,18 @@ contract EmiReferral is Initializable {
     l3ReferralShare = 10;
   }
 
+  // Core functions
+
   function getRefStakes() external view returns(uint256, uint256, uint256) {
     return (l1ReferralShare, l2ReferralShare, l3ReferralShare);
   }
 
-  function addReferral(address _user, address _referral) external {
+  function addReferral(address _user, address _referral) external refGranted() {
     referrals[_user] = _referral;
   }
 
-  // VIEW METHODS
+  // View methods
+
   function getReferralChain(address _user) external view returns (address[] memory userReferrals) {
     address l1 = referrals[_user];
 

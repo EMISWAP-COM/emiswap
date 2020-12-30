@@ -15,7 +15,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "ESW v1.0-26-g7562cb8";
+ string public codeVersion = "ESW v1.0-27-g6e09c30";
   uint256 constant public MAXIMUM_SUPPLY = 200_000_000e18; 
 
   mapping (address => uint256) public walletNonce;
@@ -104,39 +104,6 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
   function burn(address account, uint256 amount) public {
     super._burn(account, amount);
   }
-
-  /************************************************************
-  * mint with start vesting for the recipient, 
-  * 
-  *************************************************************/
-  function mintAndFreeze(address recipient, uint256 amount, uint256 category) external mintGranted() {
-    IEmiVesting(vesting).freeze(recipient, amount, category);
-    _mint(vesting, amount);
-  }
-
-  /************************************************************
-  * mint only claimed from vesting for the recipient 
-  * 
-  *************************************************************/
-  function mintClaimed(address recipient, uint256 amount) external mintGranted() {
-    _mint(recipient, amount);
-  }
-
-  /************************************************************
-  * mint virtual with start vesting for the recipient, 
-  * 
-  *************************************************************/
-  function mintVirtualAndFreeze(address recipient, uint256 amount, uint256 category) external mintGranted() {
-    IEmiVesting(vesting).freezeVirtual(recipient, amount, category);
-  }
-
-  /************************************************************
-  * mint virtual with start vesting for the presale tokens
-  * 
-  *************************************************************/
-  function mintVirtualAndFreezePresale(address recipient, uint32 sinceDate, uint256 amount, uint256 category) external mintGranted() {
-    IEmiVesting(vesting).freezeVirtual2(recipient, sinceDate, amount, category);
-  }  
 
   /*
   * Get currentCrowdsaleLimit
