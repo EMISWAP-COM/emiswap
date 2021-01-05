@@ -22,7 +22,7 @@ const { BN,
   
   let emiVest, usdy;
   
-  describe('EmiVesting contract', () => {
+  describe.skip('EmiVesting contract', () => {
     const initialOwner = accounts[0];
     const tokenPool = accounts[1];
     const userBob = accounts[2];

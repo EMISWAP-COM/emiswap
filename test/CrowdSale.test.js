@@ -4,6 +4,7 @@ const { ether, time, expectEvent, expectRevert } = require('@openzeppelin/test-h
 const { default: BigNumber } = require('bignumber.js');
 const { assert } = require('chai');
 const { contract } = require('./twrapper');
+const helper = require("./helpers/truffleTestHelper"); // helper to shift block/time
 
 const Referral = contract.fromArtifact('EmiReferral');
 const UniswapV2Factory = contract.fromArtifact('UniswapV2Factory');
@@ -330,7 +331,21 @@ describe('CrowdSale Test', function () {
           'Priviledgeable: caller is not the owner'
         );
       });
-  });
+      // helper
+      it('should revert for dates after 31 january 2021 23:59:59', async function () {
+        await helper.skipToDate("2021-02-01T02:00");
+        let block = await web3.eth.getBlock("latest");
+        console.log('block.timestamp', block.timestamp); 
+
+        let beneficiaries = [george, henry, ivan];
+        let tokens = ['100000000000000000000000', '100000000000000000000000', '100000000000000000000000'];
+        let sinceDates = ['1601424000', '1598918400', '1599004800'];
+        await expectRevert(
+          crowdSale.presaleBulkLoad(beneficiaries, tokens, sinceDates, {from: presaleAdmin}),
+          'Sale: presale is over'
+        );
+      });
+    });
 
     describe('Buy with ETH', () => {
         beforeEach(async function () {

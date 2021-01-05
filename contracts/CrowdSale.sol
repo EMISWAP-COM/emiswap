@@ -51,7 +51,7 @@ contract CrowdSale is Initializable, Priviledgeable {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "CrowdSale v1.0-27-g6e09c30";
+ string public codeVersion = "CrowdSale v1.0-28-g10dc247";
   uint256 public crowdSalePool = 40_000_000e18; 
   bool public isStoped;
 
@@ -324,6 +324,7 @@ contract CrowdSale is Initializable, Priviledgeable {
   
   /*
   * Presale function, get lists of weallets, tokens and dates, and virtual freeze it.
+  * Presale limits by time and working till 1612137599 (2021-01-31T23:59:59+00:00 in ISO 8601)
   * @param beneficiaries - list of beneficiaries wallets
   * @param tokens - list of ESW tokens amount bought
   * @param sinceDate - list of purchasing dates
@@ -335,6 +336,7 @@ contract CrowdSale is Initializable, Priviledgeable {
     require(beneficiaries.length > 0, "Sale:Array empty");
     require(beneficiaries.length == sinceDate.length, "Sale:Arrays length");
     require(sinceDate.length == tokens.length, "Sale:Arrays length");
+    require(now <= 1612137599, "Sale: presale is over");
     uint256 tokenSum;
 
     for (uint i = 0; i < beneficiaries.length; i++) {
