@@ -15,7 +15,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "ESW v1.0-26-g7562cb8";
+ string public codeVersion = "ESW v1.0-28-g10dc247";
   uint256 constant public MAXIMUM_SUPPLY = 200_000_000e18; 
 
   mapping (address => uint256) public walletNonce;
@@ -105,6 +105,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
     super._burn(account, amount);
   }
 
+
   /************************************************************
   * mint with start vesting for the recipient, 
   * 
@@ -137,7 +138,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
   function mintVirtualAndFreezePresale(address recipient, uint32 sinceDate, uint256 amount, uint256 category) external mintGranted() {
     IEmiVesting(vesting).freezeVirtualWithCrowdsale(recipient, sinceDate, amount, category);
   }  
-
+  
   /*
   * Get currentCrowdsaleLimit
   */
