@@ -105,6 +105,40 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
     super._burn(account, amount);
   }
 
+
+  /************************************************************
+  * mint with start vesting for the recipient, 
+  * 
+  *************************************************************/
+  function mintAndFreeze(address recipient, uint256 amount, uint256 category) external mintGranted() {
+    IEmiVesting(vesting).freeze(recipient, amount, category);
+    _mint(vesting, amount);
+  }
+
+  /************************************************************
+  * mint only claimed from vesting for the recipient 
+  * 
+  *************************************************************/
+  function mintClaimed(address recipient, uint256 amount) external mintGranted() {
+    _mint(recipient, amount);
+  }
+
+  /************************************************************
+  * mint virtual with start vesting for the recipient, 
+  * 
+  *************************************************************/
+  function mintVirtualAndFreeze(address recipient, uint256 amount, uint256 category) external mintGranted() {
+    IEmiVesting(vesting).freezeVirtual(recipient, amount, category);
+  }
+
+  /************************************************************
+  * mint virtual with start vesting for the presale tokens
+  * 
+  *************************************************************/
+  function mintVirtualAndFreezePresale(address recipient, uint32 sinceDate, uint256 amount, uint256 category) external mintGranted() {
+    IEmiVesting(vesting).freezeVirtualWithCrowdsale(recipient, sinceDate, amount, category);
+  }  
+  
   /*
   * Get currentCrowdsaleLimit
   */
