@@ -224,7 +224,7 @@ module.exports = async function (deployer, network, accounts) {
     // 0xD6C45e77fab68193847f19Ce839fa3320D5Aa796
     // 0xe29ec5380C08A2a68D4AB3ad765f51801Ded674B
     // 0x573A865d71E3c78fd5a4b6cB1cFF8421F0C3aa74
-    for (const iterator of ['0xD6C45e77fab68193847f19Ce839fa3320D5Aa796', '0xe29ec5380C08A2a68D4AB3ad765f51801Ded674B', '0x573A865d71E3c78fd5a4b6cB1cFF8421F0C3aa74']) {
+    for (const iterator of ['0xD6C45e77fab68193847f19Ce839fa3320D5Aa796', '0xe29ec5380C08A2a68D4AB3ad765f51801Ded674B', '0x573A865d71E3c78fd5a4b6cB1cFF8421F0C3aa74', '0xd67C3f117B90C0930CeAf80325c83416dfF57bec']) {
         console.log('transfer tokens for', iterator)
         await MockUSDC_deployed.transfer(iterator, new BN(1000000).mul(new BN(10).pow(new BN(await MockUSDC_deployed.decimals()))));
         await MockEMRX_deployed.transfer(iterator, new BN(1000000).mul(new BN(10).pow(new BN(await MockEMRX_deployed.decimals()))));
