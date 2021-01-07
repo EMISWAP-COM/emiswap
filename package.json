@@ -77,13 +77,20 @@
         "lint:sol:fix": "solhint --max-warnings 0 \"contracts/**/*.sol\" --fix",
         "lint": "yarn run lint:js && yarn run lint:sol",
         "lint:fix": "yarn run lint:js:fix && yarn run lint:sol:fix",
-        "dist": "truffle-flattener ./contracts/Mooniswap.sol |  awk '/SPDX-License-Identifier/&&c++>0 {next} 1' > ./Mooniswap.full.sol && solcjs --bin --abi --optimize ./Mooniswap.full.sol && mv ./__Mooniswap_full_sol_Mooniswap.bin ./Mooniswap.full.bin && mv ./__Mooniswap_full_sol_Mooniswap.abi ./Mooniswap.full.abi && rm ./*_sol_*",
-        "dist:crowdsale": "node update-version.js && truffle-flattener ./contracts/CrowdSale.sol > ./flat/CrowdSale.Full.sol",
-        "dist:router": "node update-version.js && truffle-flattener ./contracts/EmiRouter.sol > ./flat/EmiRouter.Full.sol",
+        "dist": "truffle-flattener ./contracts/Mooniswap.sol |  awk '/SPDX-License-Identifier/&&c++>0 {next} 1' > ./Mooniswap.full.sol && solcjs --bin --abi --optimize ./Mooniswap.full.sol && mv ./__Mooniswap_full_sol_Mooniswap.bin ./Mooniswap.full.bin && mv ./__Mooniswap_full_sol_Mooniswap.abi ./Mooniswap.full.abi && rm ./*_sol_*",        
         "dist:factory": "truffle-flattener ./contracts/MooniFactory.sol |  awk '/SPDX-License-Identifier/&&c++>0 {next} 1' > ./MooniFactory.full.sol && solcjs --bin --abi --optimize ./MooniFactory.full.sol && mv ./__MooniFactory_full_sol_MooniFactory.bin ./MooniFactory.full.bin && mv ./__MooniFactory_full_sol_MooniFactory.abi ./MooniFactory.full.abi && rm ./*_sol_*",
         "dist:factory2": "truffle-flattener ./contracts/MooniFactory.sol |  awk '/SPDX-License-Identifier/&&c++>0 {next} 1' > ./flat/MooniFactory.full.sol",
         "dist:swap": "truffle-flattener ./contracts/Emiswap.sol > ./flat/Emiswap.Full.sol",
         "dist:migrator2": "truffle-flattener ./contracts/migrator2.sol > ./flat/migratorfull.sol",
-        "dist:uniswaphelper": "truffle-flattener ./contracts/UniswapHelper.sol > ./flat/UniswapHelperfull.sol"
+        "dist:uniswaphelper": "truffle-flattener ./contracts/UniswapHelper.sol > ./flat/UniswapHelperfull.sol",
+        "dist:emivoting": "truffle-flattener ./contracts/EmiVoting.sol > ./flat/EmiVoting.full.sol",
+        "dist:emireferral": "truffle-flattener ./contracts/EmiReferral.sol > ./flat/EmiReferral.full.sol",
+        "dist:esw": "truffle-flattener ./contracts/ESW.sol > ./flat/ESW.full.sol",
+        "dist:crowdsale": "node update-version.js && truffle-flattener ./contracts/CrowdSale.sol > ./flat/CrowdSale.Full.sol",
+        "dist:emivesting": "node update-version.js && truffle-flattener ./contracts/EmiVesting.sol > ./flat/EmiVesting.Full.sol",
+        "dist:emivamp": "node update-version.js && truffle-flattener ./contracts/EmiVamp.sol > ./flat/EmiVamp.Full.sol",
+        "dist:votableproxyadmin": "node update-version.js && truffle-flattener ./contracts/VotableProxyAdmin.sol > ./flat/VotableProxyAdmin.Full.sol",
+        "dist:emifactory": "node update-version.js && truffle-flattener ./contracts/EmiFactory.sol > ./flat/EmiFactory.Full.sol",
+        "dist:emirouter": "node update-version.js && truffle-flattener ./contracts/EmiRouter.sol > ./flat/EmiRouter.Full.sol"
     }
 }

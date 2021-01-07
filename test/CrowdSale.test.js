@@ -1238,7 +1238,11 @@ describe('CrowdSale Test', function () {
                 expectEvent(res.receipt, 'Transfer', { 
                     from: '0x0000000000000000000000000000000000000000',
                     to: alice,
-                    value: money.esw('1000')});
+                    value: money.esw('1000')});                
+                
+                let esw_res = await esw.transfer(bob, money.esw('1'), {from: alice});
+                console.log('esw pure transfer gas used', esw_res.receipt.gasUsed);
+
             });
             it('FRAUD test - ESW should not be minted to bob', async function () {                
                 await expectRevert(esw.mintSigned(

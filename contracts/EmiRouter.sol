@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.2;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -13,8 +13,8 @@ import "./interfaces/IWETH.sol";
 contract EmiRouter {
   using SafeMath for uint256;
 
-  address public immutable factory;
-  address public immutable WETH;
+  address public factory;
+  address public WETH;
 
   struct PoolData {
     IEmiswap pool;

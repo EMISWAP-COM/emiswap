@@ -60,7 +60,7 @@ First, setup environment: set Injected Web3 and login to Metamask main admin acc
 5. Push Deploy button.
 6. On "Deployed Contracts" section -> EmiVesting AT... write down emiVestingImpl address.
 
-### Vemp contract
+### Vamp contract
 0. Switch to SOLIDITY COMPILER tab.
 1. Switch to _EmiVamp.sol_ in opened file list tabs.
 2. Press big blue button *Compile EmiVamp.sol*.
@@ -148,7 +148,7 @@ If upgrade proxy account differ from main system account, we need to setup admin
 7. Set _ADMIN address_ parameter to emiVotableProxyAdmin address.
 8. Set _DATA bytes_ parameter to value from step 5-6. It should look like long digits string: 0xcd6dc687000000000000000000000000652c9accc53e765e1d96e2455e618daab79ba5950000000000000000000000000000000000000000000000000000000000000001
 9. Push Transact button.
-10. On "Deployed Contracts" section -> last TransactUpgradeableProxy AT... entry write down final *Vamo* address.
+10. On "Deployed Contracts" section -> last TransactUpgradeableProxy AT... entry write down final *Vamp* address.
 
 ### Crowdsale
 0. Switch to SOLIDITY COMPILER tab.
