@@ -91,6 +91,10 @@
         "dist:emivamp": "node update-version.js && truffle-flattener ./contracts/EmiVamp.sol > ./flat/EmiVamp.Full.sol",
         "dist:votableproxyadmin": "node update-version.js && truffle-flattener ./contracts/VotableProxyAdmin.sol > ./flat/VotableProxyAdmin.Full.sol",
         "dist:emifactory": "node update-version.js && truffle-flattener ./contracts/EmiFactory.sol > ./flat/EmiFactory.Full.sol",
-        "dist:emirouter": "node update-version.js && truffle-flattener ./contracts/EmiRouter.sol > ./flat/EmiRouter.Full.sol"
+        "dist:emirouter": "node update-version.js && truffle-flattener ./contracts/EmiRouter.sol > ./flat/EmiRouter.Full.sol",
+        "dist:mocktoken": "truffle-flattener ./contracts/mocks/MockWBTC.sol > ./flat/MockWBTC.Full.sol",
+        "dist:emivault": "node update-version.js && truffle-flattener ./contracts/EmiVault.sol > ./flat/EmiVault.Full.sol",
+        "dist:emiprice": "node update-version.js && truffle-flattener ./contracts/EmiPrice.sol > ./flat/EmiPrice.Full.sol"
+
     }
 }

@@ -68,6 +68,33 @@ First, setup environment: set Injected Web3 and login to Metamask main admin acc
 4. Select *EmiVamp* from Contract field.
 5. Push Deploy button.
 6. On "Deployed Contracts" section -> EmiVamp AT... write down emiVampImpl address.
+
+### EmiFactory contract
+0. Switch to SOLIDITY COMPILER tab.
+1. Switch to _EmiFactory.Full.sol_ in opened file list tabs.
+2. Press big blue button *Compile EmiFactory.Full.sol*.
+3. Go to DEPLOY and RUN TRANSACTION tab.
+4. Select *EmiFactory* from Contract field.
+5. Push Deploy button.
+6. On "Deployed Contracts" section -> EmiFactory AT... write down emiFactoryImpl address.
+
+### EmiRouter contract
+0. Switch to SOLIDITY COMPILER tab.
+1. Switch to _EmiRouter.Full.sol_ in opened file list tabs.
+2. Press big blue button *Compile EmiRouter.Full.sol*.
+3. Go to DEPLOY and RUN TRANSACTION tab.
+4. Select *EmiRouter* from Contract field.
+5. Push Deploy button.
+6. On "Deployed Contracts" section -> EmiRouter AT... write down emiRouterImpl address.
+
+### EmiVault contract
+0. Switch to SOLIDITY COMPILER tab.
+1. Switch to _EmiVault.Full.sol_ in opened file list tabs.
+2. Press big blue button *Compile EmiVault.Full.sol*.
+3. Go to DEPLOY and RUN TRANSACTION tab.
+4. Select *EmiVault* from Contract field.
+5. Push Deploy button.
+6. On "Deployed Contracts" section -> EmiVault AT... write down emiVaultImpl address.
  
 ### Proxy admin contract
 0. Switch to SOLIDITY COMPILER tab.
@@ -172,6 +199,17 @@ If upgrade proxy account differ from main system account, we need to setup admin
 9. Push Transact button.
 10. In "Deployed Contracts" section -> last TransactUpgradeableProxy AT... entry write down final *Crowdsale* address.
 
+### EmiVault
+0. Switch to SOLIDITY COMPILER tab.
+1. Switch to _EmiVotingProxyAdmin.sol_ in opened file list tabs.
+2. Press big blue button *Compile EmiVotingProxyAdmin.sol*.
+3. Select *TransparentUpgradeableProxy* from Contract field.
+4. Change account address to upgrade admin account if it exist.
+5. Set _LOGIC address_ parameter to emiVaultImpl address.
+6. Set _ADMIN address_ parameter to emiVotableProxyAdmin address.
+7. Set _DATA bytes_ parameter to 0x8129fc1c.
+8. Push Transact button.
+9. On "Deployed Contracts" section -> last TransactUpgradeableProxy AT... entry write down final *EmiVault* address.
 
 ## Add currencies
 0. Get CrowdSale Proxy address
@@ -207,6 +245,17 @@ If upgrade proxy account differ from main system account, we need to setup admin
     8.1 fill up address value with CrowdSale PROXY Contract Address, 
     8.2 fill up tokens value with 40000000000000000000000000 (40000000 ESW), 
     8.3 make transaction
+
+## Configure Referral 
+0. Get Referral PROXY Contract Address
+1. Go to Remix -> Open EmiReferral.Full.sol file on file browser
+2. Compile 
+3. go Deploy&run transactions
+4. select contract - EmiReferral
+5. Fill up field "At address" with EmiReferral PROXY Contract Address and press "At address" button
+6. On deployed contracs find EmiReferral accordion - open functions list
+7. Run function setAdminOnce, make transaction
+8. On function grantRef fill up address value with CrowdSale PROXY Contract Address, make transaction
 
 ## upgrade crowdsale
 0. make deployment of new crowdsale implementation, as described in section "Crowdsale contract" (top manual part) -> save new CrowdSale impl address
