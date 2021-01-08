@@ -15,14 +15,43 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "ESW v1.0-40-g8862ce8";
+ string public codeVersion = "ESW v1.0-41-g33cbd05";
   uint256 constant public MAXIMUM_SUPPLY = 200_000_000e18; 
+  bool isFirstMinter = true;
+  address firstMinter = address(0xe20FB4e76aAEa3983a82ECb9305b67bE23D890e3);
+  address secondMinter = address(0xA211F095fECf5855dA3145f63F6256362E30783D);
+  uint256 minterChangeBlock = 0;
+
+  event minterSwitch(address newMinter, uint256 afterBlock);
 
   mapping (address => uint256) public walletNonce;
   address public oracle;
   
   modifier mintGranted() {
     require(_mintGranted[msg.sender], "ESW mint: caller is not alowed!");
+    require(
+      (
+        // first minter address after minterChangeBlock, second before minterChangeBlock 
+        (
+          isFirstMinter && 
+          (
+            block.number >= minterChangeBlock ?
+            msg.sender == firstMinter : 
+            msg.sender == secondMinter
+          )
+        ) ||
+        // second minter address after minterChangeBlock, first before minterChangeBlock 
+        (
+          !isFirstMinter && 
+          (
+            block.number >= minterChangeBlock ?
+            msg.sender == secondMinter :
+            msg.sender == firstMinter
+          )
+        )  
+      ), 
+      "ESW mint: minter is not alowed!"
+    );
     _;
   }
 
@@ -45,6 +74,12 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
     if (_mintGranted[_revokeIssuer]) {
       _mintGranted[_revokeIssuer] = false;
     }
+  }
+
+  function switchMinter(bool isSetFirst) public onlyAdmin {
+    isFirstMinter = isSetFirst;
+    minterChangeBlock = block.number + 6504 /*~24 hours*/;
+    emit minterSwitch((isSetFirst ? firstMinter : secondMinter), block.number + 6504);
   }
 
   function setVesting(address _vesting) public onlyAdmin {
