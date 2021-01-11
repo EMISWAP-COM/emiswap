@@ -15,12 +15,12 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
 
   // !!!In updates to contracts set new variables strictly below this line!!!
   //-----------------------------------------------------------------------------------
- string public codeVersion = "ESW v1.0-41-g33cbd05";
+ string public codeVersion = "ESW v1.0-42-g46ef400";
   uint256 constant public MAXIMUM_SUPPLY = 200_000_000e18; 
-  bool isFirstMinter = true;
-  address firstMinter = address(0xe20FB4e76aAEa3983a82ECb9305b67bE23D890e3);
-  address secondMinter = address(0xA211F095fECf5855dA3145f63F6256362E30783D);
-  uint256 minterChangeBlock = 0;
+  bool public isFirstMinter = true;
+  address constant public firstMinter = 0xe20FB4e76aAEa3983a82ECb9305b67bE23D890e3;
+  address constant public secondMinter = 0xA211F095fECf5855dA3145f63F6256362E30783D;
+  uint256 public minterChangeBlock = 0;
 
   event minterSwitch(address newMinter, uint256 afterBlock);
 
@@ -78,30 +78,16 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
 
   function switchMinter(bool isSetFirst) public onlyAdmin {
     isFirstMinter = isSetFirst;
-    minterChangeBlock = block.number + 6504 /*~24 hours*/;
-    emit minterSwitch((isSetFirst ? firstMinter : secondMinter), block.number + 6504);
-  }
-
-  function setVesting(address _vesting) public onlyAdmin {
-    require(_vesting != address(0), "Set vesting contract address");
-    vesting = _vesting;
-    grantMint(_vesting);
+    minterChangeBlock = block.number + 35 /* 6504 ~24 hours*/;
+    emit minterSwitch((isSetFirst ? firstMinter : secondMinter), minterChangeBlock);
   }
 
   function initialSupply() public view returns (uint256) {
     return _initialSupply;
   }
-
-  function balanceOf2(address account) public view returns (uint256) {
-    return super.balanceOf(account).add(IEmiVesting(vesting).balanceOf(account));
-  }
-
+  
   function balanceOf(address account) public override view returns (uint256) {
     return super.balanceOf(account);
-  }  
-
-  function setDividendToken(address _dividendToken) onlyAdmin public {
-    dividendToken = _dividendToken;
   }
 
   function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
@@ -138,47 +124,6 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
 
   function burn(address account, uint256 amount) public {
     super._burn(account, amount);
-  }
-
-
-  /************************************************************
-  * mint with start vesting for the recipient, 
-  * 
-  *************************************************************/
-  function mintAndFreeze(address recipient, uint256 amount, uint256 category) external mintGranted() {
-    IEmiVesting(vesting).freeze(recipient, amount, category);
-    _mint(vesting, amount);
-  }
-
-  /************************************************************
-  * mint only claimed from vesting for the recipient 
-  * 
-  *************************************************************/
-  function mintClaimed(address recipient, uint256 amount) external mintGranted() {
-    _mint(recipient, amount);
-  }
-
-  /************************************************************
-  * mint virtual with start vesting for the recipient, 
-  * 
-  *************************************************************/
-  function mintVirtualAndFreeze(address recipient, uint256 amount, uint256 category) external mintGranted() {
-    IEmiVesting(vesting).freezeVirtual(recipient, amount, category);
-  }
-
-  /************************************************************
-  * mint virtual with start vesting for the presale tokens
-  * 
-  *************************************************************/
-  function mintVirtualAndFreezePresale(address recipient, uint32 sinceDate, uint256 amount, uint256 category) external mintGranted() {
-    IEmiVesting(vesting).freezeVirtualWithCrowdsale(recipient, sinceDate, amount, category);
-  }  
-  
-  /*
-  * Get currentCrowdsaleLimit
-  */
-  function currentCrowdsaleLimit() external view returns( uint256 ) {
-    return( IEmiVesting(vesting).getCrowdsaleLimit() );
   }
 
   /*************************************************************
@@ -238,6 +183,16 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
 
     walletNonce[msg.sender] = nonce;
 
+    super._mint(recipient, amount);
+  }
+
+  /*
+  * test only, remove at production
+  */
+  function mint(address recipient, uint256 amount)
+    public
+    mintGranted 
+  {
     super._mint(recipient, amount);
   }
 
