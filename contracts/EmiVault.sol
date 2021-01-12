@@ -9,17 +9,135 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./libraries/Priviledgeable.sol";
 
 contract EmiVault is Initializable, Priviledgeable {
-  using SafeMath for uint256;
-  using SafeERC20 for IERC20;
-      
- string public codeVersion = "EmiVault v1.0-42-g46ef400";
-  // !!!In updates to contracts set new variables strictly below this line!!!
-  //----------------------------------------------------------------------------------- 
+    using SafeMath for uint256;
+    using SafeERC20 for IERC20;
 
-  function initialize()
-    public
-    initializer
-  {
-    _addAdmin(msg.sender);    
-  }
+ string public codeVersion = "EmiVault v1.0-43-g4eb280e";
+    // !!!In updates to contracts set new variables strictly below this line!!!
+    //-----------------------------------------------------------------------------------
+    /* constant */
+    address public ORACLE = 0xe20FB4e76aAEa3983a82ECb9305b67bE23D890e3;
+    mapping(address => uint256) public walletNonce;
+
+    function initialize() public initializer {
+        _addAdmin(msg.sender);
+    }
+
+    /*************************************************************
+     *  SIGNED functions
+     **************************************************************/
+    function _splitSignature(bytes memory sig)
+        internal
+        pure
+        returns (
+            uint8,
+            bytes32,
+            bytes32
+        )
+    {
+        require(sig.length == 65, "Incorrect signature length");
+
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+
+        assembly {
+            //first 32 bytes, after the length prefix
+            r := mload(add(sig, 0x20))
+            //next 32 bytes
+            s := mload(add(sig, 0x40))
+            //final byte, first of next 32 bytes
+            v := byte(0, mload(add(sig, 0x60)))
+        }
+
+        return (v, r, s);
+    }
+
+    function _recoverSigner(bytes32 message, bytes memory sig)
+        internal
+        pure
+        returns (address)
+    {
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+
+        (v, r, s) = _splitSignature(sig);
+
+        return ecrecover(message, v, r, s);
+    }
+
+    function _prefixed(bytes32 hash) internal pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
+            );
+    }
+
+    function getWalletNonce() public view returns (uint256) {
+        return walletNonce[msg.sender];
+    }
+
+    /**     * TEST ONLY!     * REMOVE FOR PRODUCTION!     */
+    function setOracle(address _oracle) public onlyAdmin {
+        require(_oracle != address(0), "oracleSign: bad address");
+        ORACLE = _oracle;
+    }
+
+    function mintSigned(
+        address recipient,
+        uint256 amount,
+        uint256 nonce,
+        bytes memory sig
+    ) 
+        public
+    {
+        // check sign
+        bytes32 message =
+            _prefixed(
+                keccak256(abi.encodePacked(recipient, amount, nonce, this))
+            );
+
+        require(
+            _recoverSigner(message, sig) == ORACLE &&
+                walletNonce[msg.sender] < nonce,
+            "CrowdSale:sign incorrect"
+        );
+
+        walletNonce[msg.sender] = nonce;
+
+        //super._mint(recipient, amount);
+    }
+
+    function withdrawTokens(
+        address[] memory tokenAddresses,
+        uint256[] memory amounts,
+        address recipient,
+        uint256 nonce,
+        bytes memory sig
+    ) 
+        public
+    {
+        require(
+            tokenAddresses.length > 0 &&
+            tokenAddresses.length == amounts.length &&
+            tokenAddresses.length <= 60,
+            "EmiVault: length issue");
+        // check sign
+        bytes32 message = 
+            _prefixed(
+                keccak256(abi.encodePacked(tokenAddresses, amounts, recipient, nonce, this))
+            );
+
+        require(
+            _recoverSigner(message, sig) == ORACLE &&
+            walletNonce[msg.sender] < nonce,
+            "EmiVault:sign incorrect");
+
+        walletNonce[msg.sender] = nonce;
+        
+        for (uint256 index = 0; index < tokenAddresses.length; index++) {
+            IERC20(tokenAddresses[index]).transfer(recipient, amounts[index]);
+        }
+    }
 }
