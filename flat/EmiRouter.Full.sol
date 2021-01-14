@@ -263,10 +263,11 @@ interface IEmiswap {
 
     function tokens(uint256 i) external view returns (IERC20);
 
-    function deposit(uint256[] calldata amounts, uint256[] calldata minAmounts)
-        external
-        payable
-        returns (uint256 fairSupply);
+    function deposit(
+        uint256[] calldata amounts,
+        uint256[] calldata minAmounts,
+        address referral
+    ) external payable returns (uint256 fairSupply);
 
     function withdraw(uint256 amount, uint256[] calldata minReturns) external;
 
@@ -812,7 +813,11 @@ contract EmiRouter {
         }
 
         //emit Log(amounts[0], amounts[1]);
-        liquidity = IEmiswap(pairContract).deposit(amounts, minAmounts);
+        liquidity = IEmiswap(pairContract).deposit(
+            amounts,
+            minAmounts,
+            address(0)
+        );
         TransferHelper.safeTransfer(
             address(pairContract),
             msg.sender,
@@ -879,7 +884,11 @@ contract EmiRouter {
             minAmounts[0] = amountETHMin;
             minAmounts[1] = amountTokenMin;
         }
-        liquidity = IEmiswap(pairContract).deposit(amounts, minAmounts);
+        liquidity = IEmiswap(pairContract).deposit(
+            amounts,
+            minAmounts,
+            address(0)
+        );
         TransferHelper.safeTransfer(
             address(pairContract),
             msg.sender,

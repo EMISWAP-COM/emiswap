@@ -231,18 +231,32 @@ library SafeMath {
 pragma solidity ^0.6.0;
 
 interface IUniswapV2Factory {
-    event PairCreated(address indexed token0, address indexed token1, address pair, uint);
+    event PairCreated(
+        address indexed token0,
+        address indexed token1,
+        address pair,
+        uint256
+    );
 
     function feeTo() external view returns (address);
+
     function feeToSetter() external view returns (address);
 
-    function getPair(address tokenA, address tokenB) external view returns (address pair);
-    function allPairs(uint) external view returns (address pair);
-    function allPairsLength() external view returns (uint);
+    function getPair(address tokenA, address tokenB)
+        external
+        view
+        returns (address pair);
 
-    function createPair(address tokenA, address tokenB) external returns (address pair);
+    function allPairs(uint256) external view returns (address pair);
+
+    function allPairsLength() external view returns (uint256);
+
+    function createPair(address tokenA, address tokenB)
+        external
+        returns (address pair);
 
     function setFeeTo(address) external;
+
     function setFeeToSetter(address) external;
 }
 
@@ -251,51 +265,109 @@ interface IUniswapV2Factory {
 pragma solidity ^0.6.0;
 
 interface IUniswapV2Pair {
-    event Approval(address indexed owner, address indexed spender, uint value);
-    event Transfer(address indexed from, address indexed to, uint value);
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
+    event Transfer(address indexed from, address indexed to, uint256 value);
 
     function name() external pure returns (string memory);
-    function symbol() external pure returns (string memory);
-    function decimals() external pure returns (uint8);
-    function totalSupply() external view returns (uint);
-    function balanceOf(address owner) external view returns (uint);
-    function allowance(address owner, address spender) external view returns (uint);
 
-    function approve(address spender, uint value) external returns (bool);
-    function transfer(address to, uint value) external returns (bool);
-    function transferFrom(address from, address to, uint value) external returns (bool);
+    function symbol() external pure returns (string memory);
+
+    function decimals() external pure returns (uint8);
+
+    function totalSupply() external view returns (uint256);
+
+    function balanceOf(address owner) external view returns (uint256);
+
+    function allowance(address owner, address spender)
+        external
+        view
+        returns (uint256);
+
+    function approve(address spender, uint256 value) external returns (bool);
+
+    function transfer(address to, uint256 value) external returns (bool);
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) external returns (bool);
 
     function DOMAIN_SEPARATOR() external view returns (bytes32);
+
     function PERMIT_TYPEHASH() external pure returns (bytes32);
-    function nonces(address owner) external view returns (uint);
 
-    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
+    function nonces(address owner) external view returns (uint256);
 
-    event Mint(address indexed sender, uint amount0, uint amount1);
-    event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
+
+    event Mint(address indexed sender, uint256 amount0, uint256 amount1);
+    event Burn(
+        address indexed sender,
+        uint256 amount0,
+        uint256 amount1,
+        address indexed to
+    );
     event Swap(
         address indexed sender,
-        uint amount0In,
-        uint amount1In,
-        uint amount0Out,
-        uint amount1Out,
+        uint256 amount0In,
+        uint256 amount1In,
+        uint256 amount0Out,
+        uint256 amount1Out,
         address indexed to
     );
     event Sync(uint112 reserve0, uint112 reserve1);
 
-    function MINIMUM_LIQUIDITY() external pure returns (uint);
-    function factory() external view returns (address);
-    function token0() external view returns (address);
-    function token1() external view returns (address);
-    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
-    function price0CumulativeLast() external view returns (uint);
-    function price1CumulativeLast() external view returns (uint);
-    function kLast() external view returns (uint);
+    function MINIMUM_LIQUIDITY() external pure returns (uint256);
 
-    function mint(address to) external returns (uint liquidity);
-    function burn(address to) external returns (uint amount0, uint amount1);
-    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
+    function factory() external view returns (address);
+
+    function token0() external view returns (address);
+
+    function token1() external view returns (address);
+
+    function getReserves()
+        external
+        view
+        returns (
+            uint112 reserve0,
+            uint112 reserve1,
+            uint32 blockTimestampLast
+        );
+
+    function price0CumulativeLast() external view returns (uint256);
+
+    function price1CumulativeLast() external view returns (uint256);
+
+    function kLast() external view returns (uint256);
+
+    function mint(address to) external returns (uint256 liquidity);
+
+    function burn(address to)
+        external
+        returns (uint256 amount0, uint256 amount1);
+
+    function swap(
+        uint256 amount0Out,
+        uint256 amount1Out,
+        address to,
+        bytes calldata data
+    ) external;
+
     function skim(address to) external;
+
     function sync() external;
 
     function initialize(address, address) external;
@@ -309,49 +381,48 @@ pragma solidity ^0.6.2;
 
 abstract contract Priviledgeable {
     using SafeMath for uint256;
-    using SafeMath for uint;
+    using SafeMath for uint256;
 
     event PriviledgeGranted(address indexed admin);
     event PriviledgeRevoked(address indexed admin);
 
     modifier onlyAdmin() {
-        require(_priviledgeTable[msg.sender], "Priviledgeable: caller is not the owner");
+        require(
+            _priviledgeTable[msg.sender],
+            "Priviledgeable: caller is not the owner"
+        );
         _;
     }
 
     mapping(address => bool) private _priviledgeTable;
 
-    constructor () internal {
-      _priviledgeTable[msg.sender] = true;
+    constructor() internal {
+        _priviledgeTable[msg.sender] = true;
     }
 
-    function addAdmin(address _admin) external onlyAdmin returns (bool)
-    {
-      require(_admin!=address(0), "Admin address cannot be 0");
-      return _addAdmin(_admin);
+    function addAdmin(address _admin) external onlyAdmin returns (bool) {
+        require(_admin != address(0), "Admin address cannot be 0");
+        return _addAdmin(_admin);
     }
 
-    function removeAdmin(address _admin) external onlyAdmin returns (bool)
-    {
-      require(_admin!=address(0), "Admin address cannot be 0");
-      _priviledgeTable[_admin] = false;
-      emit PriviledgeRevoked(_admin);
+    function removeAdmin(address _admin) external onlyAdmin returns (bool) {
+        require(_admin != address(0), "Admin address cannot be 0");
+        _priviledgeTable[_admin] = false;
+        emit PriviledgeRevoked(_admin);
 
-      return true;
+        return true;
     }
 
-    function isAdmin(address _who) external view returns (bool)
-    {
-       return _priviledgeTable[_who];
+    function isAdmin(address _who) external view returns (bool) {
+        return _priviledgeTable[_who];
     }
 
     //-----------
     // internals
     //-----------
-    function _addAdmin(address _admin) internal returns (bool)
-    {
-      _priviledgeTable[_admin] = true;
-      emit PriviledgeGranted(_admin);
+    function _addAdmin(address _admin) internal returns (bool) {
+        _priviledgeTable[_admin] = true;
+        emit PriviledgeGranted(_admin);
     }
 }
 
@@ -366,74 +437,78 @@ pragma solidity ^0.6.2;
 
 
 contract EmiPrice is Initializable, Priviledgeable {
-  using SafeMath for uint;
-  using SafeMath for uint256;
-  address [3] public market;
-  address private _DAI;
+    using SafeMath for uint256;
+    using SafeMath for uint256;
+    address[3] public market;
+    address private _DAI;
 
- string public codeVersion = "EmiPrice v1.0-40-g8862ce8";
+ string public codeVersion = "EmiPrice v1.0-58-gd991927";
 
     /**
      * @dev Upgradeable proxy constructor replacement
      */
-  function initialize(address _market1, address _market2, address _market3, address _daitoken) public initializer
-  {
-    require(_market2 != address(0), "Market address cannot be 0");
-    require(_market3 != address(0), "Market address cannot be 0");
-    require(_daitoken != address(0), "DAI token address cannot be 0");
+    function initialize(
+        address _market1,
+        address _market2,
+        address _market3,
+        address _daitoken
+    ) public initializer {
+        require(_market2 != address(0), "Market address cannot be 0");
+        require(_market3 != address(0), "Market address cannot be 0");
+        require(_daitoken != address(0), "DAI token address cannot be 0");
 
-    market[0] = _market1;
-    market[1] = _market2;
-    market[2] = _market3;
-    _DAI = _daitoken;
-    _addAdmin(msg.sender);
-  }
-
+        market[0] = _market1;
+        market[1] = _market2;
+        market[2] = _market3;
+        _DAI = _daitoken;
+        _addAdmin(msg.sender);
+    }
 
     /**
      * @dev Return coin prices * 10e5 (to solve rounding problems, this yields 5 meaning digits after decimal point)
      */
-  function getCoinPrices(address [] calldata _coins, uint8 _market) external view returns(uint[] memory prices) {
-    require(_market < market.length, "Wrong market index");
-    IUniswapV2Factory _factory = IUniswapV2Factory(market[_market]);
-    IUniswapV2Pair _p;
-    uint [] memory _prices;
+    function getCoinPrices(address[] calldata _coins, uint8 _market)
+        external
+        view
+        returns (uint256[] memory prices)
+    {
+        require(_market < market.length, "Wrong market index");
+        IUniswapV2Factory _factory = IUniswapV2Factory(market[_market]);
+        IUniswapV2Pair _p;
+        uint256[] memory _prices;
 
-    _prices = new uint[](_coins.length);
+        _prices = new uint256[](_coins.length);
 
-    if (address(_factory) == address(0)) {
-      return _prices;
-    }
-
-    for (uint i = 0; i < _coins.length; i++) {
-      _p = IUniswapV2Pair(_factory.getPair(_coins[i], _DAI));
-      if (address(_p) == address(0)) {
-        _prices[i] = 0;
-      } else {
-        (uint reserv0, uint reserv1, ) = _p.getReserves();
-        if (reserv1 == 0) {
-          _prices[i] = 0; // special case
-        } else {
-          _prices[i] = reserv0.mul(100000).div(reserv1);
+        if (address(_factory) == address(0)) {
+            return _prices;
         }
-      }
+
+        for (uint256 i = 0; i < _coins.length; i++) {
+            _p = IUniswapV2Pair(_factory.getPair(_coins[i], _DAI));
+            if (address(_p) == address(0)) {
+                _prices[i] = 0;
+            } else {
+                (uint256 reserv0, uint256 reserv1, ) = _p.getReserves();
+                if (reserv1 == 0) {
+                    _prices[i] = 0; // special case
+                } else {
+                    _prices[i] = reserv0.mul(100000).div(reserv1);
+                }
+            }
+        }
+
+        return _prices;
     }
 
-    return _prices;
-  }
+    function changeDAI(address _daiToken) external onlyAdmin {
+        require(_daiToken != address(0), "Token address cannot be 0");
+        _DAI = _daiToken;
+    }
 
-  function changeDAI(address _daiToken) external onlyAdmin
-  {
-    require(_daiToken != address(0), "Token address cannot be 0");
-    _DAI = _daiToken; 
-  }
+    function changeMarket(uint8 idx, address _market) external onlyAdmin {
+        require(_market != address(0), "Token address cannot be 0");
+        require(idx < 3, "Wrong market index");
 
-  function changeMarket(uint8 idx, address _market) external onlyAdmin
-  {
-    require(_market != address(0), "Token address cannot be 0");
-    require(idx < 3, "Wrong market index");
-
-    market[idx] = _market;
-  }
-
+        market[idx] = _market;
+    }
 }

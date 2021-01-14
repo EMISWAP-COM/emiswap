@@ -20,7 +20,7 @@ contract EmiVotableProxyAdmin is Ownable {
 
     IEmiVoting private _votingContract;
 
- string public codeVersion = "VotableProxyAdmin v1.0-57-g342d161";
+ string public codeVersion = "VotableProxyAdmin v1.0-58-gd991927";
 
     constructor(address _vc) public {
         require(_vc != address(0), "Voting contract address cannot be 0");
