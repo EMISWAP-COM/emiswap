@@ -6,7 +6,7 @@ const { BN,
     time,
     ether } = require('@openzeppelin/test-helpers');
 
-  const BigNumber = web3.BigNumber;
+  //const BigNumber = web3.BigNumber;
   
   const { assert } = require('chai');
   

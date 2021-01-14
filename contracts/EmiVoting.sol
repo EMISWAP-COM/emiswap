@@ -15,7 +15,7 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
     using SafeMath for uint256;
     using Address for address;
 
-    string public codeVersion = "EmiVoting v1.0-28-g10dc247";
+ string public codeVersion = "EmiVoting v1.0-54-g70036e4";
 
     /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
     function quorumVotes() public pure returns (uint256) {
@@ -148,7 +148,7 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
     /// @notice An event emitted when a proposal has been executed in the Timelock
     event ProposalExecuted(uint256 id);
 
-    constructor (
+    constructor(
         address timelock_,
         address esw_,
         address guardian_
@@ -164,11 +164,10 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
         string[] memory signatures,
         bytes[] memory calldatas,
         string memory description,
-        uint votingPeriod
+        uint256 votingPeriod
     ) public returns (uint256) {
         require(
-            comp.balanceOf(msg.sender) >
-                proposalThreshold(),
+            comp.balanceOf(msg.sender) > proposalThreshold(),
             "EmiVoting::propose: proposer votes below proposal threshold"
         );
         require(
@@ -375,7 +374,13 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
     }
 
     function castVote(uint256 proposalId, bool support) public {
-        return _castVote(msg.sender, uint96(comp.balanceOf(msg.sender)), proposalId, support);
+        return
+            _castVote(
+                msg.sender,
+                uint96(comp.balanceOf(msg.sender)),
+                proposalId,
+                support
+            );
     }
 
     function castVoteBySig(
