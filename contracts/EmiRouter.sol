@@ -587,7 +587,7 @@ contract EmiRouter {
      * @param path array of token addresses, represent the path for swaps, (WETH for ETH)
      * @param to send result token to
      * @param ref referral
-     * return amounts result token amount values
+     * @return amounts result token amount values
      */
 
     function swapTokensForExactETH(
@@ -596,15 +596,10 @@ contract EmiRouter {
         address[] calldata path,
         address to,
         address ref
-    ) external {
-        uint256[] memory amounts;
-        amounts = new uint256[](path.length);
+    ) external returns (uint256[] memory amounts) {
         require(path[path.length - 1] == WETH, "EmiswapRouter: INVALID_PATH");
         amounts = getAmountsIn(amountOut, path);
-        require(
-            amounts[0] <= amountInMax,
-            "EmiswapRouter: EXCESSIVE_INPUT_AMOUNT"
-        );
+        require(amounts[0] <= amountInMax, "EmiswapRouter: EXCESSIVE_AMOUNT");
 
         TransferHelper.safeTransferFrom(
             path[0],

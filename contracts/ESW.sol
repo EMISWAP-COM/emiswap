@@ -15,7 +15,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
- string public codeVersion = "ESW v1.0-43-g4eb280e";
+ string public codeVersion = "ESW v1.0-44-g5573a31";
     uint256 public constant MAXIMUM_SUPPLY = 200_000_000e18;
     bool public isFirstMinter = true;
     address public constant firstMinter =
@@ -75,6 +75,11 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
         }
     }
 
+    /**
+     * switchMinter - function for switching between two registered minters
+     * @param isSetFirst - true - set first / false - set second minter
+     */
+
     function switchMinter(bool isSetFirst) public onlyAdmin {
         isFirstMinter = isSetFirst;
         minterChangeBlock = block.number + 35; /* 6504 ~24 hours*/
@@ -110,6 +115,12 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
         super.transferFrom(sender, recipient, amount);
         return true;
     }
+
+    /**
+     * getMintLimit - read mint limit for wallets
+     * @param account - wallet address
+     * @return - mintlimit for requested wallet
+     */
 
     function getMintLimit(address account)
         public
@@ -200,10 +211,13 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
         return walletNonce[msg.sender];
     }
 
-    function setOracle(address _oracle) public onlyAdmin {
-        require(_oracle != address(0), "oracleSign: bad address");
-        oracle = _oracle;
-    }
+    /**
+     * mintSigned - oracle signed function allow user to mint ESW tokens
+     * @param recipient - user's wallet for receiving tokens
+     * @param amount - amount to mint
+     * @param nonce - user's mint request number, for security purpose
+     * @param sig - oracle signature, oracle allowance for user to mint tokens
+     */
 
     function mintSigned(
         address recipient,
@@ -211,6 +225,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
         uint256 nonce,
         bytes memory sig
     ) public {
+        require(recipient == msg.sender, "ESW:sender");
         // check sign
         bytes32 message =
             _prefixed(
@@ -220,7 +235,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
         require(
             _recoverSigner(message, sig) == oracle &&
                 walletNonce[msg.sender] < nonce,
-            "CrowdSale:sign incorrect"
+            "ESW:sign"
         );
 
         walletNonce[msg.sender] = nonce;
@@ -228,14 +243,18 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
         super._mint(recipient, amount);
     }
 
-    /*
-     * test only, remove at production
-     */
+    function getOracle() public view returns (address) {
+        return (oracle);
+    }
+
+    /****** test only, remove at production ****/
     function mint(address recipient, uint256 amount) public mintGranted {
         super._mint(recipient, amount);
     }
 
-    function getOracle() public view returns (address) {
-        return (oracle);
+    function setOracle(address _oracle) public onlyAdmin {
+        require(_oracle != address(0), "oracleSign: bad address");
+        oracle = _oracle;
     }
+    /*******************************************/
 }

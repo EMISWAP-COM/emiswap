@@ -12,7 +12,7 @@ contract EmiVault is Initializable, Priviledgeable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
- string public codeVersion = "EmiVault v1.0-43-g4eb280e";
+ string public codeVersion = "EmiVault v1.0-44-g5573a31";
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
     /* constant */
@@ -78,36 +78,14 @@ contract EmiVault is Initializable, Priviledgeable {
         return walletNonce[msg.sender];
     }
 
-    /**     * TEST ONLY!     * REMOVE FOR PRODUCTION!     */
-    function setOracle(address _oracle) public onlyAdmin {
-        require(_oracle != address(0), "oracleSign: bad address");
-        ORACLE = _oracle;
-    }
-
-    function mintSigned(
-        address recipient,
-        uint256 amount,
-        uint256 nonce,
-        bytes memory sig
-    ) 
-        public
-    {
-        // check sign
-        bytes32 message =
-            _prefixed(
-                keccak256(abi.encodePacked(recipient, amount, nonce, this))
-            );
-
-        require(
-            _recoverSigner(message, sig) == ORACLE &&
-                walletNonce[msg.sender] < nonce,
-            "CrowdSale:sign incorrect"
-        );
-
-        walletNonce[msg.sender] = nonce;
-
-        //super._mint(recipient, amount);
-    }
+    /**
+     * withdrawTokens - oracle signed function allow user to withdraw dividend tokens
+     * @param tokenAddresses - array of token addresses to withdraw
+     * @param amounts - array of token amounts to withdraw
+     * @param recipient - user's wallet for receiving tokens
+     * @param nonce - user's withdraw request number, for security purpose
+     * @param sig - oracle signature, oracle allowance for user to withdraw tokens
+     */
 
     function withdrawTokens(
         address[] memory tokenAddresses,
@@ -115,29 +93,64 @@ contract EmiVault is Initializable, Priviledgeable {
         address recipient,
         uint256 nonce,
         bytes memory sig
-    ) 
-        public
-    {
+    ) public {
+        require(recipient == msg.sender, "EmiVault:sender");
         require(
             tokenAddresses.length > 0 &&
-            tokenAddresses.length == amounts.length &&
-            tokenAddresses.length <= 60,
-            "EmiVault: length issue");
+                tokenAddresses.length == amounts.length &&
+                tokenAddresses.length <= 60,
+            "EmiVault:length"
+        );
         // check sign
-        bytes32 message = 
+        bytes32 message =
             _prefixed(
-                keccak256(abi.encodePacked(tokenAddresses, amounts, recipient, nonce, this))
+                keccak256(
+                    abi.encodePacked(
+                        tokenAddresses,
+                        amounts,
+                        recipient,
+                        nonce,
+                        this
+                    )
+                )
             );
 
         require(
             _recoverSigner(message, sig) == ORACLE &&
-            walletNonce[msg.sender] < nonce,
-            "EmiVault:sign incorrect");
+                walletNonce[msg.sender] < nonce,
+            "EmiVault:sign"
+        );
 
         walletNonce[msg.sender] = nonce;
-        
+
         for (uint256 index = 0; index < tokenAddresses.length; index++) {
             IERC20(tokenAddresses[index]).transfer(recipient, amounts[index]);
         }
     }
+
+    /**     * TEST ONLY!     * REMOVE FOR PRODUCTION!     */
+    function setOracle(address _oracle) public onlyAdmin {
+        require(_oracle != address(0), "oracleSign: bad address");
+        ORACLE = _oracle;
+    }
+
+    function getMessageHash(
+        address[] memory tokenAddresses,
+        uint256[] memory amounts,
+        address recipient,
+        uint256 nonce
+    ) public view returns (bytes32) {
+        return (
+            keccak256(
+                abi.encodePacked(
+                    tokenAddresses,
+                    amounts,
+                    recipient,
+                    nonce,
+                    this
+                )
+            )
+        );
+    }
+    /******************************************************/
 }

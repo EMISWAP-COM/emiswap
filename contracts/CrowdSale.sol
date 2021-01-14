@@ -57,7 +57,7 @@ contract CrowdSale is Initializable, Priviledgeable {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
- string public codeVersion = "CrowdSale v1.0-43-g4eb280e";
+ string public codeVersion = "CrowdSale v1.0-44-g5573a31";
     uint256 public crowdSalePool = 40_000_000e18;
     bool public isStoped;
 
@@ -375,10 +375,7 @@ contract CrowdSale is Initializable, Priviledgeable {
         }
 
         // if amount is ESW
-        if (
-            isReverse &&
-            (amount.mul(105).div(100) > IESW(_token).currentCrowdsaleLimit())
-        ) {
+        if (isReverse && (amount.mul(105).div(100) > crowdSalePool)) {
             return (currentTokenAmount, coinId, coinAmount);
         }
 
@@ -429,9 +426,7 @@ contract CrowdSale is Initializable, Priviledgeable {
         }
 
         if (
-            !isReverse &&
-            (currentTokenAmount.mul(105).div(100) >
-                IESW(_token).currentCrowdsaleLimit())
+            !isReverse && (currentTokenAmount.mul(105).div(100) > crowdSalePool)
         ) {
             return (0, 0, 0);
         }
@@ -482,8 +477,7 @@ contract CrowdSale is Initializable, Priviledgeable {
         }
 
         require(
-            eswCurrentTokenAmount.mul(105).div(100) <=
-                IESW(_token).currentCrowdsaleLimit(),
+            eswCurrentTokenAmount.mul(105).div(100) <= crowdSalePool,
             "Sale:limit exceeded"
         );
         crowdSalePool = crowdSalePool.sub(eswCurrentTokenAmount);
@@ -539,10 +533,7 @@ contract CrowdSale is Initializable, Priviledgeable {
         }
 
         // Check ESW limits
-        if (
-            isReverse &&
-            amount.mul(105).div(100) > IESW(_token).currentCrowdsaleLimit()
-        ) {
+        if (isReverse && amount.mul(105).div(100) > crowdSalePool) {
             return (0, 0);
         }
 
@@ -582,9 +573,7 @@ contract CrowdSale is Initializable, Priviledgeable {
         }
 
         if (
-            !isReverse &&
-            currentTokenAmount.mul(105).div(100) >
-            IESW(_token).currentCrowdsaleLimit()
+            !isReverse && currentTokenAmount.mul(105).div(100) > crowdSalePool
         ) {
             return (0, 0);
         }
@@ -636,8 +625,7 @@ contract CrowdSale is Initializable, Priviledgeable {
             "Sale:0 ETH"
         );
         require(
-            eswTokenAmount.mul(105).div(100) <=
-                IESW(_token).currentCrowdsaleLimit(),
+            eswTokenAmount.mul(105).div(100) <= crowdSalePool,
             "Sale:limit exceeded"
         );
 
