@@ -12,11 +12,11 @@ contract EmiVault is Initializable, Priviledgeable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
- string public codeVersion = "EmiVault v1.0-44-g5573a31";
+ string public codeVersion = "EmiVault v1.0-54-g70036e4";
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
-    /* constant */
-    address public ORACLE = 0xe20FB4e76aAEa3983a82ECb9305b67bE23D890e3;
+
+    address public constant ORACLE = 0xe20FB4e76aAEa3983a82ECb9305b67bE23D890e3;
     mapping(address => uint256) public walletNonce;
 
     function initialize() public initializer {
@@ -127,30 +127,4 @@ contract EmiVault is Initializable, Priviledgeable {
             IERC20(tokenAddresses[index]).transfer(recipient, amounts[index]);
         }
     }
-
-    /**     * TEST ONLY!     * REMOVE FOR PRODUCTION!     */
-    function setOracle(address _oracle) public onlyAdmin {
-        require(_oracle != address(0), "oracleSign: bad address");
-        ORACLE = _oracle;
-    }
-
-    function getMessageHash(
-        address[] memory tokenAddresses,
-        uint256[] memory amounts,
-        address recipient,
-        uint256 nonce
-    ) public view returns (bytes32) {
-        return (
-            keccak256(
-                abi.encodePacked(
-                    tokenAddresses,
-                    amounts,
-                    recipient,
-                    nonce,
-                    this
-                )
-            )
-        );
-    }
-    /******************************************************/
 }

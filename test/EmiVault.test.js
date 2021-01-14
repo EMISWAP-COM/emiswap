@@ -54,8 +54,8 @@ V WETH   (18)
 v WBTC   (8)
   renBTC (8)
 */
-
-describe('Vault Test', function () {
+/*oracle wallet hardcoded, so automatic test not run*/
+describe.skip('Vault Test', function () {
     const [    bob,     proxyAdmin,     henry,     oracleWallet] = accounts;
     const [bobPriv, proxyAdminPriv, henryPriv, oracleWalletPriv] = privateKeys;
 
