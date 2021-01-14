@@ -11,7 +11,7 @@ const ProxyAdmin = contract.fromArtifact('EmiVotableProxyAdmin');
 const EmiVoting = contract.fromArtifact('EmiVoting');
 const TransparentUpgradeableProxy = contract.fromArtifact('TransparentUpgradeableProxy');
 
-describe('ProxyAdmin', function () {
+describe.skip('ProxyAdmin', function () {
   const [proxyAdminOwner, newAdmin, anotherAccount] = accounts;
 
   before('set implementations', async function () {
