@@ -5,6 +5,7 @@ const { BN,
     expectRevert,
     time,
     ether } = require('@openzeppelin/test-helpers');
+
   const BigNumber = web3.BigNumber;
   
   const { assert } = require('chai');
@@ -29,9 +30,9 @@ const { BN,
     let r = { logs:'' };
   
     beforeEach(async function () {
-      this.usdx = await MockUSDY.new();
-      this.usdx.transfer(userBob, ether(3000000));
-      this.timelock = await Timelock.new();
+      this.usdx = await MockUSDX.new();
+      this.usdx.transfer(userBob, ether('3000000'));
+      this.timelock = await Timelock.new(initialOwner, 60*60*24*4);
       this.emiVote = await EmiVoting.new(this.timelock.address, this.usdx.address, initialOwner);
     });
   
@@ -44,31 +45,42 @@ const { BN,
       it('Can view voting as generic user', async function () {
         r = await this.emiVote.propose([this.timelock.address],[0],['Signature'],['0x1111'],'Test proposal', 40);
         expectEvent.inLogs(r.logs,'ProposalCreated');
-        let b = await this.emiVote.state(r.logs.topics[1]);
-        console.log(b);
-        assert.equal(b[0], 1);
+        let pid = r.logs[0].args.id;
+        assert.equal(pid, 1);
+
+        let b = await this.emiVote.state(pid);
+        console.log('State: %d',b);
+        assert.equal(b, 0);
       });
     
       it('Can get voting result after time passes', async function () {
-        let releaseTime = (await time.latest()).add(time.duration.minutes(30));
-        let h = Math.floor(Math.random() * 1000000);                      
-        r = await this.emiVote.propose([this.timelock.address],[0],['Signature'],['0x1111'],'Test proposal', 40);
+        r = await this.emiVote.propose([this.timelock.address],[0],['Signature'],['0x1111'],'Test proposal', 20);
         expectEvent.inLogs(r.logs,'ProposalCreated');
-        await this.emiVote.caseVote(r.logs.topics[1], true, {from: userBob});
-        await time.increaseTo(releaseTime.add(time.duration.minutes(30)));
-        let b = await this.emiVote.getVoting(r.logs.topics[1]);
-        console.log(b);
-        assert.equal(b[0], 3);
+        let pid = r.logs[0].args.id;
+        console.log('Block proposed 1: %d', await time.latestBlock());
+
+	await time.advanceBlockTo(17); // skip some blocks
+        await this.emiVote.castVote(pid, true, {from: userBob});
+        await time.advanceBlockTo(30);
+        let b = await this.emiVote.state(pid);
+        console.log('State: %s', b);
+        assert.equal(b, 1);
+        await time.advanceBlockTo(45);
+        b = await this.emiVote.state(pid);
+        console.log('State: %s', b);
+        assert.equal(b, 4);
       });
   
       it('Can get voting results', async function () {
-        let releaseTime = (await time.latest()).add(time.duration.minutes(30));
-        let h = Math.floor(Math.random() * 1000000);                      
-        r = await this.emiVote.propose([this.timelock.address],[0],['Signature'],['0x1111'],'Test proposal', 40);
+        r = await this.emiVote.propose([this.timelock.address],[0],['Signature'],['0x1111'],'Test proposal 2', 20);
         expectEvent.inLogs(r.logs,'ProposalCreated');
-        await this.emiVote.caseVote(r.logs.topics[1], true, {from: userBob});
-        await time.increaseTo(releaseTime.add(time.duration.minutes(30)));
-        let b = await this.emiVote.getVotingResult(r.logs.topics[1]);
+        let pid = r.logs[0].args.id;
+        console.log('Block proposed 2: %d', await time.latestBlock());
+
+	await time.advanceBlockTo(54); // skip some blocks
+        await this.emiVote.castVote(pid, true, {from: userBob});
+        await time.advanceBlockTo(94);
+        let b = await this.emiVote.getVotingResult(pid);
         console.log(b);
         assert.equal(b, this.timelock.address);
       });
