@@ -57,7 +57,7 @@ contract CrowdSale is Initializable, Priviledgeable {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
- string public codeVersion = "CrowdSale v1.0-44-g5573a31";
+ string public codeVersion = "CrowdSale v1.0-49-g086af6c";
     uint256 public crowdSalePool = 40_000_000e18;
     bool public isStoped;
 

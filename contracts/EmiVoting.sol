@@ -505,12 +505,12 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
         returns (address)
     {
         ProposalState ps = state(_hash);
-         
+
         if (ps == ProposalState.Succeeded || ps == ProposalState.Queued) {
-          (address [] memory t,,,) = getActions(_hash);
-          return t[0];        
+            (address[] memory t, , , ) = getActions(_hash);
+            return t[0];
         } else {
-          return address(0);
+            return address(0);
         }
     }
 }
