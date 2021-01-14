@@ -247,30 +247,50 @@ library SafeMath {
 pragma solidity ^0.6.0;
 
 
-
 interface IEmiswapRegistry {
-    function pools(IERC20 token1, IERC20 token2) external view returns(IEmiswap);
-    function isPool(address addr) external view returns(bool);
-    function deploy(IERC20 tokenA, IERC20 tokenB) external returns(IEmiswap);
-}
+    function pools(IERC20 token1, IERC20 token2)
+        external
+        view
+        returns (IEmiswap);
 
+    function isPool(address addr) external view returns (bool);
+
+    function deploy(IERC20 tokenA, IERC20 tokenB) external returns (IEmiswap);
+}
 
 interface IEmiswap {
     function fee() external view returns (uint256);
 
     function tokens(uint256 i) external view returns (IERC20);
 
-    function deposit(uint256[] calldata amounts, uint256[] calldata minAmounts) external payable returns(uint256 fairSupply);
+    function deposit(uint256[] calldata amounts, uint256[] calldata minAmounts)
+        external
+        payable
+        returns (uint256 fairSupply);
 
     function withdraw(uint256 amount, uint256[] calldata minReturns) external;
 
-    function getBalanceForAddition(IERC20 token) external view returns(uint256);
+    function getBalanceForAddition(IERC20 token)
+        external
+        view
+        returns (uint256);
 
-    function getBalanceForRemoval(IERC20 token) external view returns(uint256);
+    function getBalanceForRemoval(IERC20 token) external view returns (uint256);
 
-    function getReturn(IERC20 fromToken, IERC20 destToken, uint256 amount) external view returns(uint256 returnAmount);
-    
-    function swap( IERC20 fromToken, IERC20 destToken, uint256 amount, uint256 minReturn, address to, address referral) external payable returns(uint256 returnAmount);
+    function getReturn(
+        IERC20 fromToken,
+        IERC20 destToken,
+        uint256 amount
+    ) external view returns (uint256 returnAmount);
+
+    function swap(
+        IERC20 fromToken,
+        IERC20 destToken,
+        uint256 amount,
+        uint256 minReturn,
+        address to,
+        address referral
+    ) external payable returns (uint256 returnAmount);
 }
 
 // File: contracts/libraries/EmiswapLib.sol
@@ -283,95 +303,170 @@ pragma solidity ^0.6.0;
 
 
 library EmiswapLib {
-  using SafeMath for uint256;
+    using SafeMath for uint256;
 
-  function previewSwapExactTokenForToken(address factory, address tokenFrom, address tokenTo, uint256 ammountFrom) 
-    internal 
-    view
-    returns(uint256 ammountTo)
-  {
-    IEmiswap pairContract = IEmiswapRegistry(factory).pools(IERC20(tokenFrom), IERC20(tokenTo));
-    
-    if (pairContract != IEmiswap(0)) {
-      ammountTo = pairContract.getReturn(IERC20(tokenFrom), IERC20(tokenTo), ammountFrom);
-    }
-  }
+    function previewSwapExactTokenForToken(
+        address factory,
+        address tokenFrom,
+        address tokenTo,
+        uint256 ammountFrom
+    ) internal view returns (uint256 ammountTo) {
+        IEmiswap pairContract =
+            IEmiswapRegistry(factory).pools(IERC20(tokenFrom), IERC20(tokenTo));
 
-  /**************************************************************************************
-  * get preview result of virtual swap by route of tokens
-  **************************************************************************************/
-  function previewSwapbyRoute(address factory, address[] memory path, uint256 ammountFrom)
-    internal 
-    view
-    returns(uint256 ammountTo)
-  {
-    for (uint i=0; i < path.length - 1; i++) {
-      if (path.length >= 2) {
-        ammountTo = previewSwapExactTokenForToken(factory, path[i], path[i+1], ammountFrom);
-
-        if (i == (path.length - 2)) {
-          return(ammountTo);
-        } else {
-          ammountFrom = ammountTo;
+        if (pairContract != IEmiswap(0)) {
+            ammountTo = pairContract.getReturn(
+                IERC20(tokenFrom),
+                IERC20(tokenTo),
+                ammountFrom
+            );
         }
-      }
     }
-  }
-  function fee(address factory) internal view returns(uint256){
-    return IEmiswap(factory).fee();
-  }
 
-	// given an output amount of an asset and pair reserves, returns a required input amount of the other asset
-  function getAmountIn(address factory, uint256 amountOut, uint256 reserveIn, uint256 reserveOut) internal view returns (uint amountIn) {
-    require(amountOut > 0, "EmiswapLibrary: INSUFFICIENT_OUTPUT_AMOUNT");
-    require(reserveIn > 0 && reserveOut > 0, "EmiswapLibrary: INSUFFICIENT_LIQUIDITY");
-    uint256 numerator = reserveIn.mul(amountOut).mul(1000);
-    uint256 denominator = reserveOut.sub(amountOut).mul(uint256(1000000000000000000).sub(fee(factory)).div(1e15)); // 997
-    amountIn = (numerator / denominator).add(1);
-  }
+    /**************************************************************************************
+     * get preview result of virtual swap by route of tokens
+     **************************************************************************************/
+    function previewSwapbyRoute(
+        address factory,
+        address[] memory path,
+        uint256 ammountFrom
+    ) internal view returns (uint256 ammountTo) {
+        for (uint256 i = 0; i < path.length - 1; i++) {
+            if (path.length >= 2) {
+                ammountTo = previewSwapExactTokenForToken(
+                    factory,
+                    path[i],
+                    path[i + 1],
+                    ammountFrom
+                );
 
-  // given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset
-  function getAmountOut(address factory, uint256 amountIn, uint256 reserveIn, uint256 reserveOut) internal view returns (uint amountOut) {
-    require(amountIn > 0, "EmiswapLibrary: INSUFFICIENT_INPUT_AMOUNT");
-    require(reserveIn > 0 && reserveOut > 0, "EmiswapLibrary: INSUFFICIENT_LIQUIDITY");
-    uint256 amountInWithFee = amountIn.mul( uint256(1000000000000000000).sub(fee(factory)).div(1e15) ); //997    
-    uint256 numerator = amountInWithFee.mul(reserveOut);
-    uint256 denominator = reserveIn.mul(1000).add(amountInWithFee);
-    amountOut = numerator / denominator;
-  }  
-
-  // performs chained getAmountIn calculations on any number of pairs
-  function getAmountsIn(address factory, uint256 amountOut, address[] memory path) internal view returns (uint256[] memory amounts) {
-    require(path.length >= 2, "EmiswapLibrary: INVALID_PATH");
-    amounts = new uint256[](path.length);
-    amounts[amounts.length - 1] = amountOut;
-    for (uint256 i = path.length - 1; i > 0; i--) {
-      IEmiswap pairContract = IEmiswapRegistry(factory).pools(IERC20(IERC20(path[i])), IERC20(path[i - 1]));
-      uint256 reserveIn = IEmiswap(pairContract).getBalanceForAddition(IERC20(path[i - 1]));
-      uint256 reserveOut = IEmiswap(pairContract).getBalanceForRemoval(IERC20(path[i]));
-      amounts[i - 1] = getAmountIn(factory, amounts[i], reserveIn, reserveOut);
+                if (i == (path.length - 2)) {
+                    return (ammountTo);
+                } else {
+                    ammountFrom = ammountTo;
+                }
+            }
+        }
     }
-  }
 
-  // performs chained getAmountOut calculations on any number of pairs
-  function getAmountsOut(address factory, uint256 amountIn, address[] memory path) internal view returns (uint256[] memory amounts) {
-    require(path.length >= 2, "EmiswapLibrary: INVALID_PATH");
-    amounts = new uint[](path.length);
-    amounts[0] = amountIn;
-    for (uint256 i = 0; i < path.length - 1; i++) {
-      IEmiswap pairContract = IEmiswapRegistry(factory).pools(IERC20(IERC20(path[i])), IERC20(path[i + 1]));
-      uint256 reserveIn = IEmiswap(pairContract).getBalanceForAddition( IERC20( path[i] ) );
-      uint256 reserveOut = IEmiswap(pairContract).getBalanceForRemoval(IERC20(path[i + 1]));
-      amounts[i + 1] = getAmountOut(factory, amounts[i], reserveIn, reserveOut);
+    function fee(address factory) internal view returns (uint256) {
+        return IEmiswap(factory).fee();
     }
-  }
-  
-  // given some amount of an asset and pair reserves, returns an equivalent amount of the other asset
-  function quote(uint amountA, uint reserveA, uint reserveB) internal pure returns (uint amountB) {
-    require(amountA > 0, "EmiswapLibrary: INSUFFICIENT_AMOUNT");
-    require(reserveA > 0 && reserveB > 0, "EmiswapLibrary: INSUFFICIENT_LIQUIDITY");
-    amountB = amountA.mul(reserveB) / reserveA;
-  }
+
+    // given an output amount of an asset and pair reserves, returns a required input amount of the other asset
+    function getAmountIn(
+        address factory,
+        uint256 amountOut,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) internal view returns (uint256 amountIn) {
+        require(amountOut > 0, "EmiswapLibrary: INSUFFICIENT_OUTPUT_AMOUNT");
+        require(
+            reserveIn > 0 && reserveOut > 0,
+            "EmiswapLibrary: INSUFFICIENT_LIQUIDITY"
+        );
+        uint256 numerator = reserveIn.mul(amountOut).mul(1000);
+        uint256 denominator =
+            reserveOut.sub(amountOut).mul(
+                uint256(1000000000000000000).sub(fee(factory)).div(1e15)
+            ); // 997
+        amountIn = (numerator / denominator).add(1);
+    }
+
+    // given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset
+    function getAmountOut(
+        address factory,
+        uint256 amountIn,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) internal view returns (uint256 amountOut) {
+        require(amountIn > 0, "EmiswapLibrary: INSUFFICIENT_INPUT_AMOUNT");
+        require(
+            reserveIn > 0 && reserveOut > 0,
+            "EmiswapLibrary: INSUFFICIENT_LIQUIDITY"
+        );
+        uint256 amountInWithFee =
+            amountIn.mul(
+                uint256(1000000000000000000).sub(fee(factory)).div(1e15)
+            ); //997
+        uint256 numerator = amountInWithFee.mul(reserveOut);
+        uint256 denominator = reserveIn.mul(1000).add(amountInWithFee);
+        amountOut = numerator / denominator;
+    }
+
+    // performs chained getAmountIn calculations on any number of pairs
+    function getAmountsIn(
+        address factory,
+        uint256 amountOut,
+        address[] memory path
+    ) internal view returns (uint256[] memory amounts) {
+        require(path.length >= 2, "EmiswapLibrary: INVALID_PATH");
+        amounts = new uint256[](path.length);
+        amounts[amounts.length - 1] = amountOut;
+        for (uint256 i = path.length - 1; i > 0; i--) {
+            IEmiswap pairContract =
+                IEmiswapRegistry(factory).pools(
+                    IERC20(IERC20(path[i])),
+                    IERC20(path[i - 1])
+                );
+            uint256 reserveIn =
+                IEmiswap(pairContract).getBalanceForAddition(
+                    IERC20(path[i - 1])
+                );
+            uint256 reserveOut =
+                IEmiswap(pairContract).getBalanceForRemoval(IERC20(path[i]));
+            amounts[i - 1] = getAmountIn(
+                factory,
+                amounts[i],
+                reserveIn,
+                reserveOut
+            );
+        }
+    }
+
+    // performs chained getAmountOut calculations on any number of pairs
+    function getAmountsOut(
+        address factory,
+        uint256 amountIn,
+        address[] memory path
+    ) internal view returns (uint256[] memory amounts) {
+        require(path.length >= 2, "EmiswapLibrary: INVALID_PATH");
+        amounts = new uint256[](path.length);
+        amounts[0] = amountIn;
+        for (uint256 i = 0; i < path.length - 1; i++) {
+            IEmiswap pairContract =
+                IEmiswapRegistry(factory).pools(
+                    IERC20(IERC20(path[i])),
+                    IERC20(path[i + 1])
+                );
+            uint256 reserveIn =
+                IEmiswap(pairContract).getBalanceForAddition(IERC20(path[i]));
+            uint256 reserveOut =
+                IEmiswap(pairContract).getBalanceForRemoval(
+                    IERC20(path[i + 1])
+                );
+            amounts[i + 1] = getAmountOut(
+                factory,
+                amounts[i],
+                reserveIn,
+                reserveOut
+            );
+        }
+    }
+
+    // given some amount of an asset and pair reserves, returns an equivalent amount of the other asset
+    function quote(
+        uint256 amountA,
+        uint256 reserveA,
+        uint256 reserveB
+    ) internal pure returns (uint256 amountB) {
+        require(amountA > 0, "EmiswapLibrary: INSUFFICIENT_AMOUNT");
+        require(
+            reserveA > 0 && reserveB > 0,
+            "EmiswapLibrary: INSUFFICIENT_LIQUIDITY"
+        );
+        amountB = amountA.mul(reserveB) / reserveA;
+    }
 }
 
 // File: contracts/libraries/TransferHelper.sol
@@ -382,28 +477,53 @@ pragma solidity >=0.6.0;
 
 // helper methods for interacting with ERC20 tokens and sending ETH that do not consistently return true/false
 library TransferHelper {
-  function safeApprove(address token, address to, uint value) internal {
-    // bytes4(keccak256(bytes('approve(address,uint256)')));
-    (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x095ea7b3, to, value));
-    require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: APPROVE_FAILED');
-  }
+    function safeApprove(
+        address token,
+        address to,
+        uint256 value
+    ) internal {
+        // bytes4(keccak256(bytes('approve(address,uint256)')));
+        (bool success, bytes memory data) =
+            token.call(abi.encodeWithSelector(0x095ea7b3, to, value));
+        require(
+            success && (data.length == 0 || abi.decode(data, (bool))),
+            "TransferHelper: APPROVE_FAILED"
+        );
+    }
 
-  function safeTransfer(address token, address to, uint value) internal {
-    // bytes4(keccak256(bytes('transfer(address,uint256)')));
-    (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0xa9059cbb, to, value));
-    require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FAILED');
-  }
+    function safeTransfer(
+        address token,
+        address to,
+        uint256 value
+    ) internal {
+        // bytes4(keccak256(bytes('transfer(address,uint256)')));
+        (bool success, bytes memory data) =
+            token.call(abi.encodeWithSelector(0xa9059cbb, to, value));
+        require(
+            success && (data.length == 0 || abi.decode(data, (bool))),
+            "TransferHelper: TRANSFER_FAILED"
+        );
+    }
 
-  function safeTransferFrom(address token, address from, address to, uint value) internal {
-    // bytes4(keccak256(bytes('transferFrom(address,address,uint256)')));
-    (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x23b872dd, from, to, value));
-    require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FROM_FAILED');
-  }
+    function safeTransferFrom(
+        address token,
+        address from,
+        address to,
+        uint256 value
+    ) internal {
+        // bytes4(keccak256(bytes('transferFrom(address,address,uint256)')));
+        (bool success, bytes memory data) =
+            token.call(abi.encodeWithSelector(0x23b872dd, from, to, value));
+        require(
+            success && (data.length == 0 || abi.decode(data, (bool))),
+            "TransferHelper: TRANSFER_FROM_FAILED"
+        );
+    }
 
-  function safeTransferETH(address to, uint value) internal {
-    (bool success,) = to.call{value:value}(new bytes(0));
-    require(success, 'TransferHelper: ETH_TRANSFER_FAILED');
-  }
+    function safeTransferETH(address to, uint256 value) internal {
+        (bool success, ) = to.call{value: value}(new bytes(0));
+        require(success, "TransferHelper: ETH_TRANSFER_FAILED");
+    }
 }
 
 // File: contracts/interfaces/IWETH.sol
@@ -414,15 +534,17 @@ pragma solidity ^0.6.0;
 
 interface IWETH {
     function deposit() external payable;
-    function transfer(address to, uint value) external returns (bool);
-    function withdraw(uint) external;
+
+    function transfer(address to, uint256 value) external returns (bool);
+
+    function withdraw(uint256) external;
 }
 
 // File: contracts/EmiRouter.sol
 
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.2;
 pragma experimental ABIEncoderV2;
 
 
@@ -432,549 +554,686 @@ pragma experimental ABIEncoderV2;
 
 
 contract EmiRouter {
-  using SafeMath for uint256;
+    using SafeMath for uint256;
 
-  address public immutable factory;
-  address public immutable WETH;
+    address public factory;
+    address public WETH;
 
-  struct PoolData {
-    IEmiswap pool;
-    uint256 balanceA;
-    uint256 balanceB;
-  }
-
-  event Log(uint256 a, uint256 b);
-
-  constructor(address _factory, address _wEth) public {
-    factory = _factory;
-    WETH = _wEth;
-  }
-
-  receive() external payable {
-    assert(msg.sender == WETH); // only accept ETH via fallback from the WETH contract
-  }
-
-  // **** Pool Info ****
-
-  function getPoolDataList(IERC20[] memory tokenAList, IERC20[] memory tokenBList) public view returns (PoolData[] memory dataList ) {
-    require(tokenAList.length > 0, "EmiRouter: token list empty!");
-    require(tokenAList.length == tokenBList.length, "EmiRouter: token list empty!");
-    
-    dataList = new PoolData[](tokenAList.length);
-    
-    for(uint256 i=0; i<tokenAList.length; i++){
-        if (address( IEmiswapRegistry(address(factory)).pools(tokenAList[i], tokenBList[i]) ) != address(0) ) {
-            dataList[i].pool = IEmiswapRegistry(address(factory)).pools(tokenAList[i], tokenBList[i]);
-            dataList[i].balanceA = IEmiswap(address(dataList[i].pool)).getBalanceForAddition(tokenAList[i]);
-            dataList[i].balanceB = IEmiswap(address(dataList[i].pool)).getBalanceForAddition(tokenBList[i]);
-        }
-    }
-    return dataList;
-  }
-  
-  function getReservesByPool(address pool) public view returns (uint256 _reserve0, uint256 _reserve1) {
-    _reserve0 = IEmiswap( pool ).getBalanceForAddition( IEmiswap( pool ).tokens(0) );
-    _reserve1 = IEmiswap( pool ).getBalanceForAddition( IEmiswap( pool ).tokens(1) );
-  }
-    
-  function getReserves(IERC20 token0, IERC20 token1 ) public view returns (uint256 _reserve0, uint256 _reserve1) {
-    if (address( IEmiswapRegistry(address(factory)).pools(token0, token1) ) != address(0) ) {
-      _reserve0 = IEmiswapRegistry(address(factory)).pools(token0, token1).getBalanceForAddition( token0 );
-      _reserve1 = IEmiswapRegistry(address(factory)).pools(token0, token1).getBalanceForAddition( token1 );
-    }
-  }
-
-  function getExpectedReturn(IERC20 fromToken, IERC20 destToken, uint256 amount) public view returns (uint256 returnAmount, uint256[] memory distribution) {
-       address[] memory path;
-       path = new address[](2);
-       path[0] = address(fromToken);
-       path[1] = address(destToken);
-       
-       returnAmount = getAmountsOut(amount, path)[1];
-       uint256[] memory _distribution;
-       _distribution = new uint256[](33);
-       _distribution[12] = 1;
-       distribution = _distribution;
-   }
-
-  // **** Liquidity ****
-  /**
-  * @param tokenA address of first token in pair
-  * @param tokenB address of second token in pair  
-  * @return LP balance
-  */
-  function getLiquidity(
-    address tokenA,
-    address tokenB
-  ) 
-    external 
-    view 
-    returns (uint256)
-  {    
-    return( 
-      IERC20(
-        address( IEmiswapRegistry(factory).pools(IERC20(tokenA), IERC20(tokenB)) )
-      ).balanceOf(msg.sender)
-    );
-  }
-
-  // **** ADD LIQUIDITY ****
-  function _addLiquidity(
-    address tokenA,
-    address tokenB,
-    uint256 amountADesired,
-    uint256 amountBDesired,
-    uint256 amountAMin,
-    uint256 amountBMin
-  ) 
-    internal
-    returns (uint256 amountA, uint256 amountB) 
-  {
-    IERC20 ERC20tokenA = IERC20(tokenA);
-    IERC20 ERC20tokenB = IERC20(tokenB);
-    IEmiswap pairContract = IEmiswapRegistry(factory).pools(ERC20tokenA, ERC20tokenB);    
-    // create the pair if it doesn't exist yet    
-    if (pairContract == IEmiswap(0)) {
-      pairContract = IEmiswapRegistry(factory).deploy(ERC20tokenA, ERC20tokenB);
+    struct PoolData {
+        IEmiswap pool;
+        uint256 balanceA;
+        uint256 balanceB;
     }
 
-    uint256 reserveA = pairContract.getBalanceForAddition(ERC20tokenA);
-    uint256 reserveB = pairContract.getBalanceForRemoval(ERC20tokenB);
-    
-    if (reserveA == 0 && reserveB == 0) {
-      (amountA, amountB) = (amountADesired, amountBDesired);
-    } else {
-      uint amountBOptimal = EmiswapLib.quote(amountADesired, reserveA, reserveB);
-      if (amountBOptimal <= amountBDesired) {
-        require(amountBOptimal >= amountBMin, "EmiswapRouter: INSUFFICIENT_B_AMOUNT");
-        (amountA, amountB) = (amountADesired, amountBOptimal);
-      } else {
-        uint amountAOptimal = EmiswapLib.quote(amountBDesired, reserveB, reserveA);
-        assert(amountAOptimal <= amountADesired);
-        require(amountAOptimal >= amountAMin, "EmiswapRouter: INSUFFICIENT_A_AMOUNT");
-        (amountA, amountB) = (amountAOptimal, amountBDesired);
-      }
-    }
-  }
+    event Log(uint256 a, uint256 b);
 
-
-  /**
-  * @param tokenA address of first token in pair
-  * @param tokenB address of second token in pair  
-  * @param amountADesired desired amount of first token
-  * @param amountBDesired desired amount of second token
-  * @param amountAMin minimum amount of first token
-  * @param amountBMin minimum amount of second token
-  * @return amountA added liquidity of first token
-  * @return amountB added liquidity of second token
-  * @return liquidity
-  */
-
-  function addLiquidity(
-    address tokenA,
-    address tokenB,
-    uint256 amountADesired,
-    uint256 amountBDesired,
-    uint256 amountAMin,
-    uint256 amountBMin
-  ) 
-  external
-  returns (uint256 amountA, uint256 amountB, uint256 liquidity)
-  {
-    (amountA, amountB) = _addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin);
-    IEmiswap pairContract = IEmiswapRegistry(factory).pools(IERC20(tokenA), IERC20(tokenB));
-    
-    TransferHelper.safeTransferFrom(tokenA, msg.sender, address(this), amountA);
-    TransferHelper.safeTransferFrom(tokenB, msg.sender, address(this), amountB);
-
-    TransferHelper.safeApprove(tokenA, address(pairContract), amountA);
-    TransferHelper.safeApprove(tokenB, address(pairContract), amountB);
-
-    uint256[] memory amounts;
-    amounts = new uint256[](2);    
-    uint256[] memory minAmounts; 
-    minAmounts = new uint256[](2);
-
-    if (tokenA < tokenB) {
-      amounts[0] = amountA;
-      amounts[1] = amountB;
-      minAmounts[0] = amountAMin;
-      minAmounts[1] = amountBMin;
-    } else {
-      amounts[0] = amountB;
-      amounts[1] = amountA;
-      minAmounts[0] = amountBMin;
-      minAmounts[1] = amountAMin;
+    constructor(address _factory, address _wEth) public {
+        factory = _factory;
+        WETH = _wEth;
     }
 
-    //emit Log(amounts[0], amounts[1]);
-    liquidity = IEmiswap(pairContract).deposit(amounts, minAmounts);
-    TransferHelper.safeTransfer(address(pairContract), msg.sender, liquidity);
-  }  
-
-  /**
-  * @param token address of token
-  * @param amountTokenDesired desired amount of token
-  * @param amountTokenMin minimum amount of token
-  * @param amountETHMin minimum amount of ETH
-  * @return amountToken added liquidity of token
-  * @return amountETH added liquidity of ETH
-  * @return liquidity
-  */
-  function addLiquidityETH(
-    address token,
-    uint amountTokenDesired,
-    uint amountTokenMin,
-    uint amountETHMin
-  ) 
-    external
-    payable
-  returns (uint amountToken, uint amountETH, uint liquidity) 
-  {
-    (amountToken, amountETH) = _addLiquidity(
-      token,
-      WETH,
-      amountTokenDesired,
-      msg.value,
-      amountTokenMin,
-      amountETHMin
-    );
-    IEmiswap pairContract = IEmiswapRegistry(factory).pools(IERC20(token), IERC20(WETH));
-    TransferHelper.safeTransferFrom(token, msg.sender, address(this), amountToken);
-    TransferHelper.safeApprove(token, address(pairContract), amountToken);
-    IWETH(WETH).deposit{value: amountETH}();
-    TransferHelper.safeApprove(WETH, address(pairContract), amountToken);
-
-    uint256[] memory amounts;
-    amounts = new uint256[](2);
-    uint256[] memory minAmounts; 
-    minAmounts = new uint256[](2);
-
-    if (token < WETH) {
-      amounts[0] = amountToken;
-      amounts[1] = amountETH;
-      minAmounts[0] = amountTokenMin;
-      minAmounts[1] = amountETHMin;
-    } else {
-      amounts[0] = amountETH;
-      amounts[1] = amountToken;
-      minAmounts[0] = amountETHMin;
-      minAmounts[1] = amountTokenMin;
-    }
-    liquidity = IEmiswap(pairContract).deposit(amounts, minAmounts);
-    TransferHelper.safeTransfer(address(pairContract), msg.sender, liquidity);
-  }
-
-  // **** REMOVE LIQUIDITY ****
-  /**
-  * @param tokenA address of first token in pair
-  * @param tokenB address of second token in pair  
-  * @param liquidity LP token
-  * @param amountAMin minimum amount of first token
-  * @param amountBMin minimum amount of second token
-  */
-  function removeLiquidity(
-    address tokenA,
-    address tokenB,
-    uint liquidity,
-    uint amountAMin,
-    uint amountBMin
-  ) 
-  public
-  {
-    IEmiswap pairContract = IEmiswapRegistry(factory).pools(IERC20(tokenA), IERC20(tokenB));
-    TransferHelper.safeTransferFrom(address(pairContract), msg.sender, address(this), liquidity); // send liquidity to this
-
-    uint256[] memory minReturns;
-    minReturns = new uint256[](2);
-
-    if (tokenA < tokenB) {
-      minReturns[0] = amountAMin;
-      minReturns[1] = amountBMin;
-    } else {
-      minReturns[0] = amountBMin;
-      minReturns[1] = amountAMin;
-    }
-    uint256 tokenAbalance = IERC20(tokenA).balanceOf(address(this));
-    uint256 tokenBbalance = IERC20(tokenB).balanceOf(address(this));
-
-    pairContract.withdraw(liquidity, minReturns);
-
-    tokenAbalance = IERC20(tokenA).balanceOf(address(this)).sub(tokenAbalance);
-    tokenBbalance = IERC20(tokenB).balanceOf(address(this)).sub(tokenBbalance);
-    
-    TransferHelper.safeTransfer(tokenA, msg.sender, tokenAbalance);
-    TransferHelper.safeTransfer(tokenB, msg.sender, tokenBbalance);
-  }
-
-  /**
-  * @param token address of token
-  * @param liquidity LP token amount
-  * @param amountTokenMin minimum amount of token
-  * @param amountETHMin minimum amount of ETH
-  */
-  function removeLiquidityETH(
-    address token,
-    uint256 liquidity,
-    uint256 amountTokenMin,
-    uint256 amountETHMin
-  ) 
-    public         
-  {
-    IEmiswap pairContract = IEmiswapRegistry(factory).pools(IERC20(token), IERC20(WETH));
-    TransferHelper.safeTransferFrom( address(pairContract), msg.sender, address(this), liquidity ); // send liquidity to this
-
-    uint256[] memory minReturns;
-    minReturns = new uint256[](2);
-
-    if (token < WETH) {
-      minReturns[0] = amountTokenMin;
-      minReturns[1] = amountETHMin;
-    } else {
-      minReturns[0] = amountETHMin;
-      minReturns[1] = amountTokenMin;
+    receive() external payable {
+        assert(msg.sender == WETH); // only accept ETH via fallback from the WETH contract
     }
 
-    uint256 tokenbalance = IERC20(token).balanceOf(address(this));
-    uint256 WETHbalance = IERC20(WETH).balanceOf(address(this));
-  
-    pairContract.withdraw(liquidity, minReturns);
+    // **** Pool Info ****
 
-    tokenbalance = IERC20(token).balanceOf(address(this)).sub(tokenbalance);
-    WETHbalance = IERC20(WETH).balanceOf(address(this)).sub(WETHbalance);    
-
-    TransferHelper.safeTransfer(token, msg.sender, tokenbalance);
-
-    // convert WETH and send back raw ETH
-    IWETH(WETH).withdraw(WETHbalance);
-    TransferHelper.safeTransferETH(msg.sender, WETHbalance);
-  }
-
-  // **** SWAP ****
-
-  function _swap_(
-    address tokenFrom, 
-    address tokenTo, 
-    uint256 ammountFrom,
-    address to,
-    address ref
-  )
-  internal
-  returns(uint256 ammountTo)
-  {
-    IEmiswap pairContract = IEmiswapRegistry(factory).pools(IERC20(tokenFrom), IERC20(tokenTo));
-
-    if (pairContract.getReturn(IERC20(tokenFrom), IERC20(tokenTo), ammountFrom) > 0)
-    {
-      TransferHelper.safeApprove(tokenFrom, address(pairContract), ammountFrom);
-      ammountTo = pairContract.swap(IERC20(tokenFrom), IERC20(tokenTo), ammountFrom, 0, to, ref);
+    function tokenToIERC(IERC20 _token) public view returns (IERC20) {
+        return (address(_token) == address(0) ? IERC20(WETH) : _token);
     }
-  }
 
-  function _swapbyRoute (
-    address[] memory path,
-    uint256 ammountFrom,
-    address to,
-    address ref
-  ) 
-  internal 
-  returns(uint256 ammountTo)
-  {
-    for (uint256 i=0; i < path.length - 1; i++) {
-      if (path.length >= 2) {
-        uint256 _ammountTo = _swap_(path[i], path[i+1], ammountFrom, to, ref);
-        if (i == (path.length - 2)) {
-          return(_ammountTo);
+    function getPoolDataList(
+        IERC20[] memory tokenAList,
+        IERC20[] memory tokenBList
+    ) public view returns (PoolData[] memory dataList) {
+        if (tokenAList.length > 0 && tokenAList.length == tokenBList.length) {
+            dataList = new PoolData[](tokenAList.length);
+            for (uint256 i = 0; i < tokenAList.length; i++) {
+                if (
+                    address(
+                        IEmiswapRegistry(address(factory)).pools(
+                            tokenToIERC(tokenAList[i]),
+                            tokenToIERC(tokenBList[i])
+                        )
+                    ) != address(0)
+                ) {
+                    dataList[i].pool = IEmiswapRegistry(address(factory)).pools(
+                        tokenToIERC(tokenAList[i]),
+                        tokenToIERC(tokenBList[i])
+                    );
+                    dataList[i].balanceA = IEmiswap(address(dataList[i].pool))
+                        .getBalanceForAddition(tokenToIERC(tokenAList[i]));
+                    dataList[i].balanceB = IEmiswap(address(dataList[i].pool))
+                        .getBalanceForAddition(tokenToIERC(tokenBList[i]));
+                }
+            }
         } else {
-          ammountFrom = _ammountTo;
+            dataList = new PoolData[](1);
         }
-      }
     }
-  }  
 
-  /**
-  * @param amountIn exact in value of source token
-  * @param amountOutMin minimum amount value of result token
-  * @param path array of token addresses, represent the path for swaps
-  * @param to send result token to
-  * @param ref referral
-  * @return amounts result amount
-  */
+    function getReservesByPool(address pool)
+        public
+        view
+        returns (uint256 _reserve0, uint256 _reserve1)
+    {
+        _reserve0 = IEmiswap(pool).getBalanceForAddition(
+            IEmiswap(pool).tokens(0)
+        );
+        _reserve1 = IEmiswap(pool).getBalanceForAddition(
+            IEmiswap(pool).tokens(1)
+        );
+    }
 
-  function swapExactTokensForTokens (
-    uint256 amountIn,
-    uint256 amountOutMin,
-    address[] calldata path,
-    address to,
-    address ref
-  )
-  external
-  returns (uint256[] memory amounts) 
-  {    
-    amounts = getAmountsOut(amountIn, path);
-    require(amounts[amounts.length - 1] >= amountOutMin, "EmiswapRouter: INSUFFICIENT_OUTPUT_AMOUNT");
+    function getReserves(IERC20 token0, IERC20 token1)
+        public
+        view
+        returns (uint256 _reserve0, uint256 _reserve1)
+    {
+        if (
+            address(
+                IEmiswapRegistry(address(factory)).pools(
+                    tokenToIERC(token0),
+                    tokenToIERC(token1)
+                )
+            ) != address(0)
+        ) {
+            _reserve0 = IEmiswapRegistry(address(factory))
+                .pools(tokenToIERC(token0), tokenToIERC(token1))
+                .getBalanceForAddition(tokenToIERC(token0));
+            _reserve1 = IEmiswapRegistry(address(factory))
+                .pools(tokenToIERC(token0), tokenToIERC(token1))
+                .getBalanceForAddition(tokenToIERC(token1));
+        }
+    }
 
-    TransferHelper.safeTransferFrom(path[0], msg.sender, address(this), amountIn);
-    _swapbyRoute(path, amountIn, to, ref);
-  }
+    function getExpectedReturn(
+        IERC20 fromToken,
+        IERC20 destToken,
+        uint256 amount
+    )
+        public
+        view
+        returns (uint256 returnAmount, uint256[] memory distribution)
+    {
+        address[] memory path;
+        path = new address[](2);
+        path[0] = address(tokenToIERC(fromToken));
+        path[1] = address(tokenToIERC(destToken));
 
-  /**
-  * @param amountOut exact in value of result token
-  * @param amountInMax maximum amount value of source token
-  * @param path array of token addresses, represent the path for swaps
-  * @param to send result token to
-  * @param ref referral
-  * @return amounts result amount values
-  */
+        returnAmount = getAmountsOut(amount, path)[1];
+        uint256[] memory _distribution;
+        _distribution = new uint256[](34);
+        _distribution[12] = 1;
+        distribution = _distribution;
+    }
 
-  function swapTokensForExactTokens (
-    uint256 amountOut,
-    uint256 amountInMax,
-    address[] calldata path,
-    address to,
-    address ref
-  ) 
-  external
-  returns (uint256[] memory amounts)
-  {
-    amounts = getAmountsIn(amountOut, path);    
-    require(amounts[0] <= amountInMax, "EmiswapRouter: EXCESSIVE_INPUT_AMOUNT");
-    
-    TransferHelper.safeTransferFrom(path[0], msg.sender, address(this), amounts[0]);
-    _swapbyRoute(path, amounts[0], to, ref);
-  }
+    // **** Liquidity ****
+    /**
+     * @param tokenA address of first token in pair
+     * @param tokenB address of second token in pair
+     * @return LP balance
+     */
+    function getLiquidity(address tokenA, address tokenB)
+        external
+        view
+        returns (uint256)
+    {
+        return (
+            IERC20(
+                address(
+                    IEmiswapRegistry(factory).pools(
+                        IERC20(tokenA),
+                        IERC20(tokenB)
+                    )
+                )
+            )
+                .balanceOf(msg.sender)
+        );
+    }
 
-  /**
-  * @param amountOutMin minimum amount value of result token
-  * @param path array of token addresses, represent the path for swaps
-  * @param to send result token to
-  * @param ref referral
-  * @return amounts result token amount values
-  */
-  
-  function swapExactETHForTokens (
-    uint256 amountOutMin, 
-    address[] calldata path,
-    address to,
-    address ref
-  )
-    external
-    payable
-    returns (uint[] memory amounts)
-  {
-    require(path[0] == WETH, "EmiswapRouter: INVALID_PATH");
-    amounts = getAmountsOut(msg.value, path);
-    require(amounts[amounts.length - 1] >= amountOutMin, "EmiswapRouter: INSUFFICIENT_OUTPUT_AMOUNT");
-    IWETH(WETH).deposit{value: amounts[0]}();
-    _swapbyRoute(path, amounts[0], to, ref);
-  }
-  
-  /**
-  * @param amountOut amount value of result ETH
-  * @param amountInMax maximum amount of source token
-  * @param path array of token addresses, represent the path for swaps, (WETH for ETH)
-  * @param to send result token to
-  * @param ref referral
-  * @return amounts result token amount values
-  */
+    // **** ADD LIQUIDITY ****
+    function _addLiquidity(
+        address tokenA,
+        address tokenB,
+        uint256 amountADesired,
+        uint256 amountBDesired,
+        uint256 amountAMin,
+        uint256 amountBMin
+    ) internal returns (uint256 amountA, uint256 amountB) {
+        IERC20 ERC20tokenA = IERC20(tokenA);
+        IERC20 ERC20tokenB = IERC20(tokenB);
+        IEmiswap pairContract =
+            IEmiswapRegistry(factory).pools(ERC20tokenA, ERC20tokenB);
+        // create the pair if it doesn't exist yet
+        if (pairContract == IEmiswap(0)) {
+            pairContract = IEmiswapRegistry(factory).deploy(
+                ERC20tokenA,
+                ERC20tokenB
+            );
+        }
 
-  function swapTokensForExactETH (
-    uint256 amountOut,
-    uint256 amountInMax,
-    address[] calldata path,
-    address to,
-    address ref
-  )
-    external
-    returns (uint256[] memory amounts)
-  {
-    require(path[path.length - 1] == WETH, "EmiswapRouter: INVALID_PATH");
-    amounts = getAmountsIn(amountOut, path);
-    require(amounts[0] <= amountInMax, "EmiswapRouter: EXCESSIVE_INPUT_AMOUNT");
+        uint256 reserveA = pairContract.getBalanceForAddition(ERC20tokenA);
+        uint256 reserveB = pairContract.getBalanceForRemoval(ERC20tokenB);
 
-    TransferHelper.safeTransferFrom( path[0], msg.sender, address(this), amounts[0]);
+        if (reserveA == 0 && reserveB == 0) {
+            (amountA, amountB) = (amountADesired, amountBDesired);
+        } else {
+            uint256 amountBOptimal =
+                EmiswapLib.quote(amountADesired, reserveA, reserveB);
+            if (amountBOptimal <= amountBDesired) {
+                require(
+                    amountBOptimal >= amountBMin,
+                    "EmiswapRouter: INSUFFICIENT_B_AMOUNT"
+                );
+                (amountA, amountB) = (amountADesired, amountBOptimal);
+            } else {
+                uint256 amountAOptimal =
+                    EmiswapLib.quote(amountBDesired, reserveB, reserveA);
+                assert(amountAOptimal <= amountADesired);
+                require(
+                    amountAOptimal >= amountAMin,
+                    "EmiswapRouter: INSUFFICIENT_A_AMOUNT"
+                );
+                (amountA, amountB) = (amountAOptimal, amountBDesired);
+            }
+        }
+    }
 
-    uint256 result = _swapbyRoute(path, amounts[0], address(this), ref);
-        
-    IWETH(WETH).withdraw(result);
-    TransferHelper.safeTransferETH(to, result);
-  }
+    /**
+     * @param tokenA address of first token in pair
+     * @param tokenB address of second token in pair
+     * @param amountADesired desired amount of first token
+     * @param amountBDesired desired amount of second token
+     * @param amountAMin minimum amount of first token
+     * @param amountBMin minimum amount of second token
+     * @return amountA added liquidity of first token
+     * @return amountB added liquidity of second token
+     * @return liquidity
+     */
 
-  /**
-  * @param amountIn amount value of source token
-  * @param path array of token addresses, represent the path for swaps, (WETH for ETH)
-  * @param to send result token to
-  * @param ref referral  
-  */
-  
-  function swapExactTokensForETH (
-    uint256 amountIn,
-    address[] calldata path, 
-    address to,
-    address ref
-  )
-    external
-  {
-    require(path[path.length - 1] == WETH, "EmiswapRouter: INVALID_PATH");
-    TransferHelper.safeTransferFrom( path[0], msg.sender, address(this), amountIn);
-    
-    uint256 result = _swapbyRoute(path, amountIn, address(this), ref);
-    
-    IWETH(WETH).withdraw( result );
-    TransferHelper.safeTransferETH(to, result);
-  }
+    function addLiquidity(
+        address tokenA,
+        address tokenB,
+        uint256 amountADesired,
+        uint256 amountBDesired,
+        uint256 amountAMin,
+        uint256 amountBMin
+    )
+        external
+        returns (
+            uint256 amountA,
+            uint256 amountB,
+            uint256 liquidity
+        )
+    {
+        (amountA, amountB) = _addLiquidity(
+            tokenA,
+            tokenB,
+            amountADesired,
+            amountBDesired,
+            amountAMin,
+            amountBMin
+        );
+        IEmiswap pairContract =
+            IEmiswapRegistry(factory).pools(IERC20(tokenA), IERC20(tokenB));
 
-  /**
-  * @param amountOut amount of result tokens
-  * @param path array of token addresses, represent the path for swaps, (WETH for ETH)
-  * @param to send result token to
-  * @param ref referral
-  * @return amounts result token amount values
-  */
-  
-  function swapETHForExactTokens(
-    uint256 amountOut, 
-    address[] calldata path, 
-    address to,
-    address ref
-  )
-    external
-    payable
-    returns (uint256[] memory amounts)
-  {
-    require(path[0] == WETH, "EmiswapRouter: INVALID_PATH");
-    amounts = getAmountsIn(amountOut, path);
-    require(amounts[0] <= msg.value, "EmiswapRouter: EXCESSIVE_INPUT_AMOUNT");
+        TransferHelper.safeTransferFrom(
+            tokenA,
+            msg.sender,
+            address(this),
+            amountA
+        );
+        TransferHelper.safeTransferFrom(
+            tokenB,
+            msg.sender,
+            address(this),
+            amountB
+        );
 
-    IWETH(WETH).deposit{value: amounts[0]}();
+        TransferHelper.safeApprove(tokenA, address(pairContract), amountA);
+        TransferHelper.safeApprove(tokenB, address(pairContract), amountB);
 
-    _swapbyRoute(path, amounts[0], to, ref);
-  }  
+        uint256[] memory amounts;
+        amounts = new uint256[](2);
+        uint256[] memory minAmounts;
+        minAmounts = new uint256[](2);
 
-  // **** LIBRARY FUNCTIONS ****
-  /**
-  * @param amountIn amount of source token
-  * @param path array of token addresses, represent the path for swaps, (WETH for ETH)
-  * @return amounts result token amount values
-  */
-  function getAmountsOut(uint amountIn, address[] memory path)
-    public
-    view
-    returns (uint[] memory amounts)
-  {
-    return EmiswapLib.getAmountsOut(factory, amountIn, path);
-  }
+        if (tokenA < tokenB) {
+            amounts[0] = amountA;
+            amounts[1] = amountB;
+            minAmounts[0] = amountAMin;
+            minAmounts[1] = amountBMin;
+        } else {
+            amounts[0] = amountB;
+            amounts[1] = amountA;
+            minAmounts[0] = amountBMin;
+            minAmounts[1] = amountAMin;
+        }
 
-  /**
-  * @param amountOut amount of result token
-  * @param path array of token addresses, represent the path for swaps, (WETH for ETH)
-  * @return amounts result token amount values
-  */
-  function getAmountsIn(uint amountOut, address[] memory path)
-    public
-    view
-    returns (uint[] memory amounts)
-  {
-    return EmiswapLib.getAmountsIn(factory, amountOut, path);
-  }
+        //emit Log(amounts[0], amounts[1]);
+        liquidity = IEmiswap(pairContract).deposit(amounts, minAmounts);
+        TransferHelper.safeTransfer(
+            address(pairContract),
+            msg.sender,
+            liquidity
+        );
+    }
+
+    /**
+     * @param token address of token
+     * @param amountTokenDesired desired amount of token
+     * @param amountTokenMin minimum amount of token
+     * @param amountETHMin minimum amount of ETH
+     * @return amountToken added liquidity of token
+     * @return amountETH added liquidity of ETH
+     * @return liquidity
+     */
+    function addLiquidityETH(
+        address token,
+        uint256 amountTokenDesired,
+        uint256 amountTokenMin,
+        uint256 amountETHMin
+    )
+        external
+        payable
+        returns (
+            uint256 amountToken,
+            uint256 amountETH,
+            uint256 liquidity
+        )
+    {
+        (amountToken, amountETH) = _addLiquidity(
+            token,
+            WETH,
+            amountTokenDesired,
+            msg.value,
+            amountTokenMin,
+            amountETHMin
+        );
+        IEmiswap pairContract =
+            IEmiswapRegistry(factory).pools(IERC20(token), IERC20(WETH));
+        TransferHelper.safeTransferFrom(
+            token,
+            msg.sender,
+            address(this),
+            amountToken
+        );
+        TransferHelper.safeApprove(token, address(pairContract), amountToken);
+        IWETH(WETH).deposit{value: amountETH}();
+        TransferHelper.safeApprove(WETH, address(pairContract), amountToken);
+
+        uint256[] memory amounts;
+        amounts = new uint256[](2);
+        uint256[] memory minAmounts;
+        minAmounts = new uint256[](2);
+
+        if (token < WETH) {
+            amounts[0] = amountToken;
+            amounts[1] = amountETH;
+            minAmounts[0] = amountTokenMin;
+            minAmounts[1] = amountETHMin;
+        } else {
+            amounts[0] = amountETH;
+            amounts[1] = amountToken;
+            minAmounts[0] = amountETHMin;
+            minAmounts[1] = amountTokenMin;
+        }
+        liquidity = IEmiswap(pairContract).deposit(amounts, minAmounts);
+        TransferHelper.safeTransfer(
+            address(pairContract),
+            msg.sender,
+            liquidity
+        );
+    }
+
+    // **** REMOVE LIQUIDITY ****
+    /**
+     * @param tokenA address of first token in pair
+     * @param tokenB address of second token in pair
+     * @param liquidity LP token
+     * @param amountAMin minimum amount of first token
+     * @param amountBMin minimum amount of second token
+     */
+    function removeLiquidity(
+        address tokenA,
+        address tokenB,
+        uint256 liquidity,
+        uint256 amountAMin,
+        uint256 amountBMin
+    ) public {
+        IEmiswap pairContract =
+            IEmiswapRegistry(factory).pools(IERC20(tokenA), IERC20(tokenB));
+        TransferHelper.safeTransferFrom(
+            address(pairContract),
+            msg.sender,
+            address(this),
+            liquidity
+        ); // send liquidity to this
+
+        uint256[] memory minReturns;
+        minReturns = new uint256[](2);
+
+        if (tokenA < tokenB) {
+            minReturns[0] = amountAMin;
+            minReturns[1] = amountBMin;
+        } else {
+            minReturns[0] = amountBMin;
+            minReturns[1] = amountAMin;
+        }
+        uint256 tokenAbalance = IERC20(tokenA).balanceOf(address(this));
+        uint256 tokenBbalance = IERC20(tokenB).balanceOf(address(this));
+
+        pairContract.withdraw(liquidity, minReturns);
+
+        tokenAbalance = IERC20(tokenA).balanceOf(address(this)).sub(
+            tokenAbalance
+        );
+        tokenBbalance = IERC20(tokenB).balanceOf(address(this)).sub(
+            tokenBbalance
+        );
+
+        TransferHelper.safeTransfer(tokenA, msg.sender, tokenAbalance);
+        TransferHelper.safeTransfer(tokenB, msg.sender, tokenBbalance);
+    }
+
+    /**
+     * @param token address of token
+     * @param liquidity LP token amount
+     * @param amountTokenMin minimum amount of token
+     * @param amountETHMin minimum amount of ETH
+     */
+    function removeLiquidityETH(
+        address token,
+        uint256 liquidity,
+        uint256 amountTokenMin,
+        uint256 amountETHMin
+    ) public {
+        IEmiswap pairContract =
+            IEmiswapRegistry(factory).pools(IERC20(token), IERC20(WETH));
+        TransferHelper.safeTransferFrom(
+            address(pairContract),
+            msg.sender,
+            address(this),
+            liquidity
+        ); // send liquidity to this
+
+        uint256[] memory minReturns;
+        minReturns = new uint256[](2);
+
+        if (token < WETH) {
+            minReturns[0] = amountTokenMin;
+            minReturns[1] = amountETHMin;
+        } else {
+            minReturns[0] = amountETHMin;
+            minReturns[1] = amountTokenMin;
+        }
+
+        uint256 tokenbalance = IERC20(token).balanceOf(address(this));
+        uint256 WETHbalance = IERC20(WETH).balanceOf(address(this));
+
+        pairContract.withdraw(liquidity, minReturns);
+
+        tokenbalance = IERC20(token).balanceOf(address(this)).sub(tokenbalance);
+        WETHbalance = IERC20(WETH).balanceOf(address(this)).sub(WETHbalance);
+
+        TransferHelper.safeTransfer(token, msg.sender, tokenbalance);
+
+        // convert WETH and send back raw ETH
+        IWETH(WETH).withdraw(WETHbalance);
+        TransferHelper.safeTransferETH(msg.sender, WETHbalance);
+    }
+
+    // **** SWAP ****
+
+    function _swap_(
+        address tokenFrom,
+        address tokenTo,
+        uint256 ammountFrom,
+        address to,
+        address ref
+    ) internal returns (uint256 ammountTo) {
+        IEmiswap pairContract =
+            IEmiswapRegistry(factory).pools(IERC20(tokenFrom), IERC20(tokenTo));
+
+        if (
+            pairContract.getReturn(
+                IERC20(tokenFrom),
+                IERC20(tokenTo),
+                ammountFrom
+            ) > 0
+        ) {
+            TransferHelper.safeApprove(
+                tokenFrom,
+                address(pairContract),
+                ammountFrom
+            );
+            ammountTo = pairContract.swap(
+                IERC20(tokenFrom),
+                IERC20(tokenTo),
+                ammountFrom,
+                0,
+                to,
+                ref
+            );
+        }
+    }
+
+    function _swapbyRoute(
+        address[] memory path,
+        uint256 ammountFrom,
+        address to,
+        address ref
+    ) internal returns (uint256 ammountTo) {
+        for (uint256 i = 0; i < path.length - 1; i++) {
+            if (path.length >= 2) {
+                uint256 _ammountTo =
+                    _swap_(path[i], path[i + 1], ammountFrom, to, ref);
+                if (i == (path.length - 2)) {
+                    return (_ammountTo);
+                } else {
+                    ammountFrom = _ammountTo;
+                }
+            }
+        }
+    }
+
+    /**
+     * @param amountIn exact in value of source token
+     * @param amountOutMin minimum amount value of result token
+     * @param path array of token addresses, represent the path for swaps
+     * @param to send result token to
+     * @param ref referral
+     * @return amounts result amount
+     */
+
+    function swapExactTokensForTokens(
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        address ref
+    ) external returns (uint256[] memory amounts) {
+        amounts = getAmountsOut(amountIn, path);
+        require(
+            amounts[amounts.length - 1] >= amountOutMin,
+            "EmiswapRouter: INSUFFICIENT_OUTPUT_AMOUNT"
+        );
+
+        TransferHelper.safeTransferFrom(
+            path[0],
+            msg.sender,
+            address(this),
+            amountIn
+        );
+        _swapbyRoute(path, amountIn, to, ref);
+    }
+
+    /**
+     * @param amountOut exact in value of result token
+     * @param amountInMax maximum amount value of source token
+     * @param path array of token addresses, represent the path for swaps
+     * @param to send result token to
+     * @param ref referral
+     * @return amounts result amount values
+     */
+
+    function swapTokensForExactTokens(
+        uint256 amountOut,
+        uint256 amountInMax,
+        address[] calldata path,
+        address to,
+        address ref
+    ) external returns (uint256[] memory amounts) {
+        amounts = getAmountsIn(amountOut, path);
+        require(
+            amounts[0] <= amountInMax,
+            "EmiswapRouter: EXCESSIVE_INPUT_AMOUNT"
+        );
+
+        TransferHelper.safeTransferFrom(
+            path[0],
+            msg.sender,
+            address(this),
+            amounts[0]
+        );
+        _swapbyRoute(path, amounts[0], to, ref);
+    }
+
+    /**
+     * @param amountOutMin minimum amount value of result token
+     * @param path array of token addresses, represent the path for swaps
+     * @param to send result token to
+     * @param ref referral
+     * @return amounts result token amount values
+     */
+
+    function swapExactETHForTokens(
+        uint256 amountOutMin,
+        address[] calldata path,
+        address to,
+        address ref
+    ) external payable returns (uint256[] memory amounts) {
+        require(path[0] == WETH, "EmiswapRouter: INVALID_PATH");
+        amounts = getAmountsOut(msg.value, path);
+        require(
+            amounts[amounts.length - 1] >= amountOutMin,
+            "EmiswapRouter: INSUFFICIENT_OUTPUT_AMOUNT"
+        );
+        IWETH(WETH).deposit{value: amounts[0]}();
+        _swapbyRoute(path, amounts[0], to, ref);
+    }
+
+    /**
+     * @param amountOut amount value of result ETH
+     * @param amountInMax maximum amount of source token
+     * @param path array of token addresses, represent the path for swaps, (WETH for ETH)
+     * @param to send result token to
+     * @param ref referral
+     * @return amounts result token amount values
+     */
+
+    function swapTokensForExactETH(
+        uint256 amountOut,
+        uint256 amountInMax,
+        address[] calldata path,
+        address to,
+        address ref
+    ) external returns (uint256[] memory amounts) {
+        require(path[path.length - 1] == WETH, "EmiswapRouter: INVALID_PATH");
+        amounts = getAmountsIn(amountOut, path);
+        require(amounts[0] <= amountInMax, "EmiswapRouter: EXCESSIVE_AMOUNT");
+
+        TransferHelper.safeTransferFrom(
+            path[0],
+            msg.sender,
+            address(this),
+            amounts[0]
+        );
+
+        uint256 result = _swapbyRoute(path, amounts[0], address(this), ref);
+
+        IWETH(WETH).withdraw(result);
+        TransferHelper.safeTransferETH(to, result);
+    }
+
+    /**
+     * @param amountIn amount value of source token
+     * @param path array of token addresses, represent the path for swaps, (WETH for ETH)
+     * @param to send result token to
+     * @param ref referral
+     */
+
+    function swapExactTokensForETH(
+        uint256 amountIn,
+        address[] calldata path,
+        address to,
+        address ref
+    ) external {
+        require(path[path.length - 1] == WETH, "EmiswapRouter: INVALID_PATH");
+        TransferHelper.safeTransferFrom(
+            path[0],
+            msg.sender,
+            address(this),
+            amountIn
+        );
+
+        uint256 result = _swapbyRoute(path, amountIn, address(this), ref);
+
+        IWETH(WETH).withdraw(result);
+        TransferHelper.safeTransferETH(to, result);
+    }
+
+    /**
+     * @param amountOut amount of result tokens
+     * @param path array of token addresses, represent the path for swaps, (WETH for ETH)
+     * @param to send result token to
+     * @param ref referral
+     * @return amounts result token amount values
+     */
+
+    function swapETHForExactTokens(
+        uint256 amountOut,
+        address[] calldata path,
+        address to,
+        address ref
+    ) external payable returns (uint256[] memory amounts) {
+        require(path[0] == WETH, "EmiswapRouter: INVALID_PATH");
+        amounts = getAmountsIn(amountOut, path);
+        require(
+            amounts[0] <= msg.value,
+            "EmiswapRouter: EXCESSIVE_INPUT_AMOUNT"
+        );
+
+        IWETH(WETH).deposit{value: amounts[0]}();
+
+        _swapbyRoute(path, amounts[0], to, ref);
+    }
+
+    // **** LIBRARY FUNCTIONS ****
+    /**
+     * @param amountIn amount of source token
+     * @param path array of token addresses, represent the path for swaps, (WETH for ETH)
+     * @return amounts result token amount values
+     */
+    function getAmountsOut(uint256 amountIn, address[] memory path)
+        public
+        view
+        returns (uint256[] memory amounts)
+    {
+        return EmiswapLib.getAmountsOut(factory, amountIn, path);
+    }
+
+    /**
+     * @param amountOut amount of result token
+     * @param path array of token addresses, represent the path for swaps, (WETH for ETH)
+     * @return amounts result token amount values
+     */
+    function getAmountsIn(uint256 amountOut, address[] memory path)
+        public
+        view
+        returns (uint256[] memory amounts)
+    {
+        return EmiswapLib.getAmountsIn(factory, amountOut, path);
+    }
 }
