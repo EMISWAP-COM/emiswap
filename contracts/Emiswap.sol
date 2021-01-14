@@ -68,7 +68,8 @@ contract Emiswap is ERC20, ReentrancyGuard, Ownable {
 
     event Deposited(
         address indexed account,
-        uint256 amount
+        uint256 amount,
+        address referral
     );
 
     event Withdrawn(
@@ -152,7 +153,7 @@ contract Emiswap is ERC20, ReentrancyGuard, Ownable {
         return _getReturn(src, dst, amount, getBalanceForAddition(src), getBalanceForRemoval(dst));
     }
 
-    function deposit(uint256[] calldata amounts, uint256[] calldata minAmounts) external nonReentrant returns(uint256 fairSupply) {
+    function deposit(uint256[] calldata amounts, uint256[] calldata minAmounts, address referral) external nonReentrant returns(uint256 fairSupply) {
         IERC20[] memory _tokens = tokens;
         require((amounts.length > 0) && (amounts.length == _tokens.length), "Emiswap: wrong amounts length");
         require((amounts[0] > 0) && (amounts[1] > 0), "Emiswap: wrong value usage");
@@ -204,7 +205,7 @@ contract Emiswap is ERC20, ReentrancyGuard, Ownable {
         require(fairSupply > 0, "Emniswap: result is not enough");
         _mint(msg.sender, fairSupply);
 
-        emit Deposited(msg.sender, fairSupply);
+        emit Deposited(msg.sender, fairSupply, referral);
     }
 
     function withdraw(uint256 amount, uint256[] memory minReturns) external nonReentrant {

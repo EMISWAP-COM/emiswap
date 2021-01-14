@@ -17,7 +17,7 @@ interface IEmiswap {
 
     function tokens(uint256 i) external view returns (IERC20);
 
-    function deposit(uint256[] calldata amounts, uint256[] calldata minAmounts) external payable returns(uint256 fairSupply);
+    function deposit(uint256[] calldata amounts, uint256[] calldata minAmounts, address referral) external payable returns(uint256 fairSupply);
 
     function withdraw(uint256 amount, uint256[] calldata minReturns) external;
 

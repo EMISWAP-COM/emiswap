@@ -193,7 +193,7 @@ contract EmiRouter {
     }
 
     //emit Log(amounts[0], amounts[1]);
-    liquidity = IEmiswap(pairContract).deposit(amounts, minAmounts);
+    liquidity = IEmiswap(pairContract).deposit(amounts, minAmounts, address(0));
     TransferHelper.safeTransfer(address(pairContract), msg.sender, liquidity);
   }  
 
@@ -246,7 +246,7 @@ contract EmiRouter {
       minAmounts[0] = amountETHMin;
       minAmounts[1] = amountTokenMin;
     }
-    liquidity = IEmiswap(pairContract).deposit(amounts, minAmounts);
+    liquidity = IEmiswap(pairContract).deposit(amounts, minAmounts, address(0));
     TransferHelper.safeTransfer(address(pairContract), msg.sender, liquidity);
   }
 
