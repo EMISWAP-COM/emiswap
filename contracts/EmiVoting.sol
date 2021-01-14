@@ -166,7 +166,7 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
         address timelock_,
         address esw_,
         address guardian_
-    ) public {
+    ) public onlyAdmin {
         timelock = TimelockInterface(timelock_);
         comp = IESW(esw_);
         guardian = guardian_;
