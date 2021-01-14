@@ -2,9 +2,9 @@
 
 pragma solidity >=0.6.2;
 
-interface IEmiRouter
-{
+interface IEmiRouter {
     function factory() external pure returns (address);
+
     function WETH() external pure returns (address);
 
     function addLiquidity(
@@ -14,9 +14,14 @@ interface IEmiRouter
         uint256 amountBDesired,
         uint256 amountAMin,
         uint256 amountBMin
-    ) 
-    external
-    returns (uint256 amountA, uint256 amountB, uint256 liquidity);
+    )
+        external
+        returns (
+            uint256 amountA,
+            uint256 amountB,
+            uint256 liquidity
+        );
+
     /*function addLiquidityETH(
         address token,
         uint amountTokenDesired,
@@ -62,56 +67,69 @@ interface IEmiRouter
         bool approveMax, uint8 v, bytes32 r, bytes32 s
     ) external returns (uint amountToken, uint amountETH); */
     function swapExactTokensForTokens(
-        uint amountIn,
-        uint amountOutMin,
+        uint256 amountIn,
+        uint256 amountOutMin,
         address[] calldata path,
         address to,
         address ref
-    ) external returns (uint[] memory amounts);
+    ) external returns (uint256[] memory amounts);
+
     function swapTokensForExactTokens(
         uint256 amountOut,
         uint256 amountInMax,
         address[] calldata path,
         address[] calldata pathDAI
-    ) external returns (uint[] memory amounts);
+    ) external returns (uint256[] memory amounts);
+
     function swapExactETHForTokens(
-        uint amountOutMin, 
+        uint256 amountOutMin,
         address[] calldata path,
         address[] calldata pathDAI
-    )
-        external
-        payable
-        returns (uint[] memory amounts);
+    ) external payable returns (uint256[] memory amounts);
+
     function swapTokensForExactETH(
-        uint amountOut, 
-        uint amountInMax, 
+        uint256 amountOut,
+        uint256 amountInMax,
         address[] calldata path,
         address[] calldata pathDAI
-    )
-        external
-        returns (uint[] memory amounts);
+    ) external returns (uint256[] memory amounts);
+
     function swapExactTokensForETH(
-        uint amountIn, 
-        uint amountOutMin, 
+        uint256 amountIn,
+        uint256 amountOutMin,
         address[] calldata path,
         address[] calldata pathDAI
-    )
-        external
-        returns (uint[] memory amounts);
+    ) external returns (uint256[] memory amounts);
+
     function swapETHForExactTokens(
-        uint amountOut, 
+        uint256 amountOut,
         address[] calldata path,
         address[] calldata pathDAI
-    )
-        external
-        payable
-        returns (uint[] memory amounts);
+    ) external payable returns (uint256[] memory amounts);
 
     //function quote(uint amountA, uint reserveA, uint reserveB) external pure returns (uint amountB);
-    function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) external view returns (uint amountOut);
-    function getAmountIn(uint amountOut, uint reserveIn, uint reserveOut) external view returns (uint amountIn);
-    function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts);
-    function getAmountsIn(uint amountOut, address[] calldata path) external view returns (uint[] memory amounts);
+    function getAmountOut(
+        uint256 amountIn,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) external view returns (uint256 amountOut);
+
+    function getAmountIn(
+        uint256 amountOut,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) external view returns (uint256 amountIn);
+
+    function getAmountsOut(uint256 amountIn, address[] calldata path)
+        external
+        view
+        returns (uint256[] memory amounts);
+
+    function getAmountsIn(uint256 amountOut, address[] calldata path)
+        external
+        view
+        returns (uint256[] memory amounts);
+
     /* function removeLiquidityETHSupportingFeeOnTransferTokens(
         address token,
         uint liquidity,
@@ -131,19 +149,21 @@ interface IEmiRouter
     ) external returns (uint amountETH); */
 
     function swapExactTokensForTokensSupportingFeeOnTransferTokens(
-        uint amountIn,
-        uint amountOutMin,
+        uint256 amountIn,
+        uint256 amountOutMin,
         address[] calldata path,
         address[] calldata pathDAI
     ) external;
+
     function swapExactETHForTokensSupportingFeeOnTransferTokens(
-        uint amountOutMin,
+        uint256 amountOutMin,
         address[] calldata path,
         address[] calldata pathDAI
     ) external payable;
+
     function swapExactTokensForETHSupportingFeeOnTransferTokens(
-        uint amountIn,
-        uint amountOutMin,
+        uint256 amountIn,
+        uint256 amountOutMin,
         address[] calldata path,
         address[] calldata pathDAI
     ) external;

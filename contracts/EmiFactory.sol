@@ -32,8 +32,8 @@ contract EmiFactory is Ownable {
     Emiswap[] public allPools;
     mapping(Emiswap => bool) public isPool;
     mapping(IERC20 => mapping(IERC20 => Emiswap)) public pools;
-    
-    function getAllPools() external view returns(Emiswap[] memory) {
+
+    function getAllPools() external view returns (Emiswap[] memory) {
         return allPools;
     }
 
@@ -50,17 +50,26 @@ contract EmiFactory is Ownable {
     function setaddressVault(address newAddressVault) external onlyAdmin {
         require(newAddressVault != address(0), "Factory: vault");
         addressVault = newAddressVault;
-    }    
+    }
 
-    function setAdminGrant(address newAdmin, bool isGranted) external onlyOwner {
-        require( newAdmin != address(0), "Admin address 0");
+    function setAdminGrant(address newAdmin, bool isGranted)
+        external
+        onlyOwner
+    {
+        require(newAdmin != address(0), "Admin address 0");
         _adminTable[newAdmin] = isGranted;
         emit adminGranted(newAdmin, isGranted);
     }
 
-    function deploy(IERC20 tokenA, IERC20 tokenB) external returns(Emiswap pool) {
+    function deploy(IERC20 tokenA, IERC20 tokenB)
+        external
+        returns (Emiswap pool)
+    {
         require(tokenA != tokenB, "Factory: not support same tokens");
-        require(pools[tokenA][tokenB] == Emiswap(0), "Factory: pool already exists");
+        require(
+            pools[tokenA][tokenB] == Emiswap(0),
+            "Factory: pool already exists"
+        );
 
         (IERC20 token1, IERC20 token2) = sortTokens(tokenA, tokenB);
         IERC20[] memory tokens = new IERC20[](2);
@@ -72,7 +81,9 @@ contract EmiFactory is Ownable {
 
         pool = new Emiswap(
             tokens,
-            string(abi.encodePacked("Emiswap V1 (", symbol1, "-", symbol2, ")")),
+            string(
+                abi.encodePacked("Emiswap V1 (", symbol1, "-", symbol2, ")")
+            ),
             string(abi.encodePacked("EMI-V1-", symbol1, "-", symbol2))
         );
 
@@ -82,14 +93,14 @@ contract EmiFactory is Ownable {
         allPools.push(pool);
         isPool[pool] = true;
 
-        emit Deployed(
-            address(pool),
-            address(token1),
-            address(token2)
-        );
+        emit Deployed(address(pool), address(token1), address(token2));
     }
 
-    function sortTokens(IERC20 tokenA, IERC20 tokenB) public pure returns(IERC20, IERC20) {
+    function sortTokens(IERC20 tokenA, IERC20 tokenB)
+        public
+        pure
+        returns (IERC20, IERC20)
+    {
         if (tokenA < tokenB) {
             return (tokenA, tokenB);
         }
