@@ -19,6 +19,7 @@ contract EmiVotableProxyAdmin is Ownable {
     using SafeMath for uint256;
 
     IEmiVoting private _votingContract;
+
     string public codeVersion = "VotableProxyAdmin v1.0-28-g10dc247";
 
     constructor(address _vc) public {

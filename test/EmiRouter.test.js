@@ -187,7 +187,7 @@ describe('EmiRouter', function () {
             expect(WETHfirstdeposite).to.be.bignumber.above(money.weth('1'));
         });
     });
-    describe.skip('Creation, swap and remove liquidity in raw-ETH - ERC-20', async function () {
+    describe('Creation, swap and remove liquidity in raw-ETH - ERC-20', async function () {
         beforeEach(async function () {
             let res = await this.router.addLiquidityETH(
                 this.DAI.address,            

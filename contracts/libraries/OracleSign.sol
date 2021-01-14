@@ -1,49 +1,64 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.2;
 
-abstract contract OracleSign {  
-  mapping (address => uint256) public walletNonce;
-  address public oracle;
+abstract contract OracleSign {
+    mapping(address => uint256) public walletNonce;
+    address public oracle;
 
-  function _setOracle(address _oracle) internal {
-    require(_oracle != address(0), "oracleSign: bad address");
-    oracle = _oracle;
-  }
-
-  function _splitSignature(bytes memory sig) internal pure returns (uint8, bytes32, bytes32) {
-    require (sig.length == 65, "Incorrect signature length");
-
-    bytes32 r;
-    bytes32 s;
-    uint8 v;
-
-    assembly {
-      //first 32 bytes, after the length prefix
-      r := mload(add(sig, 0x20))
-      //next 32 bytes
-      s := mload(add(sig, 0x40))
-      //final byte, first of next 32 bytes
-      v := byte(0, mload(add(sig, 0x60)))
+    function _setOracle(address _oracle) internal {
+        require(_oracle != address(0), "oracleSign: bad address");
+        oracle = _oracle;
     }
 
-    return (v, r, s);
-  }
-    
-  function _recoverSigner(bytes32 message, bytes memory sig) internal pure returns (address) {
-    uint8 v;
-    bytes32 r;
-    bytes32 s;
+    function _splitSignature(bytes memory sig)
+        internal
+        pure
+        returns (
+            uint8,
+            bytes32,
+            bytes32
+        )
+    {
+        require(sig.length == 65, "Incorrect signature length");
 
-    (v, r, s) = _splitSignature(sig);
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
 
-    return ecrecover(message, v, r, s);
-  }
-    
-  function _prefixed(bytes32 hash) internal pure returns (bytes32) {
-    return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
-  }
+        assembly {
+            //first 32 bytes, after the length prefix
+            r := mload(add(sig, 0x20))
+            //next 32 bytes
+            s := mload(add(sig, 0x40))
+            //final byte, first of next 32 bytes
+            v := byte(0, mload(add(sig, 0x60)))
+        }
 
-  function getWalletNonce() public view returns(uint256) {
-    return walletNonce[msg.sender];
-  }
+        return (v, r, s);
+    }
+
+    function _recoverSigner(bytes32 message, bytes memory sig)
+        internal
+        pure
+        returns (address)
+    {
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+
+        (v, r, s) = _splitSignature(sig);
+
+        return ecrecover(message, v, r, s);
+    }
+
+    function _prefixed(bytes32 hash) internal pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
+            );
+    }
+
+    function getWalletNonce() public view returns (uint256) {
+        return walletNonce[msg.sender];
+    }
 }
