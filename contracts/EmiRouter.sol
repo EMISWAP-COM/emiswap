@@ -69,6 +69,7 @@ contract EmiRouter {
         }
     }
 
+
     function getReservesByPool(address pool)
         public
         view
@@ -269,7 +270,7 @@ contract EmiRouter {
         }
 
         //emit Log(amounts[0], amounts[1]);
-        liquidity = IEmiswap(pairContract).deposit(amounts, minAmounts);
+        liquidity = IEmiswap(pairContract).deposit(amounts, minAmounts, address(0));
         TransferHelper.safeTransfer(
             address(pairContract),
             msg.sender,
@@ -336,7 +337,7 @@ contract EmiRouter {
             minAmounts[0] = amountETHMin;
             minAmounts[1] = amountTokenMin;
         }
-        liquidity = IEmiswap(pairContract).deposit(amounts, minAmounts);
+        liquidity = IEmiswap(pairContract).deposit(amounts, minAmounts, address(0));
         TransferHelper.safeTransfer(
             address(pairContract),
             msg.sender,
