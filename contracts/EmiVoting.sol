@@ -15,15 +15,6 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
     using SafeMath for uint256;
     using Address for address;
 
-    struct VotingRecord {
-        address oldContract;
-        address newContract;
-        uint256 endTime;
-        uint256 voteResult;
-    }
-
-    mapping(uint256 => VotingRecord) private _votingList;
-    uint256[] private _votingHash;
     string public codeVersion = "EmiVoting v1.0-28-g10dc247";
 
     /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
@@ -45,11 +36,6 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
     function votingDelay() public pure returns (uint256) {
         return 1;
     } // 1 block
-
-    /// @notice The duration of voting on a proposal, in blocks
-    function votingPeriod() public pure returns (uint256) {
-        return 4;
-    } // ~1 minute in blocks (assuming 15s blocks)
 
     /// @notice The address of the Timelock
     TimelockInterface public timelock;
@@ -162,11 +148,11 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
     /// @notice An event emitted when a proposal has been executed in the Timelock
     event ProposalExecuted(uint256 id);
 
-    function initialize2(
+    constructor (
         address timelock_,
         address esw_,
         address guardian_
-    ) public onlyAdmin {
+    ) public {
         timelock = TimelockInterface(timelock_);
         comp = IESW(esw_);
         guardian = guardian_;
@@ -177,10 +163,11 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
         uint256[] memory values,
         string[] memory signatures,
         bytes[] memory calldatas,
-        string memory description
+        string memory description,
+        uint votingPeriod
     ) public returns (uint256) {
         require(
-            comp.getPriorVotes(msg.sender, block.number.sub(1)) >
+            comp.balanceOf(msg.sender) >
                 proposalThreshold(),
             "EmiVoting::propose: proposer votes below proposal threshold"
         );
@@ -214,7 +201,7 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
         }
 
         uint256 startBlock = block.number.add(votingDelay());
-        uint256 endBlock = startBlock.add(votingPeriod());
+        uint256 endBlock = startBlock.add(votingPeriod);
 
         proposalCount++;
         Proposal memory newProposal =
@@ -388,12 +375,13 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
     }
 
     function castVote(uint256 proposalId, bool support) public {
-        return _castVote(msg.sender, proposalId, support);
+        return _castVote(msg.sender, uint96(comp.balanceOf(msg.sender)), proposalId, support);
     }
 
     function castVoteBySig(
         uint256 proposalId,
         bool support,
+        uint96 voterAmount,
         uint8 v,
         bytes32 r,
         bytes32 s
@@ -418,11 +406,12 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
             signatory != address(0),
             "EmiVoting::castVoteBySig: invalid signature"
         );
-        return _castVote(signatory, proposalId, support);
+        return _castVote(signatory, voterAmount, proposalId, support);
     }
 
     function _castVote(
         address voter,
+        uint96 voterAmount,
         uint256 proposalId,
         bool support
     ) internal {
@@ -436,19 +425,18 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
             receipt.hasVoted == false,
             "EmiVoting::_castVote: voter already voted"
         );
-        uint96 votes = comp.getPriorVotes(voter, proposal.startBlock);
 
         if (support) {
-            proposal.forVotes = proposal.forVotes.add(votes);
+            proposal.forVotes = proposal.forVotes.add(voterAmount);
         } else {
-            proposal.againstVotes = proposal.againstVotes.add(votes);
+            proposal.againstVotes = proposal.againstVotes.add(voterAmount);
         }
 
         receipt.hasVoted = true;
         receipt.support = support;
-        receipt.votes = votes;
+        receipt.votes = voterAmount;
 
-        emit VoteCast(voter, proposalId, support, votes);
+        emit VoteCast(voter, proposalId, support, voterAmount);
     }
 
     function __acceptAdmin() public {
@@ -507,11 +495,6 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
             chainId := chainid()
         }
         return chainId;
-    }
-
-    function initialize(address _admin) public initializer {
-        _addAdmin(msg.sender);
-        _addAdmin(_admin);
     }
 
     // returns address if voting succeeded or 0 othervise
