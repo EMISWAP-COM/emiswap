@@ -10,6 +10,7 @@ interface IESW {
   function symbol() external returns (string memory);
   function decimals() external returns (uint8);  
   function initialSupply() external returns (uint256);
+  function balanceOf(address account) external view returns (uint256);
   function currentCrowdsaleLimit() external view returns(uint256);
   function rawBalanceOf(address account) external view returns (uint256);
   

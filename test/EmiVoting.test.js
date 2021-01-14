@@ -5,6 +5,7 @@ const { BN,
     expectRevert,
     time,
     ether } = require('@openzeppelin/test-helpers');
+
   const BigNumber = web3.BigNumber;
   
   const { assert } = require('chai');
@@ -16,9 +17,10 @@ const { BN,
   const { contract } = require('./twrapper');
   
   const EmiVoting = contract.fromArtifact('EmiVoting');
-  const MockUSDY = contract.fromArtifact('MockUSDY');
+  const MockUSDX = contract.fromArtifact('MockUSDX');
+  const Timelock = contract.fromArtifact('Timelock');
   
-  let emiVote, usdy;
+  let emiVote, usdx, timelock;
   
   describe('EmiVoting contract', () => {
     const initialOwner = accounts[0];
@@ -28,68 +30,59 @@ const { BN,
     let r = { logs:'' };
   
     beforeEach(async function () {
-      this.emiVote = await EmiVoting.new();
-      await this.emiVote.initialize(initialOwner);
+      this.usdx = await MockUSDX.new();
+      this.usdx.transfer(userBob, ether('3000000'));
+      this.timelock = await Timelock.new(initialOwner, 60*60*24*4);
+      this.emiVote = await EmiVoting.new(this.timelock.address, this.usdx.address, initialOwner);
     });
   
     describe('From ground zero we', async function () {  
       it('Can start new voting as admin', async function () {
-          let releaseTime = (await time.latest()).add(time.duration.minutes(2));
-          let h = Math.floor(Math.random() * 1000000);                      
-          r = await this.emiVote.newUpgradeVoting(userBob, userAlice, releaseTime, h);
-          expectEvent.inLogs(r.logs,'VotingCreated');
+          r = await this.emiVote.propose([this.timelock.address],[0],['Signature'],['0x1111'],'Test proposal', 40);
+          expectEvent.inLogs(r.logs,'ProposalCreated');
       });
   
       it('Can view voting as generic user', async function () {
-        let releaseTime = (await time.latest()).add(time.duration.minutes(2));
-        let h = Math.floor(Math.random() * 1000000);                      
-        r = await this.emiVote.newUpgradeVoting(userBob, userAlice, releaseTime, h);
-        expectEvent.inLogs(r.logs,'VotingCreated');
-        let b = await this.emiVote.getVoting(h);
-        console.log(b);
-        assert.equal(b[0], userBob);
+        r = await this.emiVote.propose([this.timelock.address],[0],['Signature'],['0x1111'],'Test proposal', 40);
+        expectEvent.inLogs(r.logs,'ProposalCreated');
+        let pid = r.logs[0].args.id;
+        assert.equal(pid, 1);
+
+        let b = await this.emiVote.state(pid);
+        console.log('State: %d',b);
+        assert.equal(b, 0);
       });
-  
-      it('Can get voting list by ourself', async function () {
-        let endTime = (await time.latest()).add(time.duration.days(90));
-        r = await this.emiVote.newUpgradeVoting(accounts[3], accounts[4], endTime, 126);
-        expectEvent.inLogs(r.logs,'VotingCreated');
-  
-        let b = await this.emiVote.getVotingLen();
-        assert.equal(b, 1);
-  
-        b = await this.emiVote.getVotingHash(0);
-        assert.equal(b, 126);
-  
-        b = await this.emiVote.getVoting(b);
-        let t = new Date(b[2] * 1000);
-  
-        console.log("Voting address from: %s, address to: %s, endTime: %s, status: %s", b[0], b[1], t.toString(), b[3]);
-        assert.equal(b[3], 0);
-      });
-  
+    
       it('Can get voting result after time passes', async function () {
-        let releaseTime = (await time.latest()).add(time.duration.minutes(2));
-        let h = Math.floor(Math.random() * 1000000);                      
-        let r = await this.emiVote.newUpgradeVoting(userBob, userAlice, releaseTime, h);
-        expectEvent.inLogs(r.logs,'VotingCreated');
-        await time.increaseTo(releaseTime.add(time.duration.minutes(4)));
-        let b = await this.emiVote.getVoting(h);
-        console.log(b);
-        assert.equal(b[0], userBob);
+        r = await this.emiVote.propose([this.timelock.address],[0],['Signature'],['0x1111'],'Test proposal', 20);
+        expectEvent.inLogs(r.logs,'ProposalCreated');
+        let pid = r.logs[0].args.id;
+        console.log('Block proposed 1: %d', await time.latestBlock());
+
+	await time.advanceBlockTo(17); // skip some blocks
+        await this.emiVote.castVote(pid, true, {from: userBob});
+        await time.advanceBlockTo(30);
+        let b = await this.emiVote.state(pid);
+        console.log('State: %s', b);
+        assert.equal(b, 1);
+        await time.advanceBlockTo(45);
+        b = await this.emiVote.state(pid);
+        console.log('State: %s', b);
+        assert.equal(b, 4);
       });
   
       it('Can get voting results', async function () {
-        let releaseTime = (await time.latest()).add(time.duration.minutes(2));
-        let h = Math.floor(Math.random() * 1000000);                      
-        r = await this.emiVote.newUpgradeVoting(userBob, userAlice, releaseTime, h);
-        expectEvent.inLogs(r.logs,'VotingCreated');
-        await time.increaseTo(releaseTime.add(time.duration.minutes(4)));
-        r = await this.emiVote.calcVotingResult(h);
-        expectEvent.inLogs(r.logs,'VotingFinished');
-        let b = await this.emiVote.getVotingResult(h);
+        r = await this.emiVote.propose([this.timelock.address],[0],['Signature'],['0x1111'],'Test proposal 2', 20);
+        expectEvent.inLogs(r.logs,'ProposalCreated');
+        let pid = r.logs[0].args.id;
+        console.log('Block proposed 2: %d', await time.latestBlock());
+
+	await time.advanceBlockTo(54); // skip some blocks
+        await this.emiVote.castVote(pid, true, {from: userBob});
+        await time.advanceBlockTo(94);
+        let b = await this.emiVote.getVotingResult(pid);
         console.log(b);
-        assert.equal(b, userAlice);
+        assert.equal(b, this.timelock.address);
       });
     });
   });
