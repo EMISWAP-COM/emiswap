@@ -2,6 +2,8 @@ const { constants, time, ether, expectRevert } = require('@openzeppelin/test-hel
 const expectEvent = require('@openzeppelin/test-helpers/src/expectEvent');
 const { expect } = require('chai');
 
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+
 const { contract } = require('./twrapper');
 
 const money = {
@@ -127,7 +129,7 @@ describe('Emiswap', function () {
             await this.DAI.approve(this.Emiswap.address, money.dai('270'), { from: wallet1 });
             await this.DAI.approve(this.Emiswap.address, money.dai('2700'), { from: wallet2 });
             await expectRevert.unspecified(
-                this.Emiswap.deposit([money.eth('1'), money.dai('270')], [money.zero, money.zero], { value: money.eth('1'), from: wallet1 }));            
+                this.Emiswap.deposit([money.eth('1'), money.dai('270')], [money.zero, money.zero], ZERO_ADDRESS, { value: money.eth('1'), from: wallet1 }));            
             await timeIncreaseTo((await time.latest()).add(await this.Emiswap.decayPeriod()));
         });
     });
@@ -151,89 +153,89 @@ describe('Emiswap', function () {
         describe('Initial deposits', async function () {
             it('should be denied with length not equal to 2', async function () {
                 await expectRevert(
-                    this.Emiswap.deposit([], [money.zero, money.zero], { from: wallet1 }),
+                    this.Emiswap.deposit([], [money.zero, money.zero], ZERO_ADDRESS, { from: wallet1 }),
                     'Emiswap: wrong amounts length',
                 );
 
                 await expectRevert(
-                    this.Emiswap.deposit([money.weth('1')], [money.zero, money.zero], { from: wallet1 }),
+                    this.Emiswap.deposit([money.weth('1')], [money.zero, money.zero], ZERO_ADDRESS, { from: wallet1 }),
                     'Emiswap: wrong amounts length',
                 );
 
                 await expectRevert(
-                    this.Emiswap.deposit([money.weth('1'), money.dai('270'), money.dai('1')], [money.zero, money.zero], { from: wallet1 }),
+                    this.Emiswap.deposit([money.weth('1'), money.dai('270'), money.dai('1')], [money.zero, money.zero], ZERO_ADDRESS, { from: wallet1 }),
                     'Emiswap: wrong amounts length',
                 );
             });
 
             it('should be denied for zero amount', async function () {
                 await expectRevert(
-                    this.Emiswap.deposit([money.weth('0'), money.dai('270')], [money.zero, money.zero], { from: wallet1 }),
+                    this.Emiswap.deposit([money.weth('0'), money.dai('270')], [money.zero, money.zero], ZERO_ADDRESS, { from: wallet1 }),
                     'Emiswap: wrong value usage',
                 );
 
                 await expectRevert(
-                    this.Emiswap.deposit([money.weth('1'), money.dai('0')], [money.zero, money.zero], { from: wallet1 }),
+                    this.Emiswap.deposit([money.weth('1'), money.dai('0')], [money.zero, money.zero], ZERO_ADDRESS, { from: wallet1 }),
                     'Emiswap: wrong value usage',
                 );
             });
 
             it('should check minAmounts on deposit', async function () {
-                this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], { from: wallet1 });
+                this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], ZERO_ADDRESS, { from: wallet1 });
 
                 await expectRevert(
-                    this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.weth('1').addn(1), money.dai('270')], { from: wallet2 }),
+                    this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.weth('1').addn(1), money.dai('270')], ZERO_ADDRESS, { from: wallet2 }),
                     'Emiswap: minAmount not reached',
                 );
 
                 await expectRevert(
-                    this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.weth('1'), money.dai('270').addn(1)], { from: wallet2 }),
+                    this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.weth('1'), money.dai('270').addn(1)], ZERO_ADDRESS, { from: wallet2 }),
                     'Emiswap: minAmount not reached',
                 );
             });
 
             it('should be allowed with zero minReturn', async function () {
-                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], { from: wallet1 });
+                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], ZERO_ADDRESS, { from: wallet1 });
                 expect(await this.Emiswap.balanceOf(wallet1)).to.be.bignumber.equal(money.dai('270'));
             });
 
             it('should be allowed with strict minReturn', async function () {
-                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], { from: wallet1 });
+                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], ZERO_ADDRESS, { from: wallet1 });
                 expect(await this.Emiswap.balanceOf(wallet1)).to.be.bignumber.equal(money.dai('270'));
             });
 
             it('should give the same shares for the same deposits', async function () {
-                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], { from: wallet1 });
+                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], ZERO_ADDRESS, { from: wallet1 });
                 expect(await this.Emiswap.balanceOf(wallet1)).to.be.bignumber.equal(money.dai('270'));
 
-                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.weth('1'), money.dai('270')], { from: wallet2 });
+                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.weth('1'), money.dai('270')], ZERO_ADDRESS, { from: wallet2 });
                 expect(await this.Emiswap.balanceOf(wallet2)).to.be.bignumber.equal(money.dai('270').addn(1000));
             });
 
             it('should give the proportional shares for the proportional deposits', async function () {
-                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], { from: wallet1 });
+                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], ZERO_ADDRESS, { from: wallet1 });
                 expect(await this.Emiswap.balanceOf(wallet1)).to.be.bignumber.equal(money.dai('270'));
 
-                await this.Emiswap.deposit([money.weth('10'), money.dai('2700')], [money.weth('10'), money.dai('2700')], { from: wallet2 });
+                await this.Emiswap.deposit([money.weth('10'), money.dai('2700')], [money.weth('10'), money.dai('2700')], ZERO_ADDRESS, { from: wallet2 });
                 expect(await this.Emiswap.balanceOf(wallet2)).to.be.bignumber.equal(money.dai('2700').addn(10000));
             });
 
             it('should give the right shares for the repeated deposits', async function () {
-                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], { from: wallet1 });
+                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], ZERO_ADDRESS, { from: wallet1 });
                 expect(await this.Emiswap.balanceOf(wallet1)).to.be.bignumber.equal(money.dai('270'));
 
-                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.weth('1'), money.dai('270')], { from: wallet2 });
+                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.weth('1'), money.dai('270')], ZERO_ADDRESS, { from: wallet2 });
                 expect(await this.Emiswap.balanceOf(wallet2)).to.be.bignumber.equal(money.dai('270').addn(1000));
 
-                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.weth('1'), money.dai('270')], { from: wallet2 });
+                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.weth('1'), money.dai('270')], ZERO_ADDRESS, { from: wallet2 });
                 expect(await this.Emiswap.balanceOf(wallet2)).to.be.bignumber.equal(money.dai('540').addn(2000));
             });
 
             it('should give less share on unbalanced deposits', async function () {
-                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], { from: wallet1 });
+                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], ZERO_ADDRESS, { from: wallet1 });
                 expect(await this.Emiswap.balanceOf(wallet1)).to.be.bignumber.equal(money.dai('270'));
 
-                await this.Emiswap.deposit([money.weth('1'), money.dai('271')], [money.weth('1'), money.dai('270')], { from: wallet2 });
+                await this.Emiswap.deposit([money.weth('1'), money.dai('271')], [money.weth('1'), money.dai('270')], ZERO_ADDRESS, { from: wallet2 });
                 expect(await this.Emiswap.balanceOf(wallet2)).to.be.bignumber.equal(money.dai('270').addn(1000));
                 expect(await this.DAI.balanceOf(wallet2)).to.be.bignumber.equal(money.dai('2430'));
             });
@@ -241,12 +243,12 @@ describe('Emiswap', function () {
 
         describe('Deposits', async function () {
             it('should work without dust (mitigated with fairSupplyCached)', async function () {
-                await this.Emiswap.deposit(['73185705953920517', '289638863448966403'], [money.zero, money.zero], { from: wallet1 });
+                await this.Emiswap.deposit(['73185705953920517', '289638863448966403'], [money.zero, money.zero], ZERO_ADDRESS, { from: wallet1 });
 
                 const received = await trackReceivedToken(
                     this.DAI,
                     this.Emiswap.address,
-                    () => this.Emiswap.deposit(['73470488055448580', '217583468484493826'], [money.zero, money.zero], { from: wallet1 }),
+                    () => this.Emiswap.deposit(['73470488055448580', '217583468484493826'], [money.zero, money.zero], ZERO_ADDRESS, { from: wallet1 }),
                 );
                 expect(received).to.be.bignumber.equal('217583468484493826');
             });
@@ -254,7 +256,7 @@ describe('Emiswap', function () {
 
         describe('Swaps', async function () {
             beforeEach(async function () {
-                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], { from: wallet1 });
+                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], ZERO_ADDRESS, { from: wallet1 });
                 expect(await this.Emiswap.balanceOf(wallet1)).to.be.bignumber.equal(money.dai('270'));
                 await timeIncreaseTo((await time.latest()).add(await this.Emiswap.decayPeriod()));
             });
@@ -391,7 +393,7 @@ describe('Emiswap', function () {
 
         describe('Deposits after swaps', async function () {
             beforeEach(async function () {
-                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], { from: wallet1 });
+                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], ZERO_ADDRESS, { from: wallet1 });
                 expect(await this.Emiswap.balanceOf(wallet1)).to.be.bignumber.equal(money.dai('270'));
                 await timeIncreaseTo((await time.latest()).add(await this.Emiswap.decayPeriod()));
             });
@@ -410,6 +412,7 @@ describe('Emiswap', function () {
                     () => this.Emiswap.deposit(
                         [money.weth('2'), money.dai('135')],
                         [money.weth('2'), money.dai('135')],
+                        ZERO_ADDRESS, 
                         { from: wallet2 },
                     ),
                 );
@@ -437,6 +440,7 @@ describe('Emiswap', function () {
                     () => this.Emiswap.deposit(
                         [money.weth('2'), money.dai('135')],
                         [money.weth('2'), money.dai('135')],
+                        ZERO_ADDRESS, 
                         { from: wallet2 },
                     ),
                 );
@@ -450,7 +454,7 @@ describe('Emiswap', function () {
 
         describe('Withdrawals', async function () {
             beforeEach(async function () {
-                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], { from: wallet1 });
+                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], ZERO_ADDRESS, { from: wallet1 });
                 expect(await this.Emiswap.balanceOf(wallet1)).to.be.bignumber.equal(money.dai('270'));
                 await timeIncreaseTo((await time.latest()).add(await this.Emiswap.decayPeriod()));
             });
@@ -478,6 +482,7 @@ describe('Emiswap', function () {
                 await this.Emiswap.deposit(
                     [money.weth('1'), money.dai('270')],
                     [money.weth('1'), money.dai('270')],
+                    ZERO_ADDRESS, 
                     { from: wallet2 },
                 );
 
@@ -496,7 +501,7 @@ describe('Emiswap', function () {
         describe('Rounding', async function () {
             for (const i of ['13', '452', '8000', '14991', '98625']) {
                 it('should round virtual balances on withdrawals correctly', async function () {
-                    await this.Emiswap.deposit(['100', '100'], [money.zero, money.zero], { from: wallet1 });
+                    await this.Emiswap.deposit(['100', '100'], [money.zero, money.zero], ZERO_ADDRESS, { from: wallet1 });
                     expect(await this.Emiswap.balanceOf(wallet1)).to.be.bignumber.equal('99000');
                     await timeIncreaseTo((await time.latest()).add(await this.Emiswap.decayPeriod()));
                     await this.Emiswap.withdraw(i, [], { from: wallet1 });
@@ -513,7 +518,7 @@ describe('Emiswap', function () {
 
         describe('Fee', async function () {
             beforeEach(async function () {
-                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], { from: wallet1 });
+                await this.Emiswap.deposit([money.weth('1'), money.dai('270')], [money.zero, money.zero], ZERO_ADDRESS, { from: wallet1 });
                 expect(await this.Emiswap.balanceOf(wallet1)).to.be.bignumber.equal(money.dai('270'));
                 await timeIncreaseTo((await time.latest()).add(await this.Emiswap.decayPeriod()).add(await this.Emiswap.decayPeriod()));
             });

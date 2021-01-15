@@ -558,15 +558,26 @@ library SafeERC20 {
 pragma solidity ^0.6.0;
 
 interface IEmiReferral {
-  function l1ReferralShare() external pure returns (uint256);
-  function l2ReferralShare() external pure returns (uint256);
-  function l3ReferralShare() external pure returns (uint256);
+    function l1ReferralShare() external pure returns (uint256);
 
-  function getRefStakes() external view returns(uint256, uint256, uint256);
+    function l2ReferralShare() external pure returns (uint256);
 
-  function addReferral(address _user, address _referral) external;
+    function l3ReferralShare() external pure returns (uint256);
 
-  function getReferralChain(address _user) external returns (address [] memory);
+    function getRefStakes()
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256
+        );
+
+    function addReferral(address _user, address _referral) external;
+
+    function getReferralChain(address _user)
+        external
+        returns (address[] memory);
 }
 
 // File: contracts/interfaces/IESW.sol
@@ -579,18 +590,24 @@ pragma solidity ^0.6.0;
  * @dev Interface of the DAO token.
  */
 interface IESW {
-  function name() external returns (string memory);
-  function symbol() external returns (string memory);
-  function decimals() external returns (uint8);  
-  function initialSupply() external returns (uint256);
-  function currentCrowdsaleLimit() external view returns(uint256);
-  function rawBalanceOf(address account) external view returns (uint256);
-  
-  function setVesting(address _vesting) external;
-  function mintAndFreeze(address recipient, uint256 amount, uint256 category) external;
-  function mintVirtualAndFreeze(address recipient, uint256 amount, uint256 category) external;
-  function mintVirtualAndFreezePresale(address recipient, uint32 sinceDate, uint256 amount, uint256 category) external;
-  function mintClaimed(address recipient, uint256 amount) external;
+    function name() external returns (string memory);
+
+    function balanceOf(address account) external view returns (uint256);
+
+    function symbol() external returns (string memory);
+
+    function decimals() external returns (uint8);
+
+    function initialSupply() external returns (uint256);
+
+    function burn(address account, uint256 amount) external;
+
+    function mintClaimed(address recipient, uint256 amount) external;
+
+    function getPriorVotes(address account, uint256 blockNumber)
+        external
+        view
+        returns (uint96);
 }
 
 // File: contracts/interfaces/IERC20Detailed.sol
@@ -603,13 +620,13 @@ pragma solidity ^0.6.0;
  * @dev Interface of the DAO token.
  */
 interface IERC20Detailed {
-  function name() external returns (string memory);
+    function name() external returns (string memory);
 
-  function symbol() external returns (string memory);
+    function symbol() external returns (string memory);
 
-  function decimals() external returns (uint8);
+    function decimals() external returns (uint8);
 
-  function mint(address account, uint256 amount) external;
+    function mint(address account, uint256 amount) external;
 }
 
 // File: contracts/uniswapv2/interfaces/IUniswapV2Factory.sol
@@ -617,18 +634,32 @@ interface IERC20Detailed {
 pragma solidity ^0.6.0;
 
 interface IUniswapV2Factory {
-    event PairCreated(address indexed token0, address indexed token1, address pair, uint);
+    event PairCreated(
+        address indexed token0,
+        address indexed token1,
+        address pair,
+        uint256
+    );
 
     function feeTo() external view returns (address);
+
     function feeToSetter() external view returns (address);
 
-    function getPair(address tokenA, address tokenB) external view returns (address pair);
-    function allPairs(uint) external view returns (address pair);
-    function allPairsLength() external view returns (uint);
+    function getPair(address tokenA, address tokenB)
+        external
+        view
+        returns (address pair);
 
-    function createPair(address tokenA, address tokenB) external returns (address pair);
+    function allPairs(uint256) external view returns (address pair);
+
+    function allPairsLength() external view returns (uint256);
+
+    function createPair(address tokenA, address tokenB)
+        external
+        returns (address pair);
 
     function setFeeTo(address) external;
+
     function setFeeToSetter(address) external;
 }
 
@@ -637,51 +668,109 @@ interface IUniswapV2Factory {
 pragma solidity ^0.6.0;
 
 interface IUniswapV2Pair {
-    event Approval(address indexed owner, address indexed spender, uint value);
-    event Transfer(address indexed from, address indexed to, uint value);
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
+    event Transfer(address indexed from, address indexed to, uint256 value);
 
     function name() external pure returns (string memory);
-    function symbol() external pure returns (string memory);
-    function decimals() external pure returns (uint8);
-    function totalSupply() external view returns (uint);
-    function balanceOf(address owner) external view returns (uint);
-    function allowance(address owner, address spender) external view returns (uint);
 
-    function approve(address spender, uint value) external returns (bool);
-    function transfer(address to, uint value) external returns (bool);
-    function transferFrom(address from, address to, uint value) external returns (bool);
+    function symbol() external pure returns (string memory);
+
+    function decimals() external pure returns (uint8);
+
+    function totalSupply() external view returns (uint256);
+
+    function balanceOf(address owner) external view returns (uint256);
+
+    function allowance(address owner, address spender)
+        external
+        view
+        returns (uint256);
+
+    function approve(address spender, uint256 value) external returns (bool);
+
+    function transfer(address to, uint256 value) external returns (bool);
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) external returns (bool);
 
     function DOMAIN_SEPARATOR() external view returns (bytes32);
+
     function PERMIT_TYPEHASH() external pure returns (bytes32);
-    function nonces(address owner) external view returns (uint);
 
-    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
+    function nonces(address owner) external view returns (uint256);
 
-    event Mint(address indexed sender, uint amount0, uint amount1);
-    event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
+
+    event Mint(address indexed sender, uint256 amount0, uint256 amount1);
+    event Burn(
+        address indexed sender,
+        uint256 amount0,
+        uint256 amount1,
+        address indexed to
+    );
     event Swap(
         address indexed sender,
-        uint amount0In,
-        uint amount1In,
-        uint amount0Out,
-        uint amount1Out,
+        uint256 amount0In,
+        uint256 amount1In,
+        uint256 amount0Out,
+        uint256 amount1Out,
         address indexed to
     );
     event Sync(uint112 reserve0, uint112 reserve1);
 
-    function MINIMUM_LIQUIDITY() external pure returns (uint);
-    function factory() external view returns (address);
-    function token0() external view returns (address);
-    function token1() external view returns (address);
-    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
-    function price0CumulativeLast() external view returns (uint);
-    function price1CumulativeLast() external view returns (uint);
-    function kLast() external view returns (uint);
+    function MINIMUM_LIQUIDITY() external pure returns (uint256);
 
-    function mint(address to) external returns (uint liquidity);
-    function burn(address to) external returns (uint amount0, uint amount1);
-    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
+    function factory() external view returns (address);
+
+    function token0() external view returns (address);
+
+    function token1() external view returns (address);
+
+    function getReserves()
+        external
+        view
+        returns (
+            uint112 reserve0,
+            uint112 reserve1,
+            uint32 blockTimestampLast
+        );
+
+    function price0CumulativeLast() external view returns (uint256);
+
+    function price1CumulativeLast() external view returns (uint256);
+
+    function kLast() external view returns (uint256);
+
+    function mint(address to) external returns (uint256 liquidity);
+
+    function burn(address to)
+        external
+        returns (uint256 amount0, uint256 amount1);
+
+    function swap(
+        uint256 amount0Out,
+        uint256 amount1Out,
+        address to,
+        bytes calldata data
+    ) external;
+
     function skim(address to) external;
+
     function sync() external;
 
     function initialize(address, address) external;
@@ -695,49 +784,48 @@ pragma solidity ^0.6.2;
 
 abstract contract Priviledgeable {
     using SafeMath for uint256;
-    using SafeMath for uint;
+    using SafeMath for uint256;
 
     event PriviledgeGranted(address indexed admin);
     event PriviledgeRevoked(address indexed admin);
 
     modifier onlyAdmin() {
-        require(_priviledgeTable[msg.sender], "Priviledgeable: caller is not the owner");
+        require(
+            _priviledgeTable[msg.sender],
+            "Priviledgeable: caller is not the owner"
+        );
         _;
     }
 
     mapping(address => bool) private _priviledgeTable;
 
-    constructor () internal {
-      _priviledgeTable[msg.sender] = true;
+    constructor() internal {
+        _priviledgeTable[msg.sender] = true;
     }
 
-    function addAdmin(address _admin) external onlyAdmin returns (bool)
-    {
-      require(_admin!=address(0), "Admin address cannot be 0");
-      return _addAdmin(_admin);
+    function addAdmin(address _admin) external onlyAdmin returns (bool) {
+        require(_admin != address(0), "Admin address cannot be 0");
+        return _addAdmin(_admin);
     }
 
-    function removeAdmin(address _admin) external onlyAdmin returns (bool)
-    {
-      require(_admin!=address(0), "Admin address cannot be 0");
-      _priviledgeTable[_admin] = false;
-      emit PriviledgeRevoked(_admin);
+    function removeAdmin(address _admin) external onlyAdmin returns (bool) {
+        require(_admin != address(0), "Admin address cannot be 0");
+        _priviledgeTable[_admin] = false;
+        emit PriviledgeRevoked(_admin);
 
-      return true;
+        return true;
     }
 
-    function isAdmin(address _who) external view returns (bool)
-    {
-       return _priviledgeTable[_who];
+    function isAdmin(address _who) external view returns (bool) {
+        return _priviledgeTable[_who];
     }
 
     //-----------
     // internals
     //-----------
-    function _addAdmin(address _admin) internal returns (bool)
-    {
-      _priviledgeTable[_admin] = true;
-      emit PriviledgeGranted(_admin);
+    function _addAdmin(address _admin) internal returns (bool) {
+        _priviledgeTable[_admin] = true;
+        emit PriviledgeGranted(_admin);
     }
 }
 
@@ -758,600 +846,668 @@ pragma solidity ^0.6.2;
 
 
 contract CrowdSale is Initializable, Priviledgeable {
-  using SafeMath for uint256;
-  using SafeMath for uint32;
-  using SafeERC20 for IERC20;
+    using SafeMath for uint256;
+    using SafeMath for uint32;
+    using SafeERC20 for IERC20;
 
-  event Buy(address account, uint256 amount, uint32 coinId, uint256 coinAmount, address referral);
-
-  struct Coin {
-    address token;
-    string name;
-    string symbol;
-    uint8 decimals;
-    uint32 rate;
-    uint8 status;
-  }
-
-  mapping(uint16 => Coin) internal _coins;
-  mapping(address => uint16) public coinIndex;
-  uint16 internal _coinCounter;
-  uint32 internal _ratePrecision;
-  /******************************************************************
-  * _token - ESW token
-  * _wethToken - WETH token
-  * _uniswapFactory - uniswap factory address  
-  * referralStore - referral contract address
-  * foundationWallet - foundation wallet
-  * teamWallet - team wallet
-  *******************************************************************/
-  address internal _token;
-  address internal _wethToken;
-  address internal _uniswapFactory;
-  address internal referralStore;
-  address payable public foundationWallet;
-  address public teamWallet;
-  address internal defRef;
-
-  // !!!In updates to contracts set new variables strictly below this line!!!
-  //-----------------------------------------------------------------------------------
- string public codeVersion = "CrowdSale v1.0-39-gbe96add";
-  
-  //-----------------------------------------------------------------------------------
-  // Smart contract Constructor
-  //-----------------------------------------------------------------------------------
-  
-  function initialize(
-    address eswToken, 
-    address uniswapFactory, 
-    address referralStoreInput, 
-    address wethToken, 
-    address payable _foundationWallet,
-    address _teamWallet
-  )
-    public
-    initializer
-  {
-    require(eswToken != address(0) || uniswapFactory != address(0) || referralStoreInput != address(0) || 
-      wethToken != address(0) || _foundationWallet != address(0) || _teamWallet != address(0)
-      , "Sale:Addresses empty");
-    _token = eswToken;
-    _uniswapFactory = uniswapFactory;    
-    referralStore = referralStoreInput;
-    _wethToken = wethToken;
-    foundationWallet = _foundationWallet;
-    teamWallet = _teamWallet;
-    _ratePrecision = 10000;
-    defRef = address(0xdF3242dE305d033Bb87334169faBBf3b7d3D96c2);
-    _addAdmin(msg.sender);
-  }
-
-  /*
-  * update crowdsale params
-  * @param eswToken - ESW token address
-  * @param uniswapFactory - uniswap factory address, for getting market rates
-  * @param referralStoreInput - referral contract address
-  * @param wethToken - wethToken token address
-  * @param _foundationWallet - _foundationWallet wallet address
-  * @param _teamWallet - _teamWallet wallet address
-  * @param _defRef - _defRef wallet address
-  */
-  function updateParams(
-    address eswToken, 
-    address uniswapFactory, 
-    address referralStoreInput, 
-    address wethToken, 
-    address payable _foundationWallet,
-    address _teamWallet,
-    address _defRef
-  )
-  public
-  onlyAdmin
-  {
-    require(eswToken != address(0) || uniswapFactory != address(0) || referralStoreInput != address(0) || 
-      wethToken != address(0) || _foundationWallet != address(0) || _teamWallet != address(0) || _defRef != address(0)
-      , "Sale: Addresses cannot be empty!");
-    _token = eswToken;
-    _uniswapFactory = uniswapFactory;    
-    referralStore = referralStoreInput;
-    _wethToken = wethToken;
-    foundationWallet = _foundationWallet;
-    teamWallet = _teamWallet;
-    defRef = _defRef;
-  }
-
-  /*
-  * register tokens in crowdsale
-  * @param coinAddress - token address
-  * @param rate - token rate
-  * @param status - token status
-  */
-  function fetchCoin(
-    address coinAddress, 
-    uint32 rate, 
-    uint8 status
-  )
-    public
-    onlyAdmin
-  {
-    require(coinIndex[coinAddress] == 0, "Already loaded");
-    string memory _name = IERC20Detailed(coinAddress).name();
-    string memory _symbol = IERC20Detailed(coinAddress).symbol();
-    uint8 _decimals = IERC20Detailed(coinAddress).decimals();
-
-    _coins[_coinCounter] = Coin(
-      coinAddress,
-      _name,
-      _symbol,
-      _decimals,
-      1 * rate,
-      status
+    event Buy(
+        address account,
+        uint256 amount,
+        uint32 coinId,
+        uint256 coinAmount,
+        address referral
     );
-    coinIndex[coinAddress] = _coinCounter;
-    _coinCounter += 1;
-  }
 
-  /*
-  * set status for registered token in crowdsale
-  * @param index - token index id
-  * @param status - token status
-  */
-  function setStatusByID(uint16 coinId, uint8 status)
-    public
-    onlyAdmin
-  {
-    _coins[coinId].status = status;
-  }
-
-  /*
-  * set rate for registered token in crowdsale
-  * @param index - token index id
-  * @param rate - token rate
-  */
-  function setRateByID(uint16 coinId, uint32 rate)
-    public
-    onlyAdmin
-  {
-    _coins[coinId].rate = rate;
-  }
-
-  /*
-  * get ESW token address
-  */
-  function getToken() 
-    external 
-    view 
-    returns (address) 
-  {
-    return _token;
-  }
-
-  /*
-  * get tokens count
-  */
-  function coinCounter()
-    public 
-    view 
-    returns (uint16) 
-  {
-    return _coinCounter;
-  }
-
-  /*
-  * get registered in crowdsale token's data
-  * @param index - token index id
-  * @return name - token name
-  * @return symbol - token symbol
-  * @return decimals - token decimals
-  * @return status - token decimals
-  */
-  function coin(uint16 index)
-    public
-    view
-    returns (
-      string memory name,
-      string memory symbol,
-      uint8 decimals,
-      uint8 status)
-  {
-    return (_coins[index].name, _coins[index].symbol, _coins[index].decimals, _coins[index].status);
-  }
-
-  /*
-  * get token's rate
-  * @param index - token index id
-  * @return rate - token rate
-  */
-  function coinRate(uint16 index) 
-    public 
-    view 
-    returns (uint32 rate) 
-  {
-    return (_coins[index].rate);
-  }
-
-  /*
-  * get token's address and status
-  * @param index - token index id
-  * @return coinAddress - token wallet address
-  * @return status - token status (0 - inactive, 1 - active and fixed rate, 3 - active and market rate)
-  */
-  function coinData(uint16 index)
-    public
-    view
-    returns (address coinAddress, uint8 status)
-  {
-    return (_coins[index].token, _coins[index].status);
-  }
-  
-  /*
-  * normalise amount to 10**18
-  * @param amount - amount to normalise
-  * @param coinDecimals - token decimals
-  * @param isReverse - if false calc from token value, true - calc from ESW value
-  * @return normalised value to result coin decimals
-  */
-  function _normalizeCoinAmount(uint256 amount, uint8 coinDecimals, bool isReverse)
-    internal
-    pure
-    returns (uint256)
-  {
-    if (!isReverse) {
-      if (coinDecimals > 18) {
-        return amount.div(uint256(10)**(coinDecimals - 18));
-      }
-      return amount.mul(uint256(10)**(18 - coinDecimals));
-    } else {
-      if (coinDecimals > 18) {
-        return amount.mul(uint256(10)**(coinDecimals - 18));
-      }
-      return amount.div(uint256(10)**(18 - coinDecimals));
+    struct Coin {
+        address token;
+        string name;
+        string symbol;
+        uint8 decimals;
+        uint32 rate;
+        uint8 status;
     }
-  }
 
-  /*
-  * get normalised amount of result tokens
-  * @param coinId - crowdsale registered token id
-  * @param amount - input token amount
-  * @param isReverse - if false calc from token value to ESW value, true - calc from ESW value to token value
-  * @return normalised value of result tokens
-  */  
-  function getBuyCoinAmountByID(uint16 coinId, uint256 amount, bool isReverse)
-    public
-    view
-    returns (uint256)
-  {
-    if (!isReverse) {
-      return _normalizeCoinAmount(        
-        amount.mul(_ratePrecision).div(_coins[coinId].rate),
-        _coins[coinId].decimals,
-        isReverse
-      );
-    } else {
-      return _normalizeCoinAmount(
-        amount.mul(_coins[coinId].rate).div(_ratePrecision),
-        _coins[coinId].decimals,
-        isReverse
-      );
-    }    
-  }
-  
-  /*
-  * Presale function, get lists of weallets, tokens and dates, and virtual freeze it.
-  * @param beneficiaries - list of beneficiaries wallets
-  * @param tokens - list of ESW tokens amount bought
-  * @param sinceDate - list of purchasing dates
-  */
-  function presaleBulkLoad(address[] memory beneficiaries, uint256[] memory tokens, uint32[] memory sinceDate)
-    public
-    onlyAdmin
-  {
-    require(beneficiaries.length > 0, "Sale:Array empty");
-    require(beneficiaries.length == sinceDate.length, "Sale:Arrays length");
-    require(sinceDate.length == tokens.length, "Sale:Arrays length");
-    uint256 tokenSum;
+    mapping(uint16 => Coin) internal _coins;
+    mapping(address => uint16) public coinIndex;
+    uint16 internal _coinCounter;
+    uint32 internal _ratePrecision;
+    /******************************************************************
+     * _token - ESW token
+     * _wethToken - WETH token
+     * _uniswapFactory - uniswap factory address
+     * referralStore - referral contract address
+     * foundationWallet - foundation wallet
+     * teamWallet - team wallet
+     *******************************************************************/
+    address internal _token;
+    address internal _wethToken;
+    address internal _uniswapFactory;
+    address internal referralStore;
+    address payable public foundationWallet;
+    address public teamWallet;
+    address internal defRef;
 
-    for (uint i = 0; i < beneficiaries.length; i++) {
-      IESW(_token).mintVirtualAndFreezePresale(beneficiaries[i], sinceDate[i], tokens[i], 1);
-      tokenSum = tokenSum.add(tokens[i]);
+    // !!!In updates to contracts set new variables strictly below this line!!!
+    //-----------------------------------------------------------------------------------
+ string public codeVersion = "CrowdSale v1.0-58-gd991927";
+    uint256 public crowdSalePool = 40_000_000e18;
+    bool public isStoped;
+
+    modifier crowdSaleworking {
+        require(!isStoped, "CrowdSale: stoped!");
+        _;
     }
-    if (tokenSum.mul(5).div(100) > 0) {
-      IESW(_token).mintVirtualAndFreezePresale(foundationWallet , sinceDate[0], tokenSum.mul(5).div(100), 1);
-    }
-    IESW(_token).mintVirtualAndFreeze(teamWallet, tokenSum.add(tokenSum.mul(5).div(100)), 1);
-  }
-  
-  /*
-  * Buy ESW for tokens view, 
-  * @param coinAddress - payment token address
-  * @param amount - payment token amount (isReverse = false), ESW token amount (isReverse = true),
-  * @param isReverse - 'false' for view from payment token to ESW amount, 'true' for view from ESW amount to payment token amount
-  * @return currentTokenAmount - ESW amount
-  * @return coinId - crowdsale registered token id
-  * @return coinAmount - rate in case of market token rate
-  */
-  function buyView(address coinAddress, uint256 amount, bool isReverse)
-    public 
-    view 
-    returns (
-      uint256 currentTokenAmount,
-      uint16 coinId,
-      uint256 coinAmount) 
-  {
-    coinId = coinIndex[coinAddress];
 
-    if ( 
-        (coinAddress != _coins[coinId].token) || (_coins[coinId].status == 0) 
-        || (amount == 0) 
-      ) 
+    //event BuyPresale(address account, uint256 amount, uint32 sinceDate, uint256 coinAmount);
+
+    //-----------------------------------------------------------------------------------
+    // Smart contract Constructor
+    //-----------------------------------------------------------------------------------
+
+    function initialize(
+        address eswToken,
+        address uniswapFactory,
+        address referralStoreInput,
+        address wethToken,
+        address payable _foundationWallet,
+        address _teamWallet
+    ) public initializer {
+        require(
+            eswToken != address(0) ||
+                uniswapFactory != address(0) ||
+                referralStoreInput != address(0) ||
+                wethToken != address(0) ||
+                _foundationWallet != address(0) ||
+                _teamWallet != address(0),
+            "Sale:Addresses empty"
+        );
+        _token = eswToken;
+        _uniswapFactory = uniswapFactory;
+        referralStore = referralStoreInput;
+        _wethToken = wethToken;
+        foundationWallet = _foundationWallet;
+        teamWallet = _teamWallet;
+        _ratePrecision = 10000;
+        defRef = address(0xdF3242dE305d033Bb87334169faBBf3b7d3D96c2);
+        _addAdmin(msg.sender);
+    }
+
+    /*
+     * update crowdsale params
+     * @param eswToken - ESW token address
+     * @param uniswapFactory - uniswap factory address, for getting market rates
+     * @param referralStoreInput - referral contract address
+     * @param wethToken - wethToken token address
+     * @param _foundationWallet - _foundationWallet wallet address
+     * @param _teamWallet - _teamWallet wallet address
+     * @param _defRef - _defRef wallet address
+     */
+    function updateParams(
+        address eswToken,
+        address uniswapFactory,
+        address referralStoreInput,
+        address wethToken,
+        address payable _foundationWallet,
+        address _teamWallet,
+        address _defRef
+    ) public onlyAdmin {
+        require(
+            eswToken != address(0) ||
+                uniswapFactory != address(0) ||
+                referralStoreInput != address(0) ||
+                wethToken != address(0) ||
+                _foundationWallet != address(0) ||
+                _teamWallet != address(0) ||
+                _defRef != address(0),
+            "Sale: Addresses cannot be empty!"
+        );
+        _token = eswToken;
+        _uniswapFactory = uniswapFactory;
+        referralStore = referralStoreInput;
+        _wethToken = wethToken;
+        foundationWallet = _foundationWallet;
+        teamWallet = _teamWallet;
+        defRef = _defRef;
+    }
+
+    /**
+     * stop crowdsale buy functions, need admin rights
+     */
+    function stopCrowdSale(bool isStopedNewValue) public onlyAdmin {
+        isStoped = isStopedNewValue;
+    }
+
+    /**
+     * set new crowdsale pool size, only decreasing allowed
+     */
+    function setPoolsize(uint256 _newcrowdSalePool) public onlyAdmin {
+        //require(_newcrowdSalePool < crowdSalePool, "CrowdSale: avoid pool increase");
+        crowdSalePool = _newcrowdSalePool;
+    }
+
+    /*
+     * register tokens in crowdsale
+     * @param coinAddress - token address
+     * @param rate - token rate
+     * @param status - token status
+     */
+    function fetchCoin(
+        address coinAddress,
+        uint32 rate,
+        uint8 status
+    ) public onlyAdmin {
+        require(coinIndex[coinAddress] == 0, "Already loaded");
+        string memory _name = IERC20Detailed(coinAddress).name();
+        string memory _symbol = IERC20Detailed(coinAddress).symbol();
+        uint8 _decimals = IERC20Detailed(coinAddress).decimals();
+
+        _coins[_coinCounter] = Coin(
+            coinAddress,
+            _name,
+            _symbol,
+            _decimals,
+            1 * rate,
+            status
+        );
+        coinIndex[coinAddress] = _coinCounter;
+        _coinCounter += 1;
+    }
+
+    /*
+     * set status for registered token in crowdsale
+     * @param index - token index id
+     * @param status - token status
+     */
+    function setStatusByID(uint16 coinId, uint8 status) public onlyAdmin {
+        _coins[coinId].status = status;
+    }
+
+    /*
+     * set rate for registered token in crowdsale
+     * @param index - token index id
+     * @param rate - token rate
+     */
+    function setRateByID(uint16 coinId, uint32 rate) public onlyAdmin {
+        _coins[coinId].rate = rate;
+    }
+
+    /*
+     * get ESW token address
+     */
+    function getToken() external view returns (address) {
+        return _token;
+    }
+
+    /*
+     * get tokens count
+     */
+    function coinCounter() public view returns (uint16) {
+        return _coinCounter;
+    }
+
+    /*
+     * get registered in crowdsale token's data
+     * @param index - token index id
+     * @return name - token name
+     * @return symbol - token symbol
+     * @return decimals - token decimals
+     * @return status - token decimals
+     */
+    function coin(uint16 index)
+        public
+        view
+        returns (
+            string memory name,
+            string memory symbol,
+            uint8 decimals,
+            uint8 status
+        )
     {
-      return (currentTokenAmount, coinId, coinAmount);
+        return (
+            _coins[index].name,
+            _coins[index].symbol,
+            _coins[index].decimals,
+            _coins[index].status
+        );
     }
 
-    // if amount is ESW
-    if (isReverse && 
-      (amount.mul(105).div(100) > IESW(_token).currentCrowdsaleLimit())  )
+    /*
+     * get token's rate
+     * @param index - token index id
+     * @return rate - token rate
+     */
+    function coinRate(uint16 index) public view returns (uint32 rate) {
+        return (_coins[index].rate);
+    }
+
+    /*
+     * get token's address and status
+     * @param index - token index id
+     * @return coinAddress - token wallet address
+     * @return status - token status (0 - inactive, 1 - active and fixed rate, 3 - active and market rate)
+     */
+    function coinData(uint16 index)
+        public
+        view
+        returns (address coinAddress, uint8 status)
     {
-      return (currentTokenAmount, coinId, coinAmount);
-    }
-    
-    coinAmount = amount;    
-
-    currentTokenAmount = 0;
-
-    if (_coins[coinId].status == 1) {
-      currentTokenAmount = getBuyCoinAmountByID(coinId, coinAmount, isReverse);
-    } else {
-      // get pair pool
-      address pairContract = IUniswapV2Factory(_uniswapFactory).getPair(
-        _coins[coinId].token,
-        _coins[0].token
-      );
-            
-      if (pairContract == address(0)) {
-        return(0, 0, 0);
-      }
-
-      // get pool reserves
-      uint112 reserve0;
-      uint112 reserve1;
-      if (!isReverse) {
-        (reserve0, reserve1, ) = IUniswapV2Pair(pairContract).getReserves();
-      } else {
-        (reserve1, reserve0, ) = IUniswapV2Pair(pairContract).getReserves();
-      }
-
-      // token0 1 : token1 10 => 1:10, coinamount=amount*10/1
-      if (IUniswapV2Pair(pairContract).token1() == _coins[0].token) {
-        coinAmount = _getAmountOut(amount, reserve0, reserve1);
-      } else {
-        coinAmount = _getAmountOut(amount, reserve1, reserve0);
-      }
-      currentTokenAmount = (isReverse ? 
-        coinAmount.mul(_coins[0].rate).div(_ratePrecision) : 
-        coinAmount.mul(_ratePrecision).div(_coins[0].rate));
+        return (_coins[index].token, _coins[index].status);
     }
 
-    if (!isReverse && (currentTokenAmount.mul(105).div(100) > IESW(_token).currentCrowdsaleLimit())) {
-      return(0, 0, 0);
+    /*
+     * normalise amount to 10**18
+     * @param amount - amount to normalise
+     * @param coinDecimals - token decimals
+     * @param isReverse - if false calc from token value, true - calc from ESW value
+     * @return normalised value to result coin decimals
+     */
+    function _normalizeCoinAmount(
+        uint256 amount,
+        uint8 coinDecimals,
+        bool isReverse
+    ) internal pure returns (uint256) {
+        if (!isReverse) {
+            if (coinDecimals > 18) {
+                return amount.div(uint256(10)**(coinDecimals - 18));
+            }
+            return amount.mul(uint256(10)**(18 - coinDecimals));
+        } else {
+            if (coinDecimals > 18) {
+                return amount.mul(uint256(10)**(coinDecimals - 18));
+            }
+            return amount.div(uint256(10)**(18 - coinDecimals));
+        }
     }
 
-    if ((currentTokenAmount == 0)) {
-      return(0, 0, 0);
-    }
-    
-    return(currentTokenAmount, coinId, coinAmount);
-  }
-
-  /*
-  * Buy ESW for tokens, 
-  * @param coinAddress - payment token address
-  * @param amount - payment token amount (isReverse = false), ESW token amount (isReverse = true),
-  * @param referralInput - referrral address
-  * @param isReverse - 'false' for view from payment token to ESW amount, 'true' for view from ESW amount to payment token amount
-  */
-  function buy(
-    address coinAddress, 
-    uint256 amount, 
-    address referralInput,
-    bool    isReverse
-  )
-    public    
-  {
-    require(amount > 0, "Sale:amount needed");
-    require(coinAddress == _coins[coinIndex[coinAddress]].token, "Sale:Coin not allowed");
-    require(_coins[coinIndex[coinAddress]].status != 0, "Sale:Coin not active");
-    
-    (uint256 currentTokenAmount, uint16 coinId,) = buyView(coinAddress, amount, isReverse);
-
-    require(currentTokenAmount > 0, "Sale:0 ESW");
-
-    uint256 eswCurrentTokenAmount;
-    uint256 paymentTokenAmount;
-    if (!isReverse) {
-      eswCurrentTokenAmount = currentTokenAmount;
-      paymentTokenAmount = amount;
-    } else {
-      eswCurrentTokenAmount = amount;
-      paymentTokenAmount = currentTokenAmount;
+    /*
+     * get normalised amount of result tokens
+     * @param coinId - crowdsale registered token id
+     * @param amount - input token amount
+     * @param isReverse - if false calc from token value to ESW value, true - calc from ESW value to token value
+     * @return normalised value of result tokens
+     */
+    function getBuyCoinAmountByID(
+        uint16 coinId,
+        uint256 amount,
+        bool isReverse
+    ) public view returns (uint256) {
+        if (!isReverse) {
+            return
+                _normalizeCoinAmount(
+                    amount.mul(_ratePrecision).div(_coins[coinId].rate),
+                    _coins[coinId].decimals,
+                    isReverse
+                );
+        } else {
+            return
+                _normalizeCoinAmount(
+                    amount.mul(_coins[coinId].rate).div(_ratePrecision),
+                    _coins[coinId].decimals,
+                    isReverse
+                );
+        }
     }
 
-    require(eswCurrentTokenAmount.mul(105).div(100) <= IESW(_token).currentCrowdsaleLimit(), "Sale:limit exceeded");
-    IERC20(coinAddress).safeTransferFrom(msg.sender, foundationWallet, paymentTokenAmount);
-    _sendESWToken(eswCurrentTokenAmount);
-    emit Buy(msg.sender, eswCurrentTokenAmount, coinId, paymentTokenAmount, _saveReferrals(referralInput));
-  }
+    /*
+     * Presale function, get lists of weallets, tokens and dates, and virtual freeze it.
+     * Presale limits by time and working till 1612137599 (2021-01-31T23:59:59+00:00 in ISO 8601)
+     * @param beneficiaries - list of beneficiaries wallets
+     * @param tokens - list of ESW tokens amount bought
+     * @param sinceDate - list of purchasing dates
+     */
+    function presaleBulkLoad(
+        address[] memory beneficiaries,
+        uint256[] memory tokens,
+        uint32[] memory sinceDate
+    ) public onlyAdmin {
+        require(beneficiaries.length > 0, "Sale:Array empty");
+        require(beneficiaries.length == sinceDate.length, "Sale:Arrays length");
+        require(sinceDate.length == tokens.length, "Sale:Arrays length");
+        require(now <= 1612137599, "Sale: presale is over");
+        uint256 tokenSum;
 
-  /*
-  * Rate input amount in base token (DAI) value with market rate
-  * @param amountIn - input token amount
-  * @param reserveIn - reserve of payment token
-  * @param reserveOut - reserve of base USD token (DAI)
-  * @return amountOut - input amount rated in base token (DAI)
-  */
-  function _getAmountOut(
-    uint256 amountIn,
-    uint256 reserveIn,
-    uint256 reserveOut
-  ) 
-    internal 
-    pure 
-    returns (uint256 amountOut) 
-  {
-    require(amountIn > 0, "Sale:_INPUT");
-    require(reserveIn > 0 && reserveOut > 0, "Sale:_LIQUIDITY");
-    amountOut = amountIn.mul(reserveOut).div(reserveIn);
-  }
-  
-  /*
-  * Buy ESW for ETH view
-  * @param amount - ETH amount (isReverse=false), ESW amount (isReverse=true)
-  * @param isReverse - 'false' view to calc ESW from input ETH, 'true' view to calc ETH from input ESW
-  * @return currentTokenAmount - 'false' view ESW amount, 'true' view ETH amount
-  * @return coinAmount - input amount rated in base token (DAI)
-  */
-  function buyWithETHView(uint256 amount, bool isReverse) 
-    public 
-    view 
-    returns(
-      uint256 currentTokenAmount, 
-      uint256 coinAmount) 
-  {
-    coinAmount = 0;
-    currentTokenAmount = 0;
-
-    if (amount == 0) {
-      return (0, 0);
+        for (uint256 i = 0; i < beneficiaries.length; i++) {
+            //IESW(_token).mintVirtualAndFreezePresale(beneficiaries[i], sinceDate[i], tokens[i], 1);
+            tokenSum = tokenSum.add(tokens[i]);
+            crowdSalePool = crowdSalePool.sub(tokens[i]);
+            emit Buy(msg.sender, tokens[i], 9999, 0, address(0));
+        }
     }
 
-    // Check ESW limits
-    if (isReverse && amount.mul(105).div(100) > IESW(_token).currentCrowdsaleLimit()) {
-      return(0, 0);
+    /*
+     * Buy ESW for tokens view,
+     * @param coinAddress - payment token address
+     * @param amount - payment token amount (isReverse = false), ESW token amount (isReverse = true),
+     * @param isReverse - 'false' for view from payment token to ESW amount, 'true' for view from ESW amount to payment token amount
+     * @return currentTokenAmount - ESW amount
+     * @return coinId - crowdsale registered token id
+     * @return coinAmount - rate in case of market token rate
+     */
+    function buyView(
+        address coinAddress,
+        uint256 amount,
+        bool isReverse
+    )
+        public
+        view
+        returns (
+            uint256 currentTokenAmount,
+            uint16 coinId,
+            uint256 coinAmount
+        )
+    {
+        coinId = coinIndex[coinAddress];
+
+        if (
+            (coinAddress != _coins[coinId].token) ||
+            (_coins[coinId].status == 0) ||
+            (amount == 0)
+        ) {
+            return (currentTokenAmount, coinId, coinAmount);
+        }
+
+        // if amount is ESW
+        if (isReverse && (amount.mul(105).div(100) > crowdSalePool)) {
+            return (currentTokenAmount, coinId, coinAmount);
+        }
+
+        coinAmount = amount;
+
+        currentTokenAmount = 0;
+
+        if (_coins[coinId].status == 1) {
+            currentTokenAmount = getBuyCoinAmountByID(
+                coinId,
+                coinAmount,
+                isReverse
+            );
+        } else {
+            // get pair pool
+            address pairContract =
+                IUniswapV2Factory(_uniswapFactory).getPair(
+                    _coins[coinId].token,
+                    _coins[0].token
+                );
+
+            if (pairContract == address(0)) {
+                return (0, 0, 0);
+            }
+
+            // get pool reserves
+            uint112 reserve0;
+            uint112 reserve1;
+            if (!isReverse) {
+                (reserve0, reserve1, ) = IUniswapV2Pair(pairContract)
+                    .getReserves();
+            } else {
+                (reserve1, reserve0, ) = IUniswapV2Pair(pairContract)
+                    .getReserves();
+            }
+
+            // token0 1 : token1 10 => 1:10, coinamount=amount*10/1
+            if (IUniswapV2Pair(pairContract).token1() == _coins[0].token) {
+                coinAmount = _getAmountOut(amount, reserve0, reserve1);
+            } else {
+                coinAmount = _getAmountOut(amount, reserve1, reserve0);
+            }
+            currentTokenAmount = (
+                isReverse
+                    ? coinAmount.mul(_coins[0].rate).div(_ratePrecision)
+                    : coinAmount.mul(_ratePrecision).div(_coins[0].rate)
+            );
+        }
+
+        if (
+            !isReverse && (currentTokenAmount.mul(105).div(100) > crowdSalePool)
+        ) {
+            return (0, 0, 0);
+        }
+
+        if ((currentTokenAmount == 0)) {
+            return (0, 0, 0);
+        }
+
+        return (currentTokenAmount, coinId, coinAmount);
     }
 
-    address pairContract = IUniswapV2Factory(_uniswapFactory).getPair(_wethToken, _coins[0].token);
-    
-    if (pairContract == address(0)) {
-      return(0, 0);
+    /*
+     * Buy ESW for tokens,
+     * @param coinAddress - payment token address
+     * @param amount - payment token amount (isReverse = false), ESW token amount (isReverse = true),
+     * @param referralInput - referrral address
+     * @param isReverse - 'false' for view from payment token to ESW amount, 'true' for view from ESW amount to payment token amount
+     */
+    function buy(
+        address coinAddress,
+        uint256 amount,
+        address referralInput,
+        bool isReverse
+    ) public crowdSaleworking {
+        require(amount > 0, "Sale:amount needed");
+        require(
+            coinAddress == _coins[coinIndex[coinAddress]].token,
+            "Sale:Coin not allowed"
+        );
+        require(
+            _coins[coinIndex[coinAddress]].status != 0,
+            "Sale:Coin not active"
+        );
+
+        (uint256 currentTokenAmount, uint16 coinId, ) =
+            buyView(coinAddress, amount, isReverse);
+
+        require(currentTokenAmount > 0, "Sale:0 ESW");
+
+        uint256 eswCurrentTokenAmount;
+        uint256 paymentTokenAmount;
+        if (!isReverse) {
+            eswCurrentTokenAmount = currentTokenAmount;
+            paymentTokenAmount = amount;
+        } else {
+            eswCurrentTokenAmount = amount;
+            paymentTokenAmount = currentTokenAmount;
+        }
+
+        require(
+            eswCurrentTokenAmount.mul(105).div(100) <= crowdSalePool,
+            "Sale:limit exceeded"
+        );
+        crowdSalePool = crowdSalePool.sub(eswCurrentTokenAmount);
+        IERC20(coinAddress).safeTransferFrom(
+            msg.sender,
+            foundationWallet,
+            paymentTokenAmount
+        );
+
+        emit Buy(
+            msg.sender,
+            eswCurrentTokenAmount,
+            coinId,
+            paymentTokenAmount,
+            _saveReferrals(referralInput)
+        );
     }
 
-    uint112 reserve0; 
-    uint112 reserve1;
-
-    if (!isReverse) {
-      (reserve0, reserve1, ) = IUniswapV2Pair(pairContract).getReserves();
-    } else {
-      (reserve1, reserve0, ) = IUniswapV2Pair(pairContract).getReserves();
+    /*
+     * Rate input amount in base token (DAI) value with market rate
+     * @param amountIn - input token amount
+     * @param reserveIn - reserve of payment token
+     * @param reserveOut - reserve of base USD token (DAI)
+     * @return amountOut - input amount rated in base token (DAI)
+     */
+    function _getAmountOut(
+        uint256 amountIn,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) internal pure returns (uint256 amountOut) {
+        require(amountIn > 0, "Sale:_INPUT");
+        require(reserveIn > 0 && reserveOut > 0, "Sale:_LIQUIDITY");
+        amountOut = amountIn.mul(reserveOut).div(reserveIn);
     }
 
-    coinAmount = (IUniswapV2Pair(pairContract).token1() == _coins[0].token ? 
-      _getAmountOut(amount, reserve0, reserve1) :
-      _getAmountOut(amount, reserve1, reserve0)
-    );
+    /*
+     * Buy ESW for ETH view
+     * @param amount - ETH amount (isReverse=false), ESW amount (isReverse=true)
+     * @param isReverse - 'false' view to calc ESW from input ETH, 'true' view to calc ETH from input ESW
+     * @return currentTokenAmount - 'false' view ESW amount, 'true' view ETH amount
+     * @return coinAmount - input amount rated in base token (DAI)
+     */
+    function buyWithETHView(uint256 amount, bool isReverse)
+        public
+        view
+        returns (uint256 currentTokenAmount, uint256 coinAmount)
+    {
+        coinAmount = 0;
+        currentTokenAmount = 0;
 
-    currentTokenAmount = (isReverse ? 
-      coinAmount.mul(_coins[0].rate).div(_ratePrecision) :
-      coinAmount.mul(_ratePrecision).div(_coins[0].rate)
-    );
+        if (amount == 0) {
+            return (0, 0);
+        }
 
-    if (currentTokenAmount <= 0) {
-      return(0, 0);
+        // Check ESW limits
+        if (isReverse && amount.mul(105).div(100) > crowdSalePool) {
+            return (0, 0);
+        }
+
+        address pairContract =
+            IUniswapV2Factory(_uniswapFactory).getPair(
+                _wethToken,
+                _coins[0].token
+            );
+
+        if (pairContract == address(0)) {
+            return (0, 0);
+        }
+
+        uint112 reserve0;
+        uint112 reserve1;
+
+        if (!isReverse) {
+            (reserve0, reserve1, ) = IUniswapV2Pair(pairContract).getReserves();
+        } else {
+            (reserve1, reserve0, ) = IUniswapV2Pair(pairContract).getReserves();
+        }
+
+        coinAmount = (
+            IUniswapV2Pair(pairContract).token1() == _coins[0].token
+                ? _getAmountOut(amount, reserve0, reserve1)
+                : _getAmountOut(amount, reserve1, reserve0)
+        );
+
+        currentTokenAmount = (
+            isReverse
+                ? coinAmount.mul(_coins[0].rate).div(_ratePrecision)
+                : coinAmount.mul(_ratePrecision).div(_coins[0].rate)
+        );
+
+        if (currentTokenAmount <= 0) {
+            return (0, 0);
+        }
+
+        if (
+            !isReverse && currentTokenAmount.mul(105).div(100) > crowdSalePool
+        ) {
+            return (0, 0);
+        }
+
+        return (currentTokenAmount, coinAmount);
     }
 
-    if (!isReverse && 
-      currentTokenAmount.mul(105).div(100) > IESW(_token).currentCrowdsaleLimit()) {
-      return(0, 0);
+    /*
+     * @param referralInput address of referral
+     * @param amount in case isReverse=false amount is ETH value, in case isReverse=true amount is ESW value
+     * @param isReverse switch calc mode false - calc from ETH value, true - calc from ESW value
+     * @param slippage - price change value from desired parameter, actual in range 0% - 5%, 5% = 500
+     */
+    function buyWithETH(
+        address referralInput,
+        uint256 amount,
+        bool isReverse /* , uint256 slippage */
+    ) public payable crowdSaleworking {
+        uint256 slippage = 100;
+        //require(slippage <= 500, "Sale:slippage issue");
+        require(
+            msg.value > 0 && (!isReverse ? msg.value == amount : true),
+            "Sale:ETH needed"
+        );
+        if (!isReverse) {
+            require(msg.value == amount, "Sale:ETH needed");
+        } else {
+            require(amount > 0, "Sale:incorrect amount");
+        }
+
+        uint256 eswTokenAmount;
+        uint256 ethTokenAmount;
+
+        (uint256 currentTokenAmount, ) =
+            buyWithETHView((!isReverse ? msg.value : amount), isReverse);
+
+        if (!isReverse) {
+            eswTokenAmount = currentTokenAmount;
+            ethTokenAmount = msg.value;
+        } else {
+            eswTokenAmount = amount;
+            ethTokenAmount = currentTokenAmount;
+        }
+
+        require(
+            eswTokenAmount > 0 &&
+                ethTokenAmount > 0 &&
+                ethTokenAmount.mul(10000 - slippage).div(10000) <= msg.value,
+            "Sale:0 ETH"
+        );
+        require(
+            eswTokenAmount.mul(105).div(100) <= crowdSalePool,
+            "Sale:limit exceeded"
+        );
+
+        crowdSalePool = crowdSalePool.sub(eswTokenAmount);
+        foundationWallet.transfer(msg.value);
+
+        emit Buy(
+            msg.sender,
+            eswTokenAmount,
+            999,
+            msg.value,
+            _saveReferrals(referralInput)
+        );
     }
 
-    return(currentTokenAmount, coinAmount);
-  }
+    /*
+     * save referral
+     * @param referralInput address to save
+     */
+    function _saveReferrals(address referralInput) internal returns (address) {
+        // Get referrals
+        address[] memory referrals =
+            IEmiReferral(referralStore).getReferralChain(msg.sender);
 
-  /*
-  * @param referralInput address of referral
-  * @param amount in case isReverse=false amount is ETH value, in case isReverse=true amount is ESW value
-  * @param isReverse switch calc mode false - calc from ETH value, true - calc from ESW value
-  * @param slippage - price change value from desired parameter, actual in range 0% - 5%, 5% = 500
-  */
-  function buyWithETH(address referralInput, uint256 amount, bool isReverse/* , uint256 slippage */) 
-    public 
-    payable
-  {
-    uint256 slippage = 100;
-    //require(slippage <= 500, "Sale:slippage issue");
-    require(msg.value > 0 && (!isReverse ? msg.value == amount : true) , "Sale:ETH needed");
-    if (!isReverse) {
-      require(msg.value == amount, "Sale:ETH needed");
-    } else {
-      require(amount > 0, "Sale:incorrect amount");
-    }
-        
-    uint256 eswTokenAmount;
-    uint256 ethTokenAmount;
-    
-    (uint256 currentTokenAmount, ) = buyWithETHView( (!isReverse ? msg.value : amount) , isReverse);
-
-    if (!isReverse) {
-      eswTokenAmount = currentTokenAmount;
-      ethTokenAmount = msg.value;
-    } else {
-      eswTokenAmount = amount;
-      ethTokenAmount = currentTokenAmount;
+        if (referrals.length == 0) {
+            if (address(referralInput) != address(0x0)) {
+                // if have no referral and passed refferal -> set and return it
+                IEmiReferral(referralStore).addReferral(
+                    msg.sender,
+                    referralInput
+                );
+                return (referralInput);
+            } else {
+                // if have no referral and not passed refferal -> return zero
+                return (address(0));
+            }
+        } else {
+            // already have referral -> return it
+            return (referrals[0]);
+        }
     }
 
-    require(eswTokenAmount > 0 &&  ethTokenAmount > 0 && ethTokenAmount.mul(10000 - slippage).div(10000) <= msg.value, "Sale:0 ETH");
-    require(eswTokenAmount.mul(105).div(100) <= IESW(_token).currentCrowdsaleLimit(), "Sale:limit exceeded");
-    
-    foundationWallet.transfer(msg.value);
-
-    _sendESWToken(eswTokenAmount);
-    emit Buy(msg.sender, eswTokenAmount, 999, msg.value, _saveReferrals(referralInput));
-  }
-  
-  /*
-  * mint tokens to buyer  
-  * @param currentTokenAmount value to mint for buyer
-  */
-  function _sendESWToken(
-    uint256 currentTokenAmount
-  ) 
-    internal 
-  {
-    IESW(_token).mintAndFreeze(msg.sender, currentTokenAmount, 1);
-  }
-  
-  /*
-  * save referral
-  * @param referralInput address to save
-  */
-  function _saveReferrals(
-    address referralInput
-  )
-    internal 
-    returns (address)
-  {
-    // Get referrals
-    address[] memory referrals = IEmiReferral(referralStore).getReferralChain(msg.sender);
-    
-    
-    if (referrals.length == 0) {      
-      if (address(referralInput) != address(0x0)) {
-        // if have no referral and passed refferal -> set and return it
-        IEmiReferral(referralStore).addReferral(msg.sender, referralInput);
-        return(referralInput);
-      } else {
-        // if have no referral and not passed refferal -> return zero
-        return(address(0));
-      }
-    } else {
-      // already have referral -> return it
-      return(referrals[0]);
+    /*
+     * default payment receive, not supported paramters, so call buyWithETH with 0x0 address with eth value
+     */
+    receive() external payable {
+        buyWithETH(
+            address(0),
+            msg.value,
+            false /* , 10 */ /** default slippage 0.1% */
+        );
     }
-  }
-
-  /*
-  * default payment receive, not supported paramters, so call buyWithETH with 0x0 address with eth value
-  */
-  receive() external payable {
-    buyWithETH(address(0), msg.value, false/* , 10 */ /** default slippage 0.1% */ );
-  }
 }
