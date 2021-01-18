@@ -78,14 +78,68 @@ contract EmiFactory is Ownable {
         tokens[0] = token1;
         tokens[1] = token2;
 
-        /////////// abi.encodePacked(bytecode, abi.encode(arg1, arg2))
-        bytes memory bytecode = abi.encodePacked(type(Emiswap).creationCode);
+        string memory symbol1 = ERC20(address(token1)).symbol(); //token1.uniSymbol();
+        string memory symbol2 = ERC20(address(token2)).symbol(); //token2.uniSymbol();
 
+        string memory name = string(abi.encodePacked("Emiswap V1 (", symbol1, "-", symbol2, ")"));
+        string memory symbol = string(abi.encodePacked("EMI-V1-", symbol1, "-", symbol2));
+
+        /*pool = new Emiswap(
+            tokens,
+            string(
+                abi.encodePacked("Emiswap V1 (", symbol1, "-", symbol2, ")")
+            ),
+            string(abi.encodePacked("EMI-V1-", symbol1, "-", symbol2))
+        ); */
+        //bytes memory bytecode = type(Emiswap).creationCode;
+        //abi.encodePacked(bytecode, abi.encode(_owner, _foo));
+
+        /* string memory symbol1 = token1.uniSymbol();
+        string memory symbol2 = token2.uniSymbol();
+
+        bytes memory bytecode = abi.encodePacked(
+            type(Emiswap).creationCode,
+            abi.encode(
+                string(abi.encodePacked("Emiswap V1 (", symbol1, "-", symbol2, ")")), 
+                string(abi.encodePacked("EMI-V1-", symbol1, "-", symbol2))
+            )
+        );*/
+
+        /* string memory symbol1 = token1.uniSymbol();
+        string memory symbol2 = token2.uniSymbol(); */
+
+        /* bytes memory bytecode = abi.encodePacked(
+            type(Emiswap).creationCode
+        ); */
+
+        /////////// abi.encodePacked(bytecode, abi.encode(arg1, arg2))
+        bytes memory bytecode = abi.encodePacked(
+            type(Emiswap).creationCode,
+            abi.encode(
+                tokens,
+                string(abi.encodePacked(name)),
+                string(abi.encodePacked(symbol))
+            )
+        );
+        
+        //bytes memory bytecode = abi.encodePacked(
+        //    type(Emiswap).creationCode,
+        //    arg1
+            //abi.encode(
+            //    arg1,
+            //    arg2
+                //"Emi-V1-", symbol1,"-", symbol2," )"
+                //abi.encodePacked(token1)
+                /*abi.encodePacked("Emi ( ", symbol1," - ", symbol2, " )"), 
+                abi.encodePacked("EMI- UNI - DAI ") */
+            //)
+        //);
+        
         bytes32 salt = keccak256(abi.encodePacked(token1, token2));
         assembly {
             pool := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        Emiswap(pool).initialize(tokens);
+        //Emiswap(pool).initialize(tokens);
 
         pool.transferOwnership(owner());
         pools[token1][token2] = pool;

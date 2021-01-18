@@ -85,7 +85,11 @@ contract EmiRouter {
     function getReserves(IERC20 token0, IERC20 token1)
         public
         view
-        returns (uint256 _reserve0, uint256 _reserve1)
+        returns (
+            uint256 _reserve0,
+            uint256 _reserve1,
+            address poolAddresss
+        )
     {
         if (
             address(
@@ -101,6 +105,12 @@ contract EmiRouter {
             _reserve1 = IEmiswapRegistry(address(factory))
                 .pools(tokenToIERC(token0), tokenToIERC(token1))
                 .getBalanceForAddition(tokenToIERC(token1));
+            poolAddresss = address(
+                IEmiswapRegistry(address(factory)).pools(
+                    tokenToIERC(token0),
+                    tokenToIERC(token1)
+                )
+            );
         }
     }
 

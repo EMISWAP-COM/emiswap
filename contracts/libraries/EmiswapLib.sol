@@ -84,18 +84,19 @@ library EmiswapLib {
         uint256 reserveIn,
         uint256 reserveOut
     ) internal view returns (uint256 amountOut) {
-        require(amountIn > 0, "EmiswapLibrary: INSUFFICIENT_INPUT_AMOUNT");
-        require(
-            reserveIn > 0 && reserveOut > 0,
-            "EmiswapLibrary: INSUFFICIENT_LIQUIDITY"
-        );
+        if (amountIn == 0 || reserveIn == 0 || reserveOut == 0) {
+            return (0);
+        }
+
         uint256 amountInWithFee =
             amountIn.mul(
                 uint256(1000000000000000000).sub(fee(factory)).div(1e15)
             ); //997
         uint256 numerator = amountInWithFee.mul(reserveOut);
         uint256 denominator = reserveIn.mul(1000).add(amountInWithFee);
-        amountOut = numerator / denominator;
+        amountOut = (denominator == 0 ? 0 : amountOut =
+            numerator /
+            denominator);
     }
 
     // performs chained getAmountIn calculations on any number of pairs
@@ -113,12 +114,19 @@ library EmiswapLib {
                     IERC20(IERC20(path[i])),
                     IERC20(path[i - 1])
                 );
-            uint256 reserveIn =
-                IEmiswap(pairContract).getBalanceForAddition(
+
+            uint256 reserveIn;
+            uint256 reserveOut;
+
+            if (address(pairContract) != address(0)) {
+                reserveIn = IEmiswap(pairContract).getBalanceForAddition(
                     IERC20(path[i - 1])
                 );
-            uint256 reserveOut =
-                IEmiswap(pairContract).getBalanceForRemoval(IERC20(path[i]));
+                reserveOut = IEmiswap(pairContract).getBalanceForRemoval(
+                    IERC20(path[i])
+                );
+            }
+
             amounts[i - 1] = getAmountIn(
                 factory,
                 amounts[i],
@@ -143,12 +151,18 @@ library EmiswapLib {
                     IERC20(IERC20(path[i])),
                     IERC20(path[i + 1])
                 );
-            uint256 reserveIn =
-                IEmiswap(pairContract).getBalanceForAddition(IERC20(path[i]));
-            uint256 reserveOut =
-                IEmiswap(pairContract).getBalanceForRemoval(
+
+            uint256 reserveIn;
+            uint256 reserveOut;
+
+            if (address(pairContract) != address(0)) {
+                reserveIn = IEmiswap(pairContract).getBalanceForAddition(
+                    IERC20(path[i])
+                );
+                reserveOut = IEmiswap(pairContract).getBalanceForRemoval(
                     IERC20(path[i + 1])
                 );
+            }
             amounts[i + 1] = getAmountOut(
                 factory,
                 amounts[i],

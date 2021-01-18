@@ -1,6 +1,7 @@
 const { expectRevert } = require('@openzeppelin/test-helpers');
 const { expect, assert } = require('chai');
 const { contract } = require('./twrapper');
+const { ethers } = require('ethers');
 
 const Emiswap = contract.fromArtifact('Emiswap');
 const EmiFactory = contract.fromArtifact('EmiFactory');
@@ -142,6 +143,10 @@ describe('EmiFactory', function () {
             );
         });
         it('should pool created by token description', async function () {
+            const encodeParams = (dataTypes, data) => {
+                const abiCoder = ethers.utils.defaultAbiCoder
+                return abiCoder.encode(dataTypes, data)
+            }
             const token1 = await TokenWithStringSymbolMock.new('ABC');
             const token2 = await TokenWithStringSymbolMock.new('XYZ');
 
@@ -152,23 +157,78 @@ describe('EmiFactory', function () {
             const pool = await Emiswap.at(await this.factory.pools(token1.address, token2.address));
 
             console.log('pool token name', await pool.name(), '|', 'pool token symbol', await pool.symbol(), '|');
+            console.log(
+                ethers.utils.keccak256(`${INIT_CODE_HASH}${encodeParams(["address[]", "string", "string"], [
+                    [token1.address, token2.address],
+                    "ABC",
+                    "XYZ"]).slice(2)}`)
+
+            );
+            console.log(
+                ethers.utils.keccak256(`${INIT_CODE_HASH}${encodeParams(["address[]", "string", "string"], [
+                    [token2.address, token1.address],
+                    "XYZ",
+                    "ABC"]).slice(2)}`)
+
+            );
+            /* console.log(keccak256(
+                ["address[]", "string", "string"], 
+                [
+                    [token2.address, token1.address],
+                    "XYZ",
+                    "ABC"
+                ])); */
 
             let calcedPoolAddress = 
                 (BigInt(token1.address) < BigInt(token2.address) ?             
                     getCreate2Address(
-                        this.factory.address,
-                        keccak256(['bytes'], [pack(['address', 'address'], [token1.address, token2.address])]),
-                        INIT_CODE_HASH
+                        /*from*/this.factory.address,
+                        /*salt*/keccak256(['bytes'], [pack(['address', 'address'], [token1.address, token2.address])]),
+                        /*initCodeHash*/
+                        ethers.utils.keccak256
+                        (`${INIT_CODE_HASH}${encodeParams(["address[]", "string", "string"], [
+                            [token1.address, token2.address],
+                            "ABC",
+                            "XYZ"]).slice(2)}`)
+                        /* INIT_CODE_HASH + keccak256(
+                            ["address[]", "string", "string"], 
+                            [   
+                                 
+                                [token1.address, token2.address],
+                                "ABC",
+                                "XYZ"
+                            ]).slice(2) */
+                            //+ console.log(web3.eth.abi.encodeParameter("address[]", ["0x3ed7b6C01b93494d2e5610E62acA94fAe1fAA816", "0x3ed7b6C01b93494d2e5610E62acA94fAe1fAA816"]).slice(2))
+                            //+ console.log(web3.eth.abi.encodeParameter("string", "ABC").slice(2))
+                            //+ console.log(web3.eth.abi.encodeParameter("string", "BCE").slice(2))
                     )
                     : getCreate2Address(
                         this.factory.address,
                         keccak256(['bytes'], [pack(['address', 'address'], [token2.address, token1.address])]),
-                        INIT_CODE_HASH
+                        ethers.utils.keccak256(`${INIT_CODE_HASH}${encodeParams(["address[]", "string", "string"], [
+                            [token2.address, token1.address],
+                            "XYZ",
+                            "ABC"]).slice(2)}`)
+                        /* INIT_CODE_HASH + keccak256(
+                            [// "bytes",
+                            "address[]", "string", "string"], 
+                            [   
+                                 
+                                [token2.address, token1.address],
+                                "XYZ",
+                                "ABC"
+                            ]).slice(2) */
+                            //+ console.log(web3.eth.abi.encodeParameter("address[]", ["0x3ed7b6C01b93494d2e5610E62acA94fAe1fAA816", "0x3ed7b6C01b93494d2e5610E62acA94fAe1fAA816"]).slice(2))
+                            //+ console.log(web3.eth.abi.encodeParameter("string", "ABC").slice(2))
+                            //+ console.log(web3.eth.abi.encodeParameter("string", "BCE").slice(2))
                     )
                 )
             console.log('tx', tx.receipt.gasUsed, 'created pool', pool.address); // mooni new 3503965 gas
             console.log('calced pool address    ', calcedPoolAddress)
-            assert(pool.address, calcedPoolAddress, 'Calced and created pool address not equal!');
+            //assert(pool.address, calcedPoolAddress, 'Calced and created pool address not equal!');
+            //console.log(web3.eth.abi.encodeParameter('address', '0x3ed7b6C01b93494d2e5610E62acA94fAe1fAA816').slice(2))
+            //console.log(web3.eth.abi.encodeParameter("address[]", ["0x3ed7b6C01b93494d2e5610E62acA94fAe1fAA816", "0x3ed7b6C01b93494d2e5610E62acA94fAe1fAA816"]).slice(2))
+            //console.log(web3.eth.abi.encodeParameter("address[2]", ["0x3ed7b6C01b93494d2e5610E62acA94fAe1fAA816", "0x3ed7b6C01b93494d2e5610E62acA94fAe1fAA816"]).slice(2))
         });
     });
 });
