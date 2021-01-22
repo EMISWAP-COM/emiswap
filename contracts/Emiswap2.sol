@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.6.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -114,21 +116,39 @@ contract Emiswap is ERC20, ReentrancyGuard, Ownable {
     mapping(IERC20 => VirtualBalance.Data) public virtualBalancesForAddition;
     mapping(IERC20 => VirtualBalance.Data) public virtualBalancesForRemoval;
 
-    constructor() public ERC20("Emiswap LP token", "EMI LP") {
+    constructor(
+        IERC20[] memory assets,
+        string memory name, 
+        string memory symbol
+    ) 
+        public 
+        ERC20(name, symbol/* "Emiswap LP token", "EMI - SWAP" */)
+    {
         factory = IFactory(msg.sender);
-    }
-
-    // called once by the factory at time of deployment
-    function initialize(IERC20[] memory assets) external {
-        require(msg.sender == address(factory), "Emiswap: FORBIDDEN"); // sufficient check
+        require(bytes(name).length > 0, "Emiswap: name is empty");
+        require(bytes(symbol).length > 0, "Emiswap: symbol is empty");
         require(assets.length == 2, "Emiswap: only 2 tokens allowed");
 
+        factory = IFactory(msg.sender);
         tokens = assets;
         for (uint256 i = 0; i < assets.length; i++) {
             require(!isToken[assets[i]], "Emiswap: duplicate tokens");
             isToken[assets[i]] = true;
         }
     }
+
+    // called once by the factory at time of deployment
+    /* function initialize(IERC20[] memory assets) external {
+        require(msg.sender == address(factory), "Emiswap: FORBIDDEN"); // sufficient check
+        require(assets.length == 2, "Emiswap: only 2 tokens allowed");
+
+        factory = IFactory(msg.sender);
+        tokens = assets;
+        for (uint256 i = 0; i < assets.length; i++) {
+            require(!isToken[assets[i]], "Emiswap: duplicate tokens");
+            isToken[assets[i]] = true;
+        }
+    } */
 
     function fee() public view returns (uint256) {
         return factory.fee();
