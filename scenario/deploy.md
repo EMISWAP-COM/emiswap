@@ -70,7 +70,7 @@ First, setup environment: set Injected Web3 and login to Metamask main admin acc
 6. On "Deployed Contracts" section -> EmiVamp AT... write down emiVampImpl address.
 
 ### EmiFactory contract
-0. Switch to SOLIDITY COMPILER tab.
+0. Switch to SOLIDITY COMPILER tab. Set 0.6.12 version, enable optimization = 100000
 1. Switch to _EmiFactory.Full.sol_ in opened file list tabs.
 2. Press big blue button *Compile EmiFactory.Full.sol*.
 3. Go to DEPLOY and RUN TRANSACTION tab.
@@ -78,8 +78,8 @@ First, setup environment: set Injected Web3 and login to Metamask main admin acc
 5. Push Deploy button.
 6. On "Deployed Contracts" section -> EmiFactory AT... write down emiFactoryImpl address.
 
-### EmiRouter contract
-0. Switch to SOLIDITY COMPILER tab.
+### EmiRouter contract 
+0. Switch to SOLIDITY COMPILER tab. Set 0.6.12 version, enable optimization = 100000
 1. Switch to _EmiRouter.Full.sol_ in opened file list tabs.
 2. Press big blue button *Compile EmiRouter.Full.sol*.
 3. Go to DEPLOY and RUN TRANSACTION tab.
@@ -87,7 +87,7 @@ First, setup environment: set Injected Web3 and login to Metamask main admin acc
 5. Push Deploy button.
 6. On "Deployed Contracts" section -> EmiRouter AT... write down emiRouterImpl address.
 
-### EmiVault contract
+### EmiVault contract Set 0.6.2 version, disable optimization
 0. Switch to SOLIDITY COMPILER tab.
 1. Switch to _EmiVault.Full.sol_ in opened file list tabs.
 2. Press big blue button *Compile EmiVault.Full.sol*.

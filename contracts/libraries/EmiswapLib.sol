@@ -8,6 +8,7 @@ import "./../interfaces/IEmiswap.sol";
 
 library EmiswapLib {
     using SafeMath for uint256;
+    uint256 public constant FEE_DENOMINATOR = 1e18;
 
     function previewSwapExactTokenForToken(
         address factory,
@@ -163,6 +164,7 @@ library EmiswapLib {
                     IERC20(path[i + 1])
                 );
             }
+
             amounts[i + 1] = getAmountOut(
                 factory,
                 amounts[i],

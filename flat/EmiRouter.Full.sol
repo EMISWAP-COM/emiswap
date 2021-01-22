@@ -292,6 +292,8 @@ interface IEmiswap {
         address to,
         address referral
     ) external payable returns (uint256 returnAmount);
+
+    function initialize(IERC20[] memory assets) external;
 }
 
 // File: contracts/libraries/EmiswapLib.sol
@@ -305,6 +307,7 @@ pragma solidity ^0.6.0;
 
 library EmiswapLib {
     using SafeMath for uint256;
+    uint256 public constant FEE_DENOMINATOR = 1e18;
 
     function previewSwapExactTokenForToken(
         address factory,
@@ -460,6 +463,7 @@ library EmiswapLib {
                     IERC20(path[i + 1])
                 );
             }
+
             amounts[i + 1] = getAmountOut(
                 factory,
                 amounts[i],
@@ -890,7 +894,7 @@ contract EmiRouter {
         );
         TransferHelper.safeApprove(token, address(pairContract), amountToken);
         IWETH(WETH).deposit{value: amountETH}();
-        TransferHelper.safeApprove(WETH, address(pairContract), amountToken);
+        TransferHelper.safeApprove(WETH, address(pairContract), amountETH);
 
         uint256[] memory amounts;
         amounts = new uint256[](2);
@@ -1061,7 +1065,13 @@ contract EmiRouter {
         for (uint256 i = 0; i < path.length - 1; i++) {
             if (path.length >= 2) {
                 uint256 _ammountTo =
-                    _swap_(path[i], path[i + 1], ammountFrom, to, ref);
+                    _swap_(
+                        path[i],
+                        path[i + 1],
+                        ammountFrom,
+                        (i == (path.length - 2) ? to : address(this)),
+                        ref
+                    );
                 if (i == (path.length - 2)) {
                     return (_ammountTo);
                 } else {

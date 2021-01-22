@@ -92,7 +92,7 @@ describe('EmiRouter', function () {
         console.log('balance USDC', (await this.USDC.balanceOf(wallet3)).div(money.usdc('1')).toString());
         console.log('balance DAI ', (await this.DAI.balanceOf(wallet3)).div(money.dai('1')).toString());
     });
-    describe.skip('Creation, swap and remove liquidity in ERC-20 - ERC-20', async function () {
+    describe('Creation, swap and remove liquidity in ERC-20 - ERC-20', async function () {
         beforeEach(async function () {
             let res = await this.router.addLiquidity(
                 this.WETH.address, 

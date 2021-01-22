@@ -67,6 +67,10 @@ contract EmiFactory is Ownable {
         external
         returns (Emiswap pool)
     {
+        require(
+            address(tokenA) != address(0) && address(tokenB) != address(0),
+            "Factory:no 0x address"
+        );
         require(tokenA != tokenB, "Factory:no same tokens");
         require(
             pools[tokenA][tokenB] == Emiswap(0),

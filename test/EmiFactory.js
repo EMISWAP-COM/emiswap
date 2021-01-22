@@ -169,6 +169,25 @@ describe('EmiFactory', function () {
             console.log('tx', tx.receipt.gasUsed, 'created pool', pool.address); // mooni new 3503965 gas
             console.log('calced pool address    ', calcedPoolAddress)
             assert(pool.address, calcedPoolAddress, 'Calced and created pool address not equal!');
+
+
+            let tokenWETHaddr = '0x436A822ed52422ed1759DCE74e2cf3f89Ce81Be0'
+            let tokenDAIaddr  = '0x1cC52216E4037BB55dCD950E6ed97aa15C8a4b66'
+            let factoryAddr   = '0x756346EB588e30F7C8d1F525C90Fb6e704e9142B'
+            let calcedPoolAddress2 = 
+                (BigInt(tokenWETHaddr) < BigInt(tokenDAIaddr) ?
+                    getCreate2Address(
+                        factoryAddr,
+                        keccak256(['bytes'], [pack(['address', 'address'], [tokenWETHaddr, tokenDAIaddr])]),
+                        INIT_CODE_HASH
+                    )
+                    : getCreate2Address(
+                        factoryAddr,
+                        keccak256(['bytes'], [pack(['address', 'address'], [tokenDAIaddr, tokenWETHaddr])]),
+                        INIT_CODE_HASH
+                    )
+                )
+            console.log('calced pool address2   ', calcedPoolAddress2)
         });
     });
 });

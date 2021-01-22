@@ -332,7 +332,7 @@ contract EmiRouter {
         );
         TransferHelper.safeApprove(token, address(pairContract), amountToken);
         IWETH(WETH).deposit{value: amountETH}();
-        TransferHelper.safeApprove(WETH, address(pairContract), amountToken);
+        TransferHelper.safeApprove(WETH, address(pairContract), amountETH);
 
         uint256[] memory amounts;
         amounts = new uint256[](2);
@@ -503,7 +503,13 @@ contract EmiRouter {
         for (uint256 i = 0; i < path.length - 1; i++) {
             if (path.length >= 2) {
                 uint256 _ammountTo =
-                    _swap_(path[i], path[i + 1], ammountFrom, to, ref);
+                    _swap_(
+                        path[i],
+                        path[i + 1],
+                        ammountFrom,
+                        (i == (path.length - 2) ? to : address(this)),
+                        ref
+                    );
                 if (i == (path.length - 2)) {
                     return (_ammountTo);
                 } else {

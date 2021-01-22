@@ -12,7 +12,7 @@ contract EmiVault is Initializable, Priviledgeable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    string public codeVersion = "EmiVault v1.0-55-g753f21b";
+ string public codeVersion = "EmiVault v1.0-56-ge9510cb";
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
 
