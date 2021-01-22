@@ -80,7 +80,6 @@ interface IERC20 {
 
 // File: @openzeppelin/contracts/math/SafeMath.sol
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -242,7 +241,6 @@ library SafeMath {
 
 // File: contracts/interfaces/IEmiswap.sol
 
-// SPDX-License-Identifier: UNLICENSED
 
 pragma solidity ^0.6.0;
 
@@ -292,11 +290,12 @@ interface IEmiswap {
         address to,
         address referral
     ) external payable returns (uint256 returnAmount);
+
+    function initialize(IERC20[] calldata assets) external;
 }
 
 // File: contracts/libraries/EmiswapLib.sol
 
-// SPDX-License-Identifier: UNLICENSED
 
 pragma solidity ^0.6.0;
 
@@ -305,6 +304,7 @@ pragma solidity ^0.6.0;
 
 library EmiswapLib {
     using SafeMath for uint256;
+    uint256 public constant FEE_DENOMINATOR = 1e18;
 
     function previewSwapExactTokenForToken(
         address factory,
@@ -381,18 +381,19 @@ library EmiswapLib {
         uint256 reserveIn,
         uint256 reserveOut
     ) internal view returns (uint256 amountOut) {
-        require(amountIn > 0, "EmiswapLibrary: INSUFFICIENT_INPUT_AMOUNT");
-        require(
-            reserveIn > 0 && reserveOut > 0,
-            "EmiswapLibrary: INSUFFICIENT_LIQUIDITY"
-        );
+        if (amountIn == 0 || reserveIn == 0 || reserveOut == 0) {
+            return (0);
+        }
+
         uint256 amountInWithFee =
             amountIn.mul(
                 uint256(1000000000000000000).sub(fee(factory)).div(1e15)
             ); //997
         uint256 numerator = amountInWithFee.mul(reserveOut);
         uint256 denominator = reserveIn.mul(1000).add(amountInWithFee);
-        amountOut = numerator / denominator;
+        amountOut = (denominator == 0 ? 0 : amountOut =
+            numerator /
+            denominator);
     }
 
     // performs chained getAmountIn calculations on any number of pairs
@@ -410,12 +411,19 @@ library EmiswapLib {
                     IERC20(IERC20(path[i])),
                     IERC20(path[i - 1])
                 );
-            uint256 reserveIn =
-                IEmiswap(pairContract).getBalanceForAddition(
+
+            uint256 reserveIn;
+            uint256 reserveOut;
+
+            if (address(pairContract) != address(0)) {
+                reserveIn = IEmiswap(pairContract).getBalanceForAddition(
                     IERC20(path[i - 1])
                 );
-            uint256 reserveOut =
-                IEmiswap(pairContract).getBalanceForRemoval(IERC20(path[i]));
+                reserveOut = IEmiswap(pairContract).getBalanceForRemoval(
+                    IERC20(path[i])
+                );
+            }
+
             amounts[i - 1] = getAmountIn(
                 factory,
                 amounts[i],
@@ -440,12 +448,19 @@ library EmiswapLib {
                     IERC20(IERC20(path[i])),
                     IERC20(path[i + 1])
                 );
-            uint256 reserveIn =
-                IEmiswap(pairContract).getBalanceForAddition(IERC20(path[i]));
-            uint256 reserveOut =
-                IEmiswap(pairContract).getBalanceForRemoval(
+
+            uint256 reserveIn;
+            uint256 reserveOut;
+
+            if (address(pairContract) != address(0)) {
+                reserveIn = IEmiswap(pairContract).getBalanceForAddition(
+                    IERC20(path[i])
+                );
+                reserveOut = IEmiswap(pairContract).getBalanceForRemoval(
                     IERC20(path[i + 1])
                 );
+            }
+
             amounts[i + 1] = getAmountOut(
                 factory,
                 amounts[i],
@@ -471,8 +486,6 @@ library EmiswapLib {
 }
 
 // File: contracts/libraries/TransferHelper.sol
-
-// SPDX-License-Identifier: GPL-3.0-or-later
 
 pragma solidity >=0.6.0;
 
@@ -528,9 +541,6 @@ library TransferHelper {
 }
 
 // File: contracts/interfaces/IWETH.sol
-
-// SPDX-License-Identifier: UNLICENSED
-
 pragma solidity ^0.6.0;
 
 interface IWETH {
@@ -542,8 +552,6 @@ interface IWETH {
 }
 
 // File: contracts/EmiRouter.sol
-
-// SPDX-License-Identifier: UNLICENSED
 
 pragma solidity ^0.6.2;
 pragma experimental ABIEncoderV2;
@@ -629,7 +637,11 @@ contract EmiRouter {
     function getReserves(IERC20 token0, IERC20 token1)
         public
         view
-        returns (uint256 _reserve0, uint256 _reserve1)
+        returns (
+            uint256 _reserve0,
+            uint256 _reserve1,
+            address poolAddresss
+        )
     {
         if (
             address(
@@ -645,6 +657,12 @@ contract EmiRouter {
             _reserve1 = IEmiswapRegistry(address(factory))
                 .pools(tokenToIERC(token0), tokenToIERC(token1))
                 .getBalanceForAddition(tokenToIERC(token1));
+            poolAddresss = address(
+                IEmiswapRegistry(address(factory)).pools(
+                    tokenToIERC(token0),
+                    tokenToIERC(token1)
+                )
+            );
         }
     }
 
@@ -866,7 +884,7 @@ contract EmiRouter {
         );
         TransferHelper.safeApprove(token, address(pairContract), amountToken);
         IWETH(WETH).deposit{value: amountETH}();
-        TransferHelper.safeApprove(WETH, address(pairContract), amountToken);
+        TransferHelper.safeApprove(WETH, address(pairContract), amountETH);
 
         uint256[] memory amounts;
         amounts = new uint256[](2);
@@ -1037,7 +1055,13 @@ contract EmiRouter {
         for (uint256 i = 0; i < path.length - 1; i++) {
             if (path.length >= 2) {
                 uint256 _ammountTo =
-                    _swap_(path[i], path[i + 1], ammountFrom, to, ref);
+                    _swap_(
+                        path[i],
+                        path[i + 1],
+                        ammountFrom,
+                        (i == (path.length - 2) ? to : address(this)),
+                        ref
+                    );
                 if (i == (path.length - 2)) {
                     return (_ammountTo);
                 } else {
