@@ -80,7 +80,6 @@ interface IERC20 {
 
 // File: @openzeppelin/contracts/math/SafeMath.sol
 
-// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -242,7 +241,6 @@ library SafeMath {
 
 // File: contracts/interfaces/IEmiswap.sol
 
-// SPDX-License-Identifier: UNLICENSED
 
 pragma solidity ^0.6.0;
 
@@ -293,12 +291,11 @@ interface IEmiswap {
         address referral
     ) external payable returns (uint256 returnAmount);
 
-    function initialize(IERC20[] memory assets) external;
+    function initialize(IERC20[] calldata assets) external;
 }
 
 // File: contracts/libraries/EmiswapLib.sol
 
-// SPDX-License-Identifier: UNLICENSED
 
 pragma solidity ^0.6.0;
 
@@ -490,8 +487,6 @@ library EmiswapLib {
 
 // File: contracts/libraries/TransferHelper.sol
 
-// SPDX-License-Identifier: GPL-3.0-or-later
-
 pragma solidity >=0.6.0;
 
 // helper methods for interacting with ERC20 tokens and sending ETH that do not consistently return true/false
@@ -546,9 +541,6 @@ library TransferHelper {
 }
 
 // File: contracts/interfaces/IWETH.sol
-
-// SPDX-License-Identifier: UNLICENSED
-
 pragma solidity ^0.6.0;
 
 interface IWETH {
@@ -560,8 +552,6 @@ interface IWETH {
 }
 
 // File: contracts/EmiRouter.sol
-
-// SPDX-License-Identifier: UNLICENSED
 
 pragma solidity ^0.6.2;
 pragma experimental ABIEncoderV2;

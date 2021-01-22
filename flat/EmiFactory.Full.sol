@@ -27,8 +27,6 @@ abstract contract Context {
 
 // File: @openzeppelin/contracts/access/Ownable.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity >=0.6.0 <0.8.0;
 
 /**
@@ -96,8 +94,6 @@ abstract contract Ownable is Context {
 }
 
 // File: @openzeppelin/contracts/token/ERC20/IERC20.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -176,8 +172,6 @@ interface IERC20 {
 }
 
 // File: @openzeppelin/contracts/math/SafeMath.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -338,8 +332,6 @@ library SafeMath {
 }
 
 // File: @openzeppelin/contracts/token/ERC20/ERC20.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -647,8 +639,6 @@ contract ERC20 is Context, IERC20 {
 
 // File: @openzeppelin/contracts/utils/Address.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity >=0.6.2 <0.8.0;
 
 /**
@@ -815,8 +805,6 @@ library Address {
 
 // File: @openzeppelin/contracts/token/ERC20/SafeERC20.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity >=0.6.0 <0.8.0;
 
 
@@ -891,8 +879,6 @@ library SafeERC20 {
 }
 
 // File: contracts/libraries/UniERC20.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.6.0;
 
@@ -1014,8 +1000,6 @@ library UniERC20 {
 
 // File: contracts/interfaces/IEmiswap.sol
 
-// SPDX-License-Identifier: UNLICENSED
-
 pragma solidity ^0.6.0;
 
 
@@ -1065,12 +1049,10 @@ interface IEmiswap {
         address referral
     ) external payable returns (uint256 returnAmount);
 
-    function initialize(IERC20[] memory assets) external;
+    function initialize(IERC20[] calldata assets) external;
 }
 
 // File: @openzeppelin/contracts/utils/ReentrancyGuard.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -1135,8 +1117,6 @@ abstract contract ReentrancyGuard {
 
 // File: @openzeppelin/contracts/math/Math.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity >=0.6.0 <0.8.0;
 
 /**
@@ -1168,8 +1148,6 @@ library Math {
 }
 
 // File: contracts/libraries/Sqrt.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.6.0;
 
@@ -1314,7 +1292,7 @@ contract Emiswap is ERC20, ReentrancyGuard, Ownable {
     }
 
     // called once by the factory at time of deployment
-    function initialize(IERC20[] memory assets) external {
+    function initialize(IERC20[] calldata assets) external {
         require(msg.sender == address(factory), "Emiswap: FORBIDDEN"); // sufficient check
         require(assets.length == 2, "Emiswap: only 2 tokens allowed");
 
@@ -1462,7 +1440,7 @@ contract Emiswap is ERC20, ReentrancyGuard, Ownable {
         emit Deposited(msg.sender, fairSupply, referral);
     }
 
-    function withdraw(uint256 amount, uint256[] memory minReturns)
+    function withdraw(uint256 amount, uint256[] calldata minReturns)
         external
         nonReentrant
     {
@@ -1626,8 +1604,6 @@ contract Emiswap is ERC20, ReentrancyGuard, Ownable {
 }
 
 // File: contracts/EmiFactory.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.6.0;
 

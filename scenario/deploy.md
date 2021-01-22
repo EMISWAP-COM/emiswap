@@ -69,24 +69,6 @@ First, setup environment: set Injected Web3 and login to Metamask main admin acc
 5. Push Deploy button.
 6. On "Deployed Contracts" section -> EmiVamp AT... write down emiVampImpl address.
 
-### EmiFactory contract
-0. Switch to SOLIDITY COMPILER tab. Set 0.6.12 version, enable optimization = 100000
-1. Switch to _EmiFactory.Full.sol_ in opened file list tabs.
-2. Press big blue button *Compile EmiFactory.Full.sol*.
-3. Go to DEPLOY and RUN TRANSACTION tab.
-4. Select *EmiFactory* from Contract field.
-5. Push Deploy button.
-6. On "Deployed Contracts" section -> EmiFactory AT... write down emiFactoryImpl address.
-
-### EmiRouter contract 
-0. Switch to SOLIDITY COMPILER tab. Set 0.6.12 version, enable optimization = 100000
-1. Switch to _EmiRouter.Full.sol_ in opened file list tabs.
-2. Press big blue button *Compile EmiRouter.Full.sol*.
-3. Go to DEPLOY and RUN TRANSACTION tab.
-4. Select *EmiRouter* from Contract field.
-5. Push Deploy button.
-6. On "Deployed Contracts" section -> EmiRouter AT... write down emiRouterImpl address.
-
 ### EmiVault contract Set 0.6.2 version, disable optimization
 0. Switch to SOLIDITY COMPILER tab.
 1. Switch to _EmiVault.Full.sol_ in opened file list tabs.
@@ -95,6 +77,33 @@ First, setup environment: set Injected Web3 and login to Metamask main admin acc
 4. Select *EmiVault* from Contract field.
 5. Push Deploy button.
 6. On "Deployed Contracts" section -> EmiVault AT... write down emiVaultImpl address.
+7. Make EmiVault contract upgradeable proxy (see below)!
+
+### EmiFactory contract
+0. Switch to SOLIDITY COMPILER tab. Set 0.6.12 version, enable optimization = 100000
+1. Switch to _EmiFactory.Full.sol_ in opened file list tabs.
+2. Press big blue button *Compile EmiFactory.Full.sol*.
+3. Go to DEPLOY and RUN TRANSACTION tab.
+4. Select *EmiFactory* from Contract field.
+5. Push Deploy button.
+6. On "Deployed Contracts" section -> EmiFactory AT... write down emiFactoryImpl address.
+7. Set configuration values - admin grant, vault address, fee and vault fee:
+    1. function setAdminGrant, set current wallet, true and run transaction.
+    2. function setaddressVault, set EmiVault proxy address and run transaction.
+    3. function setFee, set parameter to 3000000000000000 // 0.03% (3*10^15)
+    4. function setFeeVault, set parameter to 500000000000000 // 0.005% (3*10^14)
+
+### EmiRouter contract 
+0. Switch to SOLIDITY COMPILER tab. Set 0.6.12 version, enable optimization = 100000
+1. Switch to _EmiRouter.Full.sol_ in opened file list tabs.
+2. Press big blue button *Compile EmiRouter.Full.sol*.
+3. Go to DEPLOY and RUN TRANSACTION tab.
+4. Select *EmiRouter* from Contract field.
+5. set deploy parameters:
+    1. EmiFactory address - from previouse step
+    2. WETH token address - 0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2 (MAINNET WETH address)
+6. Push Deploy button.
+7. On "Deployed Contracts" section -> EmiRouter AT... write down emiRouterImpl address.
  
 ### Proxy admin contract
 0. Switch to SOLIDITY COMPILER tab.
