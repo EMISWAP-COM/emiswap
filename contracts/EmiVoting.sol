@@ -301,10 +301,7 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
 
         Proposal storage proposal = proposals[proposalId];
         require(
-            msg.sender == guardian ||
-                comp.getPriorVotes(proposal.proposer, block.number.sub(1)) <
-                proposalThreshold(),
-            "EmiVoting::cancel: proposer above threshold"
+            msg.sender == guardian, "EmiVoting::cancel: priviledged operation"
         );
 
         proposal.canceled = true;

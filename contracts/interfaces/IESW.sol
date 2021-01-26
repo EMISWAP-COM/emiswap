@@ -19,9 +19,4 @@ interface IESW {
     function burn(address account, uint256 amount) external;
 
     function mintClaimed(address recipient, uint256 amount) external;
-
-    function getPriorVotes(address account, uint256 blockNumber)
-        external
-        view
-        returns (uint96);
 }
