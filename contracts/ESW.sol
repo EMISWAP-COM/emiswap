@@ -5,21 +5,22 @@ import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "./interfaces/IEmiVesting.sol";
 import "./libraries/Priviledgeable.sol";
 import "./libraries/ProxiedERC20.sol";
+import "./libraries/OracleSign.sol";
 
-contract ESW is ProxiedERC20, Initializable, Priviledgeable {
+contract ESW is ProxiedERC20, Initializable, Priviledgeable, OracleSign {
     address public dividendToken;
     address public vesting;
     uint256 internal _initialSupply;
     mapping(address => uint256) internal _mintLimit;
-    mapping(address => bool) internal _mintGranted;
+    mapping(address => bool) internal _mintGranted; // <-- been used in previouse implementation, now just reserved at proxy storage
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
- string public codeVersion = "ESW v1.0-56-ge9510cb";
+ string public codeVersion = "ESW v1.0-58-gc5c11c5";
     uint256 public constant MAXIMUM_SUPPLY = 200_000_000e18;
     bool public isFirstMinter = true;
-    address public constant firstMinter =
-        0xe20FB4e76aAEa3983a82ECb9305b67bE23D890e3;
+    /* constant */
+    address public firstMinter = 0xe20FB4e76aAEa3983a82ECb9305b67bE23D890e3;
     address public constant secondMinter =
         0xA211F095fECf5855dA3145f63F6256362E30783D;
     uint256 public minterChangeBlock = 0;
@@ -27,52 +28,19 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
     event minterSwitch(address newMinter, uint256 afterBlock);
 
     mapping(address => uint256) public walletNonce;
-    address public oracle;
-
-    modifier mintGranted() {
-        require(_mintGranted[msg.sender], "ESW mint: caller is not alowed!");
-        require(
-            (// first minter address after minterChangeBlock, second before minterChangeBlock
-            (isFirstMinter &&
-                (
-                    block.number >= minterChangeBlock
-                        ? msg.sender == firstMinter
-                        : msg.sender == secondMinter
-                )) ||
-                // second minter address after minterChangeBlock, first before minterChangeBlock
-                (!isFirstMinter &&
-                    (
-                        block.number >= minterChangeBlock
-                            ? msg.sender == secondMinter
-                            : msg.sender == firstMinter
-                    ))),
-            "ESW mint: minter is not alowed!"
-        );
-        _;
-    }
 
     function initialize() public virtual {
         _initialize("EmiDAO Token", "ESW", 18);
         _addAdmin(msg.sender);
     }
 
+    /*********************** admin functions *****************************/
+
     function updateTokenName(string memory newName, string memory newSymbol)
         public
         onlyAdmin
     {
         _updateTokenName(newName, newSymbol);
-    }
-
-    function grantMint(address _newIssuer) public onlyAdmin {
-        require(_newIssuer != address(0), "ESW: Zero address not allowed");
-        _mintGranted[_newIssuer] = true;
-    }
-
-    function revokeMint(address _revokeIssuer) public onlyAdmin {
-        require(_revokeIssuer != address(0), "ESW: Zero address not allowed");
-        if (_mintGranted[_revokeIssuer]) {
-            _mintGranted[_revokeIssuer] = false;
-        }
     }
 
     /**
@@ -82,19 +50,21 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
 
     function switchMinter(bool isSetFirst) public onlyAdmin {
         isFirstMinter = isSetFirst;
-        minterChangeBlock = block.number + 35; /* 6504 ~24 hours*/
+        minterChangeBlock = block.number + 6; // 6504 ~24 hours ------------------------------------------------------------------- TEST!!!!!!!! change on PROD!
         emit minterSwitch(
             (isSetFirst ? firstMinter : secondMinter),
             minterChangeBlock
         );
     }
 
-    function initialSupply() public view returns (uint256) {
-        return _initialSupply;
-    }
+    /**
+     * set mint limit for exact contract wallets
+     * @param account - wallet to set mint limit
+     * @param amount - mint limit value
+     */
 
-    function balanceOf(address account) public view override returns (uint256) {
-        return super.balanceOf(account);
+    function setMintLimit(address account, uint256 amount) public onlyAdmin {
+        _mintLimit[account] = amount;
     }
 
     function transfer(address recipient, uint256 amount)
@@ -107,6 +77,8 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
         return true;
     }
 
+    /*********************** public functions *****************************/
+
     function transferFrom(
         address sender,
         address recipient,
@@ -116,99 +88,8 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
         return true;
     }
 
-    /**
-     * getMintLimit - read mint limit for wallets
-     * @param account - wallet address
-     * @return - mintlimit for requested wallet
-     */
-
-    function getMintLimit(address account)
-        public
-        view
-        onlyAdmin
-        returns (uint256)
-    {
-        return _mintLimit[account];
-    }
-
-    /******************************************************************
-     * set mint limit for exact contract wallets
-     *******************************************************************/
-    function setMintLimit(address account, uint256 amount) public onlyAdmin {
-        _mintLimit[account] = amount;
-        if (amount > 0) {
-            grantMint(account);
-        } else {
-            revokeMint(account);
-        }
-    }
-
-    function _mint(address recipient, uint256 amount) internal override {
-        require(
-            totalSupply().add(amount) <= MAXIMUM_SUPPLY,
-            "ESW: Maximum supply exceeded"
-        );
-        _mintLimit[msg.sender] = _mintLimit[msg.sender].sub(amount);
-        super._mint(recipient, amount);
-    }
-
-    function burn(address account, uint256 amount) public {
-        super._burn(account, amount);
-    }
-
-    /*************************************************************
-     *  SIGNED functions
-     **************************************************************/
-    function _splitSignature(bytes memory sig)
-        internal
-        pure
-        returns (
-            uint8,
-            bytes32,
-            bytes32
-        )
-    {
-        require(sig.length == 65, "Incorrect signature length");
-
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-
-        assembly {
-            //first 32 bytes, after the length prefix
-            r := mload(add(sig, 0x20))
-            //next 32 bytes
-            s := mload(add(sig, 0x40))
-            //final byte, first of next 32 bytes
-            v := byte(0, mload(add(sig, 0x60)))
-        }
-
-        return (v, r, s);
-    }
-
-    function _recoverSigner(bytes32 message, bytes memory sig)
-        internal
-        pure
-        returns (address)
-    {
-        uint8 v;
-        bytes32 r;
-        bytes32 s;
-
-        (v, r, s) = _splitSignature(sig);
-
-        return ecrecover(message, v, r, s);
-    }
-
-    function _prefixed(bytes32 hash) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
-            );
-    }
-
-    function getWalletNonce() public view returns (uint256) {
-        return walletNonce[msg.sender];
+    function burn(uint256 amount) public {
+        super._burn(msg.sender, amount);
     }
 
     /**
@@ -233,28 +114,86 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable {
             );
 
         require(
-            _recoverSigner(message, sig) == oracle &&
+            _recoverSigner(message, sig) == getOracle() &&
                 walletNonce[msg.sender] < nonce,
             "ESW:sign"
         );
 
         walletNonce[msg.sender] = nonce;
 
-        super._mint(recipient, amount);
+        _mintAllowed(getOracle(), recipient, amount);
     }
 
+    /*********************** view functions *****************************/
+
+    function initialSupply() public view returns (uint256) {
+        return _initialSupply;
+    }
+
+    function balanceOf(address account) public view override returns (uint256) {
+        return super.balanceOf(account);
+    }
+
+    /**
+     * getMintLimit - read mint limit for wallets
+     * @param account - wallet address
+     * @return - mintlimit for requested wallet
+     */
+
+    function getMintLimit(address account)
+        public
+        view
+        onlyAdmin
+        returns (uint256)
+    {
+        return _mintLimit[account];
+    }
+
+    function getWalletNonce() public view returns (uint256) {
+        return walletNonce[msg.sender];
+    }
+
+    /**
+     *first minter address after minterChangeBlock, second before minterChangeBlock
+     *second minter address after minterChangeBlock, first before minterChangeBlock
+     */
     function getOracle() public view returns (address) {
-        return (oracle);
+        return (
+            (
+                isFirstMinter
+                    ? (
+                        block.number >= minterChangeBlock
+                            ? firstMinter
+                            : secondMinter
+                    )
+                    : (
+                        block.number >= minterChangeBlock
+                            ? secondMinter
+                            : firstMinter
+                    )
+            )
+        );
+    }
+
+    /*********************** internal functions *****************************/
+
+    function _mintAllowed(
+        address allowedMinter,
+        address recipient,
+        uint256 amount
+    ) internal {
+        require(
+            totalSupply().add(amount) <= MAXIMUM_SUPPLY,
+            "ESW:supply_exceeded"
+        );
+        _mintLimit[allowedMinter] = _mintLimit[allowedMinter].sub(amount);
+        super._mint(recipient, amount);
     }
 
     /****** test only, remove at production ****/
-    function mint(address recipient, uint256 amount) public mintGranted {
-        super._mint(recipient, amount);
-    }
-
     function setOracle(address _oracle) public onlyAdmin {
         require(_oracle != address(0), "oracleSign: bad address");
-        oracle = _oracle;
+        firstMinter = _oracle;
     }
     /*******************************************/
 }

@@ -294,7 +294,7 @@ describe('CrowdSale Test', function () {
         let sinceDates = ['1601424000', '1598918400', '1599004800'];                
 
         let tx = await crowdSale.presaleBulkLoad(beneficiaries, tokens, sinceDates, {from: presaleAdmin});
-        expectEvent(tx.receipt, 'Buy');
+        expectEvent(tx.receipt, 'BuyPresale');
       });
       it('should be working fine for small value presales', async function () {
         let beneficiaries = [george, henry, ivan];
@@ -305,7 +305,7 @@ describe('CrowdSale Test', function () {
         console.log('tokens', tokens);
         let sinceDates = ['1601424000', '1598918400', '1599004800'];
         let tx = await crowdSale.presaleBulkLoad(beneficiaries, tokens, sinceDates, {from: presaleAdmin});
-        expectEvent(tx.receipt, 'Buy');
+        expectEvent(tx.receipt, 'BuyPresale');
       });
       it('should be working for exact mintLimit in loading presales', async function () {
         let beneficiaries = [george, henry, ivan];
@@ -739,9 +739,20 @@ describe('CrowdSale Test', function () {
         beforeEach('get sign and make tx', async function () { 
             // set oracle, check oracle
             this.ZEROref = ZERO_ADDRESS;
-            await esw.setOracle(oracleWallet, {from: proxyAdmin});
-            await esw.setOracle(oracleWallet, {from: proxyAdmin});
-            let storedOracle = await esw.getOracle();
+            await esw.setOracle(oracleWallet, {from: proxyAdmin})
+            await esw.setMintLimit(oracleWallet, money.esw('200000000'), {from: proxyAdmin})
+            await esw.switchMinter(true, {from: proxyAdmin})
+
+            for await (const iterator of Array(6).keys()) {
+                await helper.advanceBlock() }
+
+            let isFirstMinter = await esw.isFirstMinter()
+            let storedOracle = await esw.getOracle()            
+            let block = await web3.eth.getBlock('latest')
+            let changeBlock = await esw.minterChangeBlock()
+            let mintLimit = await esw.getMintLimit(oracleWallet, {from: proxyAdmin})
+            console.log('isFirstMinter', isFirstMinter, 'storedOracle', storedOracle, 'block', block.number, 'changeBlock', changeBlock, 'mintLimit', mintLimit);
+
             assert.equal(storedOracle, oracleWallet, 'Get stored Oracle address');
         });        
         describe('Oracle sign minting ESW', async function () {

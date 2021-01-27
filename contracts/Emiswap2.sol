@@ -118,11 +118,14 @@ contract Emiswap is ERC20, ReentrancyGuard, Ownable {
 
     constructor(
         IERC20[] memory assets,
-        string memory name, 
+        string memory name,
         string memory symbol
-    ) 
-        public 
-        ERC20(name, symbol/* "Emiswap LP token", "EMI - SWAP" */)
+    )
+        public
+        ERC20(
+            name,
+            symbol /* "Emiswap LP token", "EMI - SWAP" */
+        )
     {
         factory = IFactory(msg.sender);
         require(bytes(name).length > 0, "Emiswap: name is empty");

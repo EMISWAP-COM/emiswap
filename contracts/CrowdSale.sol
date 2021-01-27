@@ -57,7 +57,7 @@ contract CrowdSale is Initializable, Priviledgeable {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
- string public codeVersion = "CrowdSale v1.0-56-ge9510cb";
+ string public codeVersion = "CrowdSale v1.0-58-gc5c11c5";
     uint256 public crowdSalePool = 40_000_000e18;
     bool public isStoped;
 
@@ -66,7 +66,7 @@ contract CrowdSale is Initializable, Priviledgeable {
         _;
     }
 
-    //event BuyPresale(address account, uint256 amount, uint32 sinceDate, uint256 coinAmount);
+    event BuyPresale(address account, uint256 amount, uint32 sinceDate);
 
     //-----------------------------------------------------------------------------------
     // Smart contract Constructor
@@ -316,7 +316,7 @@ contract CrowdSale is Initializable, Priviledgeable {
         }
     }
 
-    /*
+    /**
      * Presale function, get lists of weallets, tokens and dates, and virtual freeze it.
      * Presale limits by time and working till 1612137599 (2021-01-31T23:59:59+00:00 in ISO 8601)
      * @param beneficiaries - list of beneficiaries wallets
@@ -335,14 +335,13 @@ contract CrowdSale is Initializable, Priviledgeable {
         uint256 tokenSum;
 
         for (uint256 i = 0; i < beneficiaries.length; i++) {
-            //IESW(_token).mintVirtualAndFreezePresale(beneficiaries[i], sinceDate[i], tokens[i], 1);
             tokenSum = tokenSum.add(tokens[i]);
             crowdSalePool = crowdSalePool.sub(tokens[i]);
-            emit Buy(msg.sender, tokens[i], 9999, 0, address(0));
+            emit BuyPresale(beneficiaries[i], tokens[i], sinceDate[i]);
         }
     }
 
-    /*
+    /**
      * Buy ESW for tokens view,
      * @param coinAddress - payment token address
      * @param amount - payment token amount (isReverse = false), ESW token amount (isReverse = true),
@@ -438,7 +437,7 @@ contract CrowdSale is Initializable, Priviledgeable {
         return (currentTokenAmount, coinId, coinAmount);
     }
 
-    /*
+    /**
      * Buy ESW for tokens,
      * @param coinAddress - payment token address
      * @param amount - payment token amount (isReverse = false), ESW token amount (isReverse = true),
@@ -496,7 +495,7 @@ contract CrowdSale is Initializable, Priviledgeable {
         );
     }
 
-    /*
+    /**
      * Rate input amount in base token (DAI) value with market rate
      * @param amountIn - input token amount
      * @param reserveIn - reserve of payment token
@@ -513,7 +512,7 @@ contract CrowdSale is Initializable, Priviledgeable {
         amountOut = amountIn.mul(reserveOut).div(reserveIn);
     }
 
-    /*
+    /**
      * Buy ESW for ETH view
      * @param amount - ETH amount (isReverse=false), ESW amount (isReverse=true)
      * @param isReverse - 'false' view to calc ESW from input ETH, 'true' view to calc ETH from input ESW
@@ -581,11 +580,11 @@ contract CrowdSale is Initializable, Priviledgeable {
         return (currentTokenAmount, coinAmount);
     }
 
-    /*
+    /**
      * @param referralInput address of referral
      * @param amount in case isReverse=false amount is ETH value, in case isReverse=true amount is ESW value
      * @param isReverse switch calc mode false - calc from ETH value, true - calc from ESW value
-     * @param slippage - price change value from desired parameter, actual in range 0% - 5%, 5% = 500
+     * slippage - price change value from desired parameter, actual in range 0% - 5%, 5% = 500
      */
     function buyWithETH(
         address referralInput,
@@ -641,7 +640,7 @@ contract CrowdSale is Initializable, Priviledgeable {
         );
     }
 
-    /*
+    /**
      * save referral
      * @param referralInput address to save
      */
@@ -668,7 +667,7 @@ contract CrowdSale is Initializable, Priviledgeable {
         }
     }
 
-    /*
+    /**
      * default payment receive, not supported paramters, so call buyWithETH with 0x0 address with eth value
      */
     receive() external payable {

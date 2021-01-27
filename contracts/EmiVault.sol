@@ -7,71 +7,21 @@ import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./libraries/Priviledgeable.sol";
+import "./libraries/OracleSign.sol";
 
-contract EmiVault is Initializable, Priviledgeable {
+contract EmiVault is Initializable, Priviledgeable, OracleSign {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
- string public codeVersion = "EmiVault v1.0-56-ge9510cb";
+ string public codeVersion = "EmiVault v1.0-58-gc5c11c5";
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
 
-    address public constant ORACLE = 0xe20FB4e76aAEa3983a82ECb9305b67bE23D890e3;
+    address public constant ORACLE = 0xdeb5A983AdC9b25b8A96ae43a65953Ded3939de6;
     mapping(address => uint256) public walletNonce;
 
     function initialize() public initializer {
         _addAdmin(msg.sender);
-    }
-
-    /*************************************************************
-     *  SIGNED functions
-     **************************************************************/
-    function _splitSignature(bytes memory sig)
-        internal
-        pure
-        returns (
-            uint8,
-            bytes32,
-            bytes32
-        )
-    {
-        require(sig.length == 65, "Incorrect signature length");
-
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-
-        assembly {
-            //first 32 bytes, after the length prefix
-            r := mload(add(sig, 0x20))
-            //next 32 bytes
-            s := mload(add(sig, 0x40))
-            //final byte, first of next 32 bytes
-            v := byte(0, mload(add(sig, 0x60)))
-        }
-
-        return (v, r, s);
-    }
-
-    function _recoverSigner(bytes32 message, bytes memory sig)
-        internal
-        pure
-        returns (address)
-    {
-        uint8 v;
-        bytes32 r;
-        bytes32 s;
-
-        (v, r, s) = _splitSignature(sig);
-
-        return ecrecover(message, v, r, s);
-    }
-
-    function _prefixed(bytes32 hash) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
-            );
     }
 
     function getWalletNonce() public view returns (uint256) {

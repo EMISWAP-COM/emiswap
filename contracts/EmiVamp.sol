@@ -26,7 +26,7 @@ contract EmiVamp is Initializable, Priviledgeable {
     // Info of each third-party lp-token.
     LPTokenInfo[] public lpTokensInfo;
 
- string public codeVersion = "EmiVamp v1.0-56-ge9510cb";
+ string public codeVersion = "EmiVamp v1.0-58-gc5c11c5";
     IEmiRouter public ourRouter;
 
     event Deposit(address indexed user, address indexed token, uint256 amount);

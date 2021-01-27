@@ -2,14 +2,6 @@
 pragma solidity ^0.6.2;
 
 abstract contract OracleSign {
-    mapping(address => uint256) public walletNonce;
-    address public oracle;
-
-    function _setOracle(address _oracle) internal {
-        require(_oracle != address(0), "oracleSign: bad address");
-        oracle = _oracle;
-    }
-
     function _splitSignature(bytes memory sig)
         internal
         pure
@@ -56,9 +48,5 @@ abstract contract OracleSign {
             keccak256(
                 abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
             );
-    }
-
-    function getWalletNonce() public view returns (uint256) {
-        return walletNonce[msg.sender];
     }
 }
