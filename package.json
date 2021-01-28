@@ -44,8 +44,7 @@
         "solc": "^0.6.12",
         "solhint": "^3.0.0",
         "solidity-coverage": "^0.7.9",
-        "truffle": "^5.1.35",
-        "truffle-flattener": "^1.4.4"
+        "truffle": "^5.1.35"
     },
     "engines": {
         "node": "^12.18.0"
@@ -61,12 +60,12 @@
         "ttest": "truffle test --network test",
         "compile": "node update-version.js && truffle compile",
         "deploy": "truffle migrate --network local",
-        "deploy_local": "truffle migrate --network local",
+        "deploy_local": "truffle migrate --reset --network local --f 1 --to 2",
         "deploy_kovan": "truffle migrate --reset --network kovan",
-        "deploy_crowdsale_local": "truffle migrate --network local --f 3 --to 3",
-        "deploy_crowdsale_ropsten": "truffle migrate --network ropsten --f 3 --to 3",
-        "deploy_crowdsale_kovan": "truffle migrate --reset --network kovan --f 3 --to 3",
-        "deploy_crowdsale_rinkeby": "truffle migrate --network rinkeby --f 3 --to 3",
+        "deploy_crowdsale_local": "truffle migrate --network local --f 2 --to 2",
+        "deploy_crowdsale_ropsten": "truffle migrate --network ropsten --f 1 --to 2",
+        "deploy_crowdsale_kovan": "truffle migrate --reset --network kovan --f 2 --to 2",
+        "deploy_crowdsale_rinkeby": "truffle migrate --network rinkeby --f 1 --to 2",
         "deploy_dex_kovan": "truffle migrate --network kovan --f 1 --to 1",
         "deploy_dex_kovan2": "truffle migrate --network kovan --f 2 --to 2",
         "deploy_dex_kovan4": "truffle migrate --network kovan --f 4 --to 4",

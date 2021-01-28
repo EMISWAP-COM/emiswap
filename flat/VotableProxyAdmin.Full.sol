@@ -834,13 +834,7 @@ library SafeMath {
 pragma solidity ^0.6.2;
 
 interface IEmiVoting {
-  event VotingCreated(uint indexed hash, uint endTime);
-  event VotingFinished(uint indexed hash, uint result);
-
-  function getVoting(uint _hash) external view returns (address, address, uint, uint);
-  function newUpgradeVoting(address _oldContract, address _newContract, uint _votingEndTime, uint _hash) external returns (uint);
-  function getVotingResult(uint _hash) external view returns (address);
-  function calcVotingResult(uint _hash) external;
+    function getVotingResult(uint256 _hash) external view returns (address);
 }
 
 // File: contracts/VotableProxyAdmin.sol
@@ -854,63 +848,76 @@ pragma solidity ^0.6.2;
 
 
 
-
 /**
-  * @dev Returns the current implementation of `proxy`.
-  * 
-  * Requirements:
-  * 
-  * - This contract must be the admin of `proxy`.
+ * @dev Returns the current implementation of `proxy`.
+ *
+ * Requirements:
+ *
+ * - This contract must be the admin of `proxy`.
  */
 contract EmiVotableProxyAdmin is Ownable {
-  using SafeMath for uint256;
+    using SafeMath for uint256;
 
-  IEmiVoting private _votingContract;
- string public codeVersion = "VotableProxyAdmin v1.0-39-g38801b0";
+    IEmiVoting private _votingContract;
 
-  constructor (address _vc) public {
-    require(_vc!=address(0), "Voting contract address cannot be 0");
-    _votingContract = IEmiVoting(_vc);
-  }
+ string public codeVersion = "VotableProxyAdmin v1.0-58-gd991927";
+
+    constructor(address _vc) public {
+        require(_vc != address(0), "Voting contract address cannot be 0");
+        _votingContract = IEmiVoting(_vc);
+    }
 
     /**
      * @dev Returns the current implementation of `proxy`.
-     * 
+     *
      * Requirements:
-     * 
+     *
      * - This contract must be the admin of `proxy`.
      */
-    function getProxyImplementation(TransparentUpgradeableProxy proxy) public view returns (address) {
+    function getProxyImplementation(TransparentUpgradeableProxy proxy)
+        public
+        view
+        returns (address)
+    {
         // We need to manually run the static call since the getter cannot be flagged as view
         // bytes4(keccak256("implementation()")) == 0x5c60da1b
-        (bool success, bytes memory returndata) = address(proxy).staticcall(hex"5c60da1b");
+        (bool success, bytes memory returndata) =
+            address(proxy).staticcall(hex"5c60da1b");
         require(success);
         return abi.decode(returndata, (address));
     }
 
     /**
      * @dev Returns the current admin of `proxy`.
-     * 
+     *
      * Requirements:
-     * 
+     *
      * - This contract must be the admin of `proxy`.
      */
-    function getProxyAdmin(TransparentUpgradeableProxy proxy) public view returns (address) {
+    function getProxyAdmin(TransparentUpgradeableProxy proxy)
+        public
+        view
+        returns (address)
+    {
         // We need to manually run the static call since the getter cannot be flagged as view
         // bytes4(keccak256("admin()")) == 0xf851a440
-        (bool success, bytes memory returndata) = address(proxy).staticcall(hex"f851a440");
+        (bool success, bytes memory returndata) =
+            address(proxy).staticcall(hex"f851a440");
         require(success);
         return abi.decode(returndata, (address));
     }
 
     /**
      * @dev Changes the admin of `proxy` to `newAdmin`.
-     * 
+     *
      * Requirements:
-     * 
+     *
      * - This contract must be the current admin of `proxy`.
      */
-    function changeProxyAdmin(TransparentUpgradeableProxy proxy, address newAdmin) public onlyOwner {
+    function changeProxyAdmin(
+        TransparentUpgradeableProxy proxy,
+        address newAdmin
+    ) public onlyOwner {
         proxy.changeAdmin(newAdmin);
     }
 
@@ -919,12 +926,15 @@ contract EmiVotableProxyAdmin is Ownable {
         _votingContract = IEmiVoting(_newVoting);
     }
 
-  function upgrade(TransparentUpgradeableProxy proxy, uint votingHash) public onlyOwner {
-    address impl;
+    function upgrade(TransparentUpgradeableProxy proxy, uint256 votingHash)
+        public
+        onlyOwner
+    {
+        address impl;
 
-    impl = _votingContract.getVotingResult(votingHash);
-    require(impl != address(0), "Voting has wrong implementation address");
+        impl = _votingContract.getVotingResult(votingHash);
+        require(impl != address(0), "Voting has wrong implementation address");
 
-    proxy.upgradeTo(impl);
-  }
+        proxy.upgradeTo(impl);
+    }
 }
