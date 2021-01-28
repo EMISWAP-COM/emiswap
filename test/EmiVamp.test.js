@@ -17,6 +17,9 @@ const MockWBTC = contract.fromArtifact('MockWBTC');
 const EmiVamp = contract.fromArtifact('EmiVamp');
 const Token = contract.fromArtifact('TokenMock');
 const TokenWETH = contract.fromArtifact('MockWETH');
+const EmiVoting = contract.fromArtifact('EmiVoting');
+const MockUSDX = contract.fromArtifact('MockUSDX');
+const Timelock = contract.fromArtifact('Timelock');
 
 const { web3 } = MockUSDX;
 
@@ -135,8 +138,11 @@ describe('EmiVamp test', function () {
         await this.factory.setaddressVault(clarc, {from: TestOwner});
 
         this.router = await EmiRouter.new(this.factory.address, weth.address);
+        this.timelock = await Timelock.new(TestOwner, 2 days);
+        this.emiVote = await EmiVoting.new(this.timelock.address, usdx.address, TestOwner);
+        await usdx.transfer(bob, ether('3000000'));
 
-        await vamp.initialize([pairAddress, pairAddressUSDX_WETH], [0, 0], this.router.address, {from:henry});
+        await vamp.initialize([pairAddress, pairAddressUSDX_WETH], [0, 0], this.router.address, this.emiVote.address, {from:henry});
         await uniswapPair.approve(vamp.address, '1000000000000000000000000000', {from: alice});
         await uniswapPair.approve(this.router.address, '1000000000000000000000000000', {from: alice});
         await weth.approve(this.router.address, '1000000000000000000000000000', {from: alice});
@@ -198,5 +204,33 @@ describe('EmiVamp test', function () {
         let tx = await vamp.deposit(0, 40000000, {from: alice});
         console.log('Gas used for LP-tokens transfer: ' + tx.receipt.gasUsed);
       });
+    });
+    describe('Change router address with voting', () => {
+      it('should successfully change router address', async function() {
+        let abi = web3.eth.abi.encodeParameter('address', this.timelock.address);
+        let r = await this.emiVote.propose([this.timelock.address],['0'],['changeRouter(address)'],[abi],'Test proposal', 20);
+        expectEvent.inLogs(r.logs,'ProposalCreated');
+        let pid = r.logs[0].args.id;
+        console.log('Block proposed 1: %d', await time.latestBlock());
+
+	await time.advanceBlockTo(47); // skip some blocks
+        await this.emiVote.castVote(pid, true, {from: bob});
+        await time.advanceBlockTo(67);
+        let b = await this.emiVote.state(pid);
+        console.log('State: %s', b);
+        assert.equal(b, 4);
+        // queue
+        await this.emiVote.queue(pid);
+        let releaseTime = (await time.latest()).add(time.duration.days(3));
+        await time.increaseTo(releaseTime);
+        await this.emiVote.execute(pid);
+        b = await this.emiVote.ourRouter();
+        assert.equal(b, this.timelock.address);
+      });
+      it('cannot change router without voting', async function() {
+        expectRevert.unspecified(this.emiVote.changeRouter(this.timelock.address, {from: userBob}));
+        expectRevert.unspecified(this.emiVote.changeRouter(this.timelock.address, {from: TestOwner}));
+        expectRevert.unspecified(this.emiVote.changeRouter(this.timelock.address));
+      })
     });
 });
