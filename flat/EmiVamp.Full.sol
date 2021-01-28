@@ -69,51 +69,109 @@ abstract contract Initializable {
 pragma solidity ^0.6.0;
 
 interface IUniswapV2Pair {
-    event Approval(address indexed owner, address indexed spender, uint value);
-    event Transfer(address indexed from, address indexed to, uint value);
+    event Approval(
+        address indexed owner,
+        address indexed spender,
+        uint256 value
+    );
+    event Transfer(address indexed from, address indexed to, uint256 value);
 
     function name() external pure returns (string memory);
-    function symbol() external pure returns (string memory);
-    function decimals() external pure returns (uint8);
-    function totalSupply() external view returns (uint);
-    function balanceOf(address owner) external view returns (uint);
-    function allowance(address owner, address spender) external view returns (uint);
 
-    function approve(address spender, uint value) external returns (bool);
-    function transfer(address to, uint value) external returns (bool);
-    function transferFrom(address from, address to, uint value) external returns (bool);
+    function symbol() external pure returns (string memory);
+
+    function decimals() external pure returns (uint8);
+
+    function totalSupply() external view returns (uint256);
+
+    function balanceOf(address owner) external view returns (uint256);
+
+    function allowance(address owner, address spender)
+        external
+        view
+        returns (uint256);
+
+    function approve(address spender, uint256 value) external returns (bool);
+
+    function transfer(address to, uint256 value) external returns (bool);
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) external returns (bool);
 
     function DOMAIN_SEPARATOR() external view returns (bytes32);
+
     function PERMIT_TYPEHASH() external pure returns (bytes32);
-    function nonces(address owner) external view returns (uint);
 
-    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
+    function nonces(address owner) external view returns (uint256);
 
-    event Mint(address indexed sender, uint amount0, uint amount1);
-    event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
+    function permit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
+
+    event Mint(address indexed sender, uint256 amount0, uint256 amount1);
+    event Burn(
+        address indexed sender,
+        uint256 amount0,
+        uint256 amount1,
+        address indexed to
+    );
     event Swap(
         address indexed sender,
-        uint amount0In,
-        uint amount1In,
-        uint amount0Out,
-        uint amount1Out,
+        uint256 amount0In,
+        uint256 amount1In,
+        uint256 amount0Out,
+        uint256 amount1Out,
         address indexed to
     );
     event Sync(uint112 reserve0, uint112 reserve1);
 
-    function MINIMUM_LIQUIDITY() external pure returns (uint);
-    function factory() external view returns (address);
-    function token0() external view returns (address);
-    function token1() external view returns (address);
-    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
-    function price0CumulativeLast() external view returns (uint);
-    function price1CumulativeLast() external view returns (uint);
-    function kLast() external view returns (uint);
+    function MINIMUM_LIQUIDITY() external pure returns (uint256);
 
-    function mint(address to) external returns (uint liquidity);
-    function burn(address to) external returns (uint amount0, uint amount1);
-    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
+    function factory() external view returns (address);
+
+    function token0() external view returns (address);
+
+    function token1() external view returns (address);
+
+    function getReserves()
+        external
+        view
+        returns (
+            uint112 reserve0,
+            uint112 reserve1,
+            uint32 blockTimestampLast
+        );
+
+    function price0CumulativeLast() external view returns (uint256);
+
+    function price1CumulativeLast() external view returns (uint256);
+
+    function kLast() external view returns (uint256);
+
+    function mint(address to) external returns (uint256 liquidity);
+
+    function burn(address to)
+        external
+        returns (uint256 amount0, uint256 amount1);
+
+    function swap(
+        uint256 amount0Out,
+        uint256 amount1Out,
+        address to,
+        bytes calldata data
+    ) external;
+
     function skim(address to) external;
+
     function sync() external;
 
     function initialize(address, address) external;
@@ -124,18 +182,32 @@ interface IUniswapV2Pair {
 pragma solidity ^0.6.0;
 
 interface IUniswapV2Factory {
-    event PairCreated(address indexed token0, address indexed token1, address pair, uint);
+    event PairCreated(
+        address indexed token0,
+        address indexed token1,
+        address pair,
+        uint256
+    );
 
     function feeTo() external view returns (address);
+
     function feeToSetter() external view returns (address);
 
-    function getPair(address tokenA, address tokenB) external view returns (address pair);
-    function allPairs(uint) external view returns (address pair);
-    function allPairsLength() external view returns (uint);
+    function getPair(address tokenA, address tokenB)
+        external
+        view
+        returns (address pair);
 
-    function createPair(address tokenA, address tokenB) external returns (address pair);
+    function allPairs(uint256) external view returns (address pair);
+
+    function allPairsLength() external view returns (uint256);
+
+    function createPair(address tokenA, address tokenB)
+        external
+        returns (address pair);
 
     function setFeeTo(address) external;
+
     function setFeeToSetter(address) external;
 }
 
@@ -309,49 +381,48 @@ pragma solidity ^0.6.2;
 
 abstract contract Priviledgeable {
     using SafeMath for uint256;
-    using SafeMath for uint;
+    using SafeMath for uint256;
 
     event PriviledgeGranted(address indexed admin);
     event PriviledgeRevoked(address indexed admin);
 
     modifier onlyAdmin() {
-        require(_priviledgeTable[msg.sender], "Priviledgeable: caller is not the owner");
+        require(
+            _priviledgeTable[msg.sender],
+            "Priviledgeable: caller is not the owner"
+        );
         _;
     }
 
     mapping(address => bool) private _priviledgeTable;
 
-    constructor () internal {
-      _priviledgeTable[msg.sender] = true;
+    constructor() internal {
+        _priviledgeTable[msg.sender] = true;
     }
 
-    function addAdmin(address _admin) external onlyAdmin returns (bool)
-    {
-      require(_admin!=address(0), "Admin address cannot be 0");
-      return _addAdmin(_admin);
+    function addAdmin(address _admin) external onlyAdmin returns (bool) {
+        require(_admin != address(0), "Admin address cannot be 0");
+        return _addAdmin(_admin);
     }
 
-    function removeAdmin(address _admin) external onlyAdmin returns (bool)
-    {
-      require(_admin!=address(0), "Admin address cannot be 0");
-      _priviledgeTable[_admin] = false;
-      emit PriviledgeRevoked(_admin);
+    function removeAdmin(address _admin) external onlyAdmin returns (bool) {
+        require(_admin != address(0), "Admin address cannot be 0");
+        _priviledgeTable[_admin] = false;
+        emit PriviledgeRevoked(_admin);
 
-      return true;
+        return true;
     }
 
-    function isAdmin(address _who) external view returns (bool)
-    {
-       return _priviledgeTable[_who];
+    function isAdmin(address _who) external view returns (bool) {
+        return _priviledgeTable[_who];
     }
 
     //-----------
     // internals
     //-----------
-    function _addAdmin(address _admin) internal returns (bool)
-    {
-      _priviledgeTable[_admin] = true;
-      emit PriviledgeGranted(_admin);
+    function _addAdmin(address _admin) internal returns (bool) {
+        _priviledgeTable[_admin] = true;
+        emit PriviledgeGranted(_admin);
     }
 }
 
@@ -686,9 +757,9 @@ library SafeERC20 {
 
 pragma solidity >=0.6.2;
 
-interface IEmiRouter
-{
+interface IEmiRouter {
     function factory() external pure returns (address);
+
     function WETH() external pure returns (address);
 
     function addLiquidity(
@@ -698,9 +769,14 @@ interface IEmiRouter
         uint256 amountBDesired,
         uint256 amountAMin,
         uint256 amountBMin
-    ) 
-    external
-    returns (uint256 amountA, uint256 amountB, uint256 liquidity);
+    )
+        external
+        returns (
+            uint256 amountA,
+            uint256 amountB,
+            uint256 liquidity
+        );
+
     /*function addLiquidityETH(
         address token,
         uint amountTokenDesired,
@@ -746,56 +822,69 @@ interface IEmiRouter
         bool approveMax, uint8 v, bytes32 r, bytes32 s
     ) external returns (uint amountToken, uint amountETH); */
     function swapExactTokensForTokens(
-        uint amountIn,
-        uint amountOutMin,
+        uint256 amountIn,
+        uint256 amountOutMin,
         address[] calldata path,
         address to,
         address ref
-    ) external returns (uint[] memory amounts);
+    ) external returns (uint256[] memory amounts);
+
     function swapTokensForExactTokens(
         uint256 amountOut,
         uint256 amountInMax,
         address[] calldata path,
         address[] calldata pathDAI
-    ) external returns (uint[] memory amounts);
+    ) external returns (uint256[] memory amounts);
+
     function swapExactETHForTokens(
-        uint amountOutMin, 
+        uint256 amountOutMin,
         address[] calldata path,
         address[] calldata pathDAI
-    )
-        external
-        payable
-        returns (uint[] memory amounts);
+    ) external payable returns (uint256[] memory amounts);
+
     function swapTokensForExactETH(
-        uint amountOut, 
-        uint amountInMax, 
+        uint256 amountOut,
+        uint256 amountInMax,
         address[] calldata path,
         address[] calldata pathDAI
-    )
-        external
-        returns (uint[] memory amounts);
+    ) external returns (uint256[] memory amounts);
+
     function swapExactTokensForETH(
-        uint amountIn, 
-        uint amountOutMin, 
+        uint256 amountIn,
+        uint256 amountOutMin,
         address[] calldata path,
         address[] calldata pathDAI
-    )
-        external
-        returns (uint[] memory amounts);
+    ) external returns (uint256[] memory amounts);
+
     function swapETHForExactTokens(
-        uint amountOut, 
+        uint256 amountOut,
         address[] calldata path,
         address[] calldata pathDAI
-    )
-        external
-        payable
-        returns (uint[] memory amounts);
+    ) external payable returns (uint256[] memory amounts);
 
     //function quote(uint amountA, uint reserveA, uint reserveB) external pure returns (uint amountB);
-    function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) external view returns (uint amountOut);
-    function getAmountIn(uint amountOut, uint reserveIn, uint reserveOut) external view returns (uint amountIn);
-    function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts);
-    function getAmountsIn(uint amountOut, address[] calldata path) external view returns (uint[] memory amounts);
+    function getAmountOut(
+        uint256 amountIn,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) external view returns (uint256 amountOut);
+
+    function getAmountIn(
+        uint256 amountOut,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) external view returns (uint256 amountIn);
+
+    function getAmountsOut(uint256 amountIn, address[] calldata path)
+        external
+        view
+        returns (uint256[] memory amounts);
+
+    function getAmountsIn(uint256 amountOut, address[] calldata path)
+        external
+        view
+        returns (uint256[] memory amounts);
+
     /* function removeLiquidityETHSupportingFeeOnTransferTokens(
         address token,
         uint liquidity,
@@ -815,19 +904,21 @@ interface IEmiRouter
     ) external returns (uint amountETH); */
 
     function swapExactTokensForTokensSupportingFeeOnTransferTokens(
-        uint amountIn,
-        uint amountOutMin,
+        uint256 amountIn,
+        uint256 amountOutMin,
         address[] calldata path,
         address[] calldata pathDAI
     ) external;
+
     function swapExactETHForTokensSupportingFeeOnTransferTokens(
-        uint amountOutMin,
+        uint256 amountOutMin,
         address[] calldata path,
         address[] calldata pathDAI
     ) external payable;
+
     function swapExactTokensForETHSupportingFeeOnTransferTokens(
-        uint amountIn,
-        uint amountOutMin,
+        uint256 amountIn,
+        uint256 amountOutMin,
         address[] calldata path,
         address[] calldata pathDAI
     ) external;
@@ -840,30 +931,51 @@ interface IEmiRouter
 pragma solidity ^0.6.0;
 
 
-
 interface IEmiswapRegistry {
-    function pools(IERC20 token1, IERC20 token2) external view returns(IEmiswap);
-    function isPool(address addr) external view returns(bool);
-    function deploy(IERC20 tokenA, IERC20 tokenB) external returns(IEmiswap);
-}
+    function pools(IERC20 token1, IERC20 token2)
+        external
+        view
+        returns (IEmiswap);
 
+    function isPool(address addr) external view returns (bool);
+
+    function deploy(IERC20 tokenA, IERC20 tokenB) external returns (IEmiswap);
+}
 
 interface IEmiswap {
     function fee() external view returns (uint256);
 
     function tokens(uint256 i) external view returns (IERC20);
 
-    function deposit(uint256[] calldata amounts, uint256[] calldata minAmounts) external payable returns(uint256 fairSupply);
+    function deposit(
+        uint256[] calldata amounts,
+        uint256[] calldata minAmounts,
+        address referral
+    ) external payable returns (uint256 fairSupply);
 
     function withdraw(uint256 amount, uint256[] calldata minReturns) external;
 
-    function getBalanceForAddition(IERC20 token) external view returns(uint256);
+    function getBalanceForAddition(IERC20 token)
+        external
+        view
+        returns (uint256);
 
-    function getBalanceForRemoval(IERC20 token) external view returns(uint256);
+    function getBalanceForRemoval(IERC20 token) external view returns (uint256);
 
-    function getReturn(IERC20 fromToken, IERC20 destToken, uint256 amount) external view returns(uint256 returnAmount);
-    
-    function swap( IERC20 fromToken, IERC20 destToken, uint256 amount, uint256 minReturn, address to, address referral) external payable returns(uint256 returnAmount);
+    function getReturn(
+        IERC20 fromToken,
+        IERC20 destToken,
+        uint256 amount
+    ) external view returns (uint256 returnAmount);
+
+    function swap(
+        IERC20 fromToken,
+        IERC20 destToken,
+        uint256 amount,
+        uint256 minReturn,
+        address to,
+        address referral
+    ) external payable returns (uint256 returnAmount);
 }
 
 // File: contracts/libraries/TransferHelper.sol
@@ -874,34 +986,67 @@ pragma solidity >=0.6.0;
 
 // helper methods for interacting with ERC20 tokens and sending ETH that do not consistently return true/false
 library TransferHelper {
-  function safeApprove(address token, address to, uint value) internal {
-    // bytes4(keccak256(bytes('approve(address,uint256)')));
-    (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x095ea7b3, to, value));
-    require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: APPROVE_FAILED');
-  }
+    function safeApprove(
+        address token,
+        address to,
+        uint256 value
+    ) internal {
+        // bytes4(keccak256(bytes('approve(address,uint256)')));
+        (bool success, bytes memory data) =
+            token.call(abi.encodeWithSelector(0x095ea7b3, to, value));
+        require(
+            success && (data.length == 0 || abi.decode(data, (bool))),
+            "TransferHelper: APPROVE_FAILED"
+        );
+    }
 
-  function safeTransfer(address token, address to, uint value) internal {
-    // bytes4(keccak256(bytes('transfer(address,uint256)')));
-    (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0xa9059cbb, to, value));
-    require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FAILED');
-  }
+    function safeTransfer(
+        address token,
+        address to,
+        uint256 value
+    ) internal {
+        // bytes4(keccak256(bytes('transfer(address,uint256)')));
+        (bool success, bytes memory data) =
+            token.call(abi.encodeWithSelector(0xa9059cbb, to, value));
+        require(
+            success && (data.length == 0 || abi.decode(data, (bool))),
+            "TransferHelper: TRANSFER_FAILED"
+        );
+    }
 
-  function safeTransferFrom(address token, address from, address to, uint value) internal {
-    // bytes4(keccak256(bytes('transferFrom(address,address,uint256)')));
-    (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x23b872dd, from, to, value));
-    require(success && (data.length == 0 || abi.decode(data, (bool))), 'TransferHelper: TRANSFER_FROM_FAILED');
-  }
+    function safeTransferFrom(
+        address token,
+        address from,
+        address to,
+        uint256 value
+    ) internal {
+        // bytes4(keccak256(bytes('transferFrom(address,address,uint256)')));
+        (bool success, bytes memory data) =
+            token.call(abi.encodeWithSelector(0x23b872dd, from, to, value));
+        require(
+            success && (data.length == 0 || abi.decode(data, (bool))),
+            "TransferHelper: TRANSFER_FROM_FAILED"
+        );
+    }
 
-  function safeTransferETH(address to, uint value) internal {
-    (bool success,) = to.call{value:value}(new bytes(0));
-    require(success, 'TransferHelper: ETH_TRANSFER_FAILED');
-  }
+    function safeTransferETH(address to, uint256 value) internal {
+        (bool success, ) = to.call{value: value}(new bytes(0));
+        require(success, "TransferHelper: ETH_TRANSFER_FAILED");
+    }
 }
 
 // File: contracts/EmiVamp.sol
 
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.2;
+pragma solidity ^0.6.2;
+
+
+
+
+
+
+
+
 
 /**
  * @dev Contract to convert liquidity from other market makers (Uniswap/Mooniswap) to our pairs.
@@ -910,199 +1055,237 @@ contract EmiVamp is Initializable, Priviledgeable {
     using SafeERC20 for IERC20;
 
     struct LPTokenInfo {
-      address lpToken;
-      uint16  tokenType; // Token type: 0 - uniswap (default), 1 - mooniswap
+        address lpToken;
+        uint16 tokenType; // Token type: 0 - uniswap (default), 1 - mooniswap
     }
 
-    IERC20 [] public allowedTokens; // List of tokens that we accept
+    IERC20[] public allowedTokens; // List of tokens that we accept
 
     // Info of each third-party lp-token.
-    LPTokenInfo [] public lpTokensInfo;
+    LPTokenInfo[] public lpTokensInfo;
 
- string public codeVersion = "EmiVamp v1.0-39-g38801b0";
+ string public codeVersion = "EmiVamp v1.0-58-gd991927";
     IEmiRouter public ourRouter;
 
     event Deposit(address indexed user, address indexed token, uint256 amount);
 
-  // !!!In updates to contracts set new variables strictly below this line!!!
-  //-----------------------------------------------------------------------------------
+    // !!!In updates to contracts set new variables strictly below this line!!!
+    //-----------------------------------------------------------------------------------
 
-  /**
-   * @dev Implementation of {UpgradeableProxy} type of constructors
-   */
-  function initialize(address[] memory _lptokens, uint8[] memory _types, address _ourrouter) public initializer
-  {
-    require(_lptokens.length > 0, "EmiVamp: length>0!");
-    require(_lptokens.length == _types.length, "EmiVamp: lengths!");
-    require(_ourrouter != address(0), "EmiVamp: router!");
+    /**
+     * @dev Implementation of {UpgradeableProxy} type of constructors
+     */
+    function initialize(
+        address[] memory _lptokens,
+        uint8[] memory _types,
+        address _ourrouter
+    ) public initializer {
+        require(_lptokens.length > 0, "EmiVamp: length>0!");
+        require(_lptokens.length == _types.length, "EmiVamp: lengths!");
+        require(_ourrouter != address(0), "EmiVamp: router!");
 
-    for (uint i = 0; i < _lptokens.length; i++) {
-      lpTokensInfo.push(LPTokenInfo({lpToken: _lptokens[i], tokenType: _types[i]}));
+        for (uint256 i = 0; i < _lptokens.length; i++) {
+            lpTokensInfo.push(
+                LPTokenInfo({lpToken: _lptokens[i], tokenType: _types[i]})
+            );
+        }
+        ourRouter = IEmiRouter(_ourrouter);
+        _addAdmin(msg.sender);
     }
-    ourRouter = IEmiRouter(_ourrouter);
-    _addAdmin(msg.sender);
-  }
 
-  /**
-   * @dev Returns length of allowed tokens private array
-   */
-  function getAllowedTokensLength() external view returns (uint)
-  {
-    return allowedTokens.length;
-  }
-
-  function lpTokensInfoLength() external view returns (uint)
-  {
-    return lpTokensInfo.length;
-  }
-
-  /**
-   * @dev Adds new entry to the list of allowed tokens (if it is not exist yet)
-   */  
-  function addAllowedToken(address _token) external onlyAdmin
-  {
-    require(_token != address(0));
-
-    for (uint i = 0; i < allowedTokens.length; i++) {
-      if (address(allowedTokens[i])==_token) {
-        return;
-      }
+    /**
+     * @dev Returns length of allowed tokens private array
+     */
+    function getAllowedTokensLength() external view returns (uint256) {
+        return allowedTokens.length;
     }
-    allowedTokens.push(IERC20(_token));
-  }
 
-  /**
-   * @dev Adds new entry to the list of convertible LP-tokens
-   */  
-  function addLPToken(address _token, uint16 _tokenType) external onlyAdmin returns (uint)
-  {
-    require(_token != address(0));
-    require(_tokenType < 2);
-
-    for (uint i = 0; i < lpTokensInfo.length; i++) {
-      if (lpTokensInfo[i].lpToken==_token) {
-        return i;
-      }
+    function lpTokensInfoLength() external view returns (uint256) {
+        return lpTokensInfo.length;
     }
-    lpTokensInfo.push(LPTokenInfo({lpToken: _token, tokenType: _tokenType}));
-    return lpTokensInfo.length;
-  }
 
-  /**
-   * @dev Change emirouter address
-   */  
+    /**
+     * @dev Adds new entry to the list of allowed tokens (if it is not exist yet)
+     */
+    function addAllowedToken(address _token) external onlyAdmin {
+        require(_token != address(0));
 
-  function changeRouter(address _newEmiRouter) external onlyAdmin 
-  {
-    ourRouter = IEmiRouter(_newEmiRouter);
-  }
+        for (uint256 i = 0; i < allowedTokens.length; i++) {
+            if (address(allowedTokens[i]) == _token) {
+                return;
+            }
+        }
+        allowedTokens.push(IERC20(_token));
+    }
+
+    /**
+     * @dev Adds new entry to the list of convertible LP-tokens
+     */
+    function addLPToken(address _token, uint16 _tokenType)
+        external
+        onlyAdmin
+        returns (uint256)
+    {
+        require(_token != address(0));
+        require(_tokenType < 2);
+
+        for (uint256 i = 0; i < lpTokensInfo.length; i++) {
+            if (lpTokensInfo[i].lpToken == _token) {
+                return i;
+            }
+        }
+        lpTokensInfo.push(
+            LPTokenInfo({lpToken: _token, tokenType: _tokenType})
+        );
+        return lpTokensInfo.length;
+    }
+
+    /**
+     * @dev Change emirouter address
+     */
+
+    function changeRouter(address _newEmiRouter) external onlyAdmin {
+        ourRouter = IEmiRouter(_newEmiRouter);
+    }
 
     // Deposit LP tokens to us
-  /**
-   * @dev Main function that converts third-party liquidity (represented by LP-tokens) to our own LP-tokens
-   */  
-    function deposit(uint256 _pid, uint256 _amount) public
-  {
+    /**
+     * @dev Main function that converts third-party liquidity (represented by LP-tokens) to our own LP-tokens
+     */
+    function deposit(uint256 _pid, uint256 _amount) public {
         require(_pid < lpTokensInfo.length);
 
         if (lpTokensInfo[_pid].tokenType == 0) {
-          _depositUniswap(_pid, _amount);
+            _depositUniswap(_pid, _amount);
         } else if (lpTokensInfo[_pid].tokenType == 1) {
-          _depositMooniswap(_pid, _amount);
+            _depositMooniswap(_pid, _amount);
         } else {
-          return;
+            return;
         }
         emit Deposit(msg.sender, lpTokensInfo[_pid].lpToken, _amount);
     }
 
-  /**
-   * @dev Actual function that converts third-party Uniswap liquidity (represented by LP-tokens) to our own LP-tokens
-   */  
+    /**
+     * @dev Actual function that converts third-party Uniswap liquidity (represented by LP-tokens) to our own LP-tokens
+     */
     function _depositUniswap(uint256 _pid, uint256 _amount) internal {
         IUniswapV2Pair lpToken = IUniswapV2Pair(lpTokensInfo[_pid].lpToken);
-    
-	// check pair existance
+
+        // check pair existance
         IERC20 token0 = IERC20(lpToken.token0());
         IERC20 token1 = IERC20(lpToken.token1());
 
         // transfer to us
         lpToken.transferFrom(address(msg.sender), address(lpToken), _amount);
 
-	// get liquidity
-        (uint amountIn0, uint amountIn1) = lpToken.burn(address(this));
+        // get liquidity
+        (uint256 amountIn0, uint256 amountIn1) = lpToken.burn(address(this));
 
-        _addOurLiquidity(address(token0), address(token1), amountIn0, amountIn1);
+        _addOurLiquidity(
+            address(token0),
+            address(token1),
+            amountIn0,
+            amountIn1
+        );
     }
 
-   function _addOurLiquidity(address _token0, address _token1, uint _amount0, uint _amount1) internal
-   {
+    function _addOurLiquidity(
+        address _token0,
+        address _token1,
+        uint256 _amount0,
+        uint256 _amount1
+    ) internal {
         TransferHelper.safeApprove(_token0, address(ourRouter), _amount0);
         TransferHelper.safeApprove(_token1, address(ourRouter), _amount1);
 
-        (uint amountOut0, uint amountOut1, ) = ourRouter.addLiquidity(
-          address(_token0), address(_token1), _amount0, _amount1, 0, 0
-        );
+        (uint256 amountOut0, uint256 amountOut1, ) =
+            ourRouter.addLiquidity(
+                address(_token0),
+                address(_token1),
+                _amount0,
+                _amount1,
+                0,
+                0
+            );
 
         // return the change
         if (amountOut0 - _amount0 > 0) {
-          TransferHelper.safeTransfer(_token0, address(msg.sender), amountOut0 - _amount0);
+            TransferHelper.safeTransfer(
+                _token0,
+                address(msg.sender),
+                amountOut0 - _amount0
+            );
         }
 
         if (amountOut1 - _amount1 > 0) {
-          TransferHelper.safeTransfer(_token1, address(msg.sender), amountOut1 - _amount1);
+            TransferHelper.safeTransfer(
+                _token1,
+                address(msg.sender),
+                amountOut1 - _amount1
+            );
         }
-   }
+    }
 
-  /**
-   * @dev Actual function that converts third-party Mooniswap liquidity (represented by LP-tokens) to our own LP-tokens
-   */  
+    /**
+     * @dev Actual function that converts third-party Mooniswap liquidity (represented by LP-tokens) to our own LP-tokens
+     */
     function _depositMooniswap(uint256 _pid, uint256 _amount) internal {
         IEmiswap lpToken = IEmiswap(lpTokensInfo[_pid].lpToken);
 
-	// check pair existance
+        // check pair existance
         IERC20 token0 = IERC20(lpToken.tokens(0));
         IERC20 token1 = IERC20(lpToken.tokens(1));
 
         // transfer to us
-        uint amountBefore0 = token0.balanceOf(msg.sender);
-        uint amountBefore1 = token1.balanceOf(msg.sender);
+        uint256 amountBefore0 = token0.balanceOf(msg.sender);
+        uint256 amountBefore1 = token1.balanceOf(msg.sender);
 
-        uint [] memory minVals = new uint[](2);
+        uint256[] memory minVals = new uint256[](2);
 
         lpToken.withdraw(_amount, minVals);
 
-	// get liquidity
-        uint amount0 = token0.balanceOf(msg.sender) - amountBefore0;
-        uint amount1 = token1.balanceOf(msg.sender) - amountBefore1;
+        // get liquidity
+        uint256 amount0 = token0.balanceOf(msg.sender) - amountBefore0;
+        uint256 amount1 = token1.balanceOf(msg.sender) - amountBefore1;
 
         _addOurLiquidity(address(token0), address(token1), amount0, amount1);
     }
 
-  /**
+    /**
     @dev Function check for LP token pair availability. Return _pid or 0 if none exists
   */
-   function isPairAvailable(address _token0, address _token1) public view returns (uint16)
-   {
-     require(_token0 != address(0));
-     require(_token1 != address(0));
+    function isPairAvailable(address _token0, address _token1)
+        public
+        view
+        returns (uint16)
+    {
+        require(_token0 != address(0));
+        require(_token1 != address(0));
 
-     for (uint16 i = 0; i < lpTokensInfo.length; i++) {
-       IUniswapV2Pair lpt = IUniswapV2Pair(lpTokensInfo[i].lpToken);
-       address t0 = lpt.token0();
-       address t1 = lpt.token1();
+        for (uint16 i = 0; i < lpTokensInfo.length; i++) {
+            IUniswapV2Pair lpt = IUniswapV2Pair(lpTokensInfo[i].lpToken);
+            address t0 = lpt.token0();
+            address t1 = lpt.token1();
 
-       if ((t0 ==_token0 && t1 == _token1) || (t1 ==_token0 && t0 == _token1)) {
-         return i;
-       }
-     }
-     return 0;
-   }
+            if (
+                (t0 == _token0 && t1 == _token1) ||
+                (t1 == _token0 && t0 == _token1)
+            ) {
+                return i;
+            }
+        }
+        return 0;
+    }
 
-   /**
-    * @dev Owner can transfer out any accidentally sent ERC20 tokens
-    */
-    function transferAnyERC20Token(address tokenAddress, address beneficiary, uint tokens) external onlyAdmin returns (bool success) {
-        require(tokenAddress!=address(0), "Token address cannot be 0");
+    /**
+     * @dev Owner can transfer out any accidentally sent ERC20 tokens
+     */
+    function transferAnyERC20Token(
+        address tokenAddress,
+        address beneficiary,
+        uint256 tokens
+    ) external onlyAdmin returns (bool success) {
+        require(tokenAddress != address(0), "Token address cannot be 0");
 
         return IERC20(tokenAddress).transfer(beneficiary, tokens);
     }
