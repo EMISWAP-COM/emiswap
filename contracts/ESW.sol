@@ -16,7 +16,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable, OracleSign {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
- string public codeVersion = "ESW v1.0-107-g4faaf05";
+ string public codeVersion = "ESW v1.0-109-g0c46f68";
     uint256 public constant MAXIMUM_SUPPLY = 200_000_000e18;
     bool public isFirstMinter = true;
     /* constant */
@@ -29,7 +29,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable, OracleSign {
 
     mapping(address => uint256) public walletNonce;
 
-    function initialize() public virtual {
+    function initialize() public virtual initializer {
         _initialize("EmiDAO Token", "ESW", 18);
         _addAdmin(msg.sender);
     }

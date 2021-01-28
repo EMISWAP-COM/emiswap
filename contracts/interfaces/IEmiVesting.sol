@@ -7,7 +7,6 @@ pragma solidity ^0.6.2;
  *
  ************************************************************************/
 interface IEmiVesting {
-
     function balanceOf(address beneficiary) external view returns (uint256);
 
     function getCrowdsaleLimit() external view returns (uint256);
