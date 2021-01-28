@@ -26,7 +26,7 @@ contract EmiVamp is Initializable, Priviledgeable {
     // Info of each third-party lp-token.
     LPTokenInfo[] public lpTokensInfo;
 
- string public codeVersion = "EmiVamp v1.0-58-gc5c11c5";
+ string public codeVersion = "EmiVamp v1.0-58-gd991927";
     IEmiRouter public ourRouter;
 
     event Deposit(address indexed user, address indexed token, uint256 amount);
@@ -34,17 +34,21 @@ contract EmiVamp is Initializable, Priviledgeable {
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
 
+    address _voting;
+
     /**
      * @dev Implementation of {UpgradeableProxy} type of constructors
      */
     function initialize(
         address[] memory _lptokens,
         uint8[] memory _types,
-        address _ourrouter
+        address _ourrouter,
+        address _ourvoting
     ) public initializer {
         require(_lptokens.length > 0, "EmiVamp: length>0!");
         require(_lptokens.length == _types.length, "EmiVamp: lengths!");
         require(_ourrouter != address(0), "EmiVamp: router!");
+        require(_ourvoting != address(0), "EmiVamp: voting!");
 
         for (uint256 i = 0; i < _lptokens.length; i++) {
             lpTokensInfo.push(
@@ -106,7 +110,8 @@ contract EmiVamp is Initializable, Priviledgeable {
      * @dev Change emirouter address
      */
 
-    function changeRouter(address _newEmiRouter) external onlyAdmin {
+    function changeRouter(address _newEmiRouter) external {
+	require(msg.sender == _voting, "Only voting can change router");
         ourRouter = IEmiRouter(_newEmiRouter);
     }
 
