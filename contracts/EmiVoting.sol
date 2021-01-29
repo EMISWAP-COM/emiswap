@@ -15,7 +15,7 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
     using SafeMath for uint256;
     using Address for address;
 
- string public codeVersion = "EmiVoting v1.0-107-g4faaf05";
+ string public codeVersion = "EmiVoting v1.0-109-g0c46f68";
 
     /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
     function quorumVotes() public pure returns (uint256) {
@@ -301,7 +301,8 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
 
         Proposal storage proposal = proposals[proposalId];
         require(
-            msg.sender == guardian, "EmiVoting::cancel: priviledged operation"
+            msg.sender == guardian,
+            "EmiVoting::cancel: priviledged operation"
         );
 
         proposal.canceled = true;

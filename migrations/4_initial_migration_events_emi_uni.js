@@ -54,7 +54,7 @@ module.exports = async function (deployer, network, accounts) {
 
     /* EmiPrice */
     await EmiPrice_deployed.initialize(UniswapV2Factory_deployed.address, UniswapV2Factory_deployed.address, 
-        UniswapV2Factory_deployed.address, MockWETH_deployed.address);
+        UniswapV2Factory_deployed.address, MockDAI_deployed.address);
 
     /* EmiFactory init */
     await EmiFactory_deployed.setAdminGrant(accounts[0], true);
