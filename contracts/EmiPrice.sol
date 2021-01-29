@@ -63,7 +63,11 @@ contract EmiPrice is Initializable, Priviledgeable {
                 if (reserv1 == 0) {
                     _prices[i] = 0; // special case
                 } else {
-                    _prices[i] = reserv0.mul(100000).div(reserv1);
+                    if (_p.token0 == _DAI) { // token0 is DAI, divide by it
+                      _prices[i] = reserv1.mul(100000).div(reserv0);
+                    } else { // token1 is DAI, divide by it
+                      _prices[i] = reserv0.mul(100000).div(reserv1);
+                    }
                 }
             }
         }
