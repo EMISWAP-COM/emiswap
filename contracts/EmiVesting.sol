@@ -56,7 +56,7 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
- string public codeVersion = "EmiVesting v1.0-109-g0c46f68";
+ string public codeVersion = "EmiVesting v1.0-112-g65e9f12";
 
     //-----------------------------------------------------------------------------------
     // Smart contract Constructor
@@ -323,6 +323,11 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
         }
     }
 
+    function burn() public onlyAdmin {
+        uint256 bal = IESW(_token).balanceOf(address(this));
+        IESW(_token).burnFromVesting(bal);
+    }
+
     function burnLock(address _beneficiary, uint256 idx) public onlyAdmin {
         require(_beneficiary != address(0), "Address should not be zero");
         require(idx < _locksTable[_beneficiary].length, "Wrong lock index");
@@ -356,7 +361,7 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
 
             uint256 totalBalance =
                 lrec.amountLocked - (periodAmount * periodsWithdrawn);
-            IESW(_token).burn(address(this), totalBalance);
+            IESW(_token).burnFromVesting(totalBalance);
         }
         delete _locksTable[_beneficiary][idx];
     }

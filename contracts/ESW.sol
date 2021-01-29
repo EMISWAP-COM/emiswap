@@ -16,14 +16,14 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable, OracleSign {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
- string public codeVersion = "ESW v1.0-109-g0c46f68";
+ string public codeVersion = "ESW v1.0-112-g65e9f12";
     uint256 public constant MAXIMUM_SUPPLY = 200_000_000e18;
     bool public isFirstMinter = true;
-    /* constant */
-    address public firstMinter = 0xe20FB4e76aAEa3983a82ECb9305b67bE23D890e3;
+    address public constant firstMinter =
+        0xdeb5A983AdC9b25b8A96ae43a65953Ded3939de6; // set to Oracle
     address public constant secondMinter =
-        0xA211F095fECf5855dA3145f63F6256362E30783D;
-    uint256 public minterChangeBlock = 0;
+        0x9Cf73e538acC5B2ea51396eA1a6DE505f6a68f2b; //set to EmiVesting
+    uint256 public minterChangeBlock;
 
     event minterSwitch(address newMinter, uint256 afterBlock);
 
@@ -50,7 +50,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable, OracleSign {
 
     function switchMinter(bool isSetFirst) public onlyAdmin {
         isFirstMinter = isSetFirst;
-        minterChangeBlock = block.number + 6; // 6504 ~24 hours ------------------------------------------------------------------- TEST!!!!!!!! change on PROD!
+        minterChangeBlock = block.number + 6646; // 6646 ~24 hours
         emit minterSwitch(
             (isSetFirst ? firstMinter : secondMinter),
             minterChangeBlock
@@ -90,6 +90,10 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable, OracleSign {
 
     function burn(uint256 amount) public {
         super._burn(msg.sender, amount);
+    }
+
+    function burnFromVesting(uint256 amount) external onlyAdmin {
+        super._burn(vesting, amount);
     }
 
     /**
@@ -189,11 +193,4 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable, OracleSign {
         _mintLimit[allowedMinter] = _mintLimit[allowedMinter].sub(amount);
         super._mint(recipient, amount);
     }
-
-    /****** test only, remove at production ****/
-    function setOracle(address _oracle) public onlyAdmin {
-        require(_oracle != address(0), "oracleSign: bad address");
-        firstMinter = _oracle;
-    }
-    /*******************************************/
 }

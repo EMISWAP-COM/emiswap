@@ -13,7 +13,7 @@ contract EmiPrice is Initializable, Priviledgeable {
     address[3] public market;
     address private _DAI;
 
- string public codeVersion = "EmiPrice v1.0-109-g0c46f68";
+ string public codeVersion = "EmiPrice v1.0-112-g65e9f12";
 
     /**
      * @dev Upgradeable proxy constructor replacement
@@ -63,11 +63,9 @@ contract EmiPrice is Initializable, Priviledgeable {
                 if (reserv1 == 0) {
                     _prices[i] = 0; // special case
                 } else {
-                    if (_p.token0 == _DAI) { // token0 is DAI, divide by it
-                      _prices[i] = reserv1.mul(100000).div(reserv0);
-                    } else { // token1 is DAI, divide by it
-                      _prices[i] = reserv0.mul(100000).div(reserv1);
-                    }
+                    _prices[i] = address(_coins[i]) < address(_DAI)
+                        ? reserv1.mul(100000).div(reserv0)
+                        : reserv0.mul(100000).div(reserv1);
                 }
             }
         }
