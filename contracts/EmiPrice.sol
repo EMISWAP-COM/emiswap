@@ -19,7 +19,7 @@ contract EmiPrice is Initializable, Priviledgeable {
     uint256 constant MARKET_UNISWAP = 1;
     uint256 constant MARKET_1INCH = 2;
 
- string public codeVersion = "EmiPrice v1.0-113-g96f8394";
+ string public codeVersion = "EmiPrice v1.0-118-gfc65556";
 
     /**
      * @dev Upgradeable proxy constructor replacement
@@ -55,11 +55,11 @@ contract EmiPrice is Initializable, Priviledgeable {
         _prices = new uint256[](_coins.length);
 
         if (_market == MARKET_UNISWAP) {
-          _getUniswapPrice(_coins, _prices);
+            _getUniswapPrice(_coins, _prices);
         } else if (_market == MARKET_OUR) {
-          _getOurPrice(_coins, _prices);
+            _getOurPrice(_coins, _prices);
         } else {
-          _get1inchPrice(_coins, _prices);
+            _get1inchPrice(_coins, _prices);
         }
 
         return _prices;
@@ -77,9 +77,11 @@ contract EmiPrice is Initializable, Priviledgeable {
         market[idx] = _market;
     }
 
-// internal methods
-    function _getUniswapPrice(address[] calldata _coins, uint256[] memory _prices) internal view
-    {
+    // internal methods
+    function _getUniswapPrice(
+        address[] calldata _coins,
+        uint256[] memory _prices
+    ) internal view {
         IUniswapV2Factory _factory = IUniswapV2Factory(market[MARKET_UNISWAP]);
         IUniswapV2Pair _p;
 
@@ -104,7 +106,9 @@ contract EmiPrice is Initializable, Priviledgeable {
         }
     }
 
-    function _getOurPrice(address[] calldata _coins, uint256[] memory _prices) internal view
+    function _getOurPrice(address[] calldata _coins, uint256[] memory _prices)
+        internal
+        view
     {
         EmiFactory _factory = EmiFactory(market[MARKET_OUR]);
         Emiswap _p;
@@ -113,7 +117,7 @@ contract EmiPrice is Initializable, Priviledgeable {
             return;
         }
         for (uint256 i = 0; i < _coins.length; i++) {
-            _p = Emiswap(_factory.pools(IERC20(_coins[i]),IERC20(_DAI)));
+            _p = Emiswap(_factory.pools(IERC20(_coins[i]), IERC20(_DAI)));
             if (address(_p) == address(0)) {
                 _prices[i] = 0;
             } else {
@@ -123,17 +127,21 @@ contract EmiPrice is Initializable, Priviledgeable {
                 if (reserv1 == 0 || reserv0 == 0) {
                     _prices[i] = 0; // special case
                 } else {
-                    if (_p.tokens(0) == IERC20(_DAI)) { // token0 is DAI, divide by it
-                      _prices[i] = reserv1.mul(100000).div(reserv0);
-                    } else { // token1 is DAI, divide by it
-                      _prices[i] = reserv0.mul(100000).div(reserv1);
+                    if (_p.tokens(0) == IERC20(_DAI)) {
+                        // token0 is DAI, divide by it
+                        _prices[i] = reserv1.mul(100000).div(reserv0);
+                    } else {
+                        // token1 is DAI, divide by it
+                        _prices[i] = reserv0.mul(100000).div(reserv1);
                     }
                 }
             }
         }
     }
 
-    function _get1inchPrice(address[] calldata _coins, uint256[] memory _prices) internal view
+    function _get1inchPrice(address[] calldata _coins, uint256[] memory _prices)
+        internal
+        view
     {
         IOneSplit _factory = IOneSplit(market[MARKET_1INCH]);
 
@@ -141,8 +149,13 @@ contract EmiPrice is Initializable, Priviledgeable {
             return;
         }
         for (uint256 i = 0; i < _coins.length; i++) {
-            (_prices[i],) = _factory.getExpectedReturn(IERC20(_coins[i]), IERC20(_DAI), 1, 0, 0);
+            (_prices[i], ) = _factory.getExpectedReturn(
+                IERC20(_coins[i]),
+                IERC20(_DAI),
+                1,
+                0,
+                0
+            );
         }
     }
-
 }

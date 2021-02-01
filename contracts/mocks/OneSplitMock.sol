@@ -11,17 +11,15 @@ contract OneSplitMock is IOneSplit {
         uint256 amount,
         uint256 parts,
         uint256 flags
-    ) external
-      virtual
-      override
-      view
-      returns(
-          uint256 returnAmount,
-          uint256[] memory distribution
-      )
+    )
+        external
+        view
+        virtual
+        override
+        returns (uint256 returnAmount, uint256[] memory distribution)
     {
-      uint256[] memory p = new uint256[](3);
+        uint256[] memory p = new uint256[](3);
 
-      return (320 * amount, p);
+        return (320 * amount, p);
     }
 }

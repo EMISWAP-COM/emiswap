@@ -1029,7 +1029,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable, OracleSign {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
- string public codeVersion = "ESW v1.0-113-g96f8394";
+ string public codeVersion = "ESW v1.0-118-gfc65556";
     uint256 public constant MAXIMUM_SUPPLY = 200_000_000e18;
     bool public isFirstMinter = true;
     address public constant firstMinter =
@@ -1105,8 +1105,9 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable, OracleSign {
         super._burn(msg.sender, amount);
     }
 
-    function burnFromVesting(uint256 amount) external onlyAdmin {
-        super._burn(vesting, amount);
+    function burnFromVesting(uint256 amount) external {
+        require(msg.sender == vesting, "Only vesting!");
+        burn(amount);
     }
 
     /**
@@ -1205,5 +1206,14 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable, OracleSign {
         );
         _mintLimit[allowedMinter] = _mintLimit[allowedMinter].sub(amount);
         super._mint(recipient, amount);
+    }
+
+    /************************************************** TEST !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+    function setVesting(address _vesting) public onlyAdmin {
+        vesting = _vesting;
+    }
+
+    function mintToVesting(uint256 amount) public onlyAdmin {
+        super._mint(vesting, amount);
     }
 }
