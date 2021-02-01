@@ -57,7 +57,7 @@ contract CrowdSale is Initializable, Priviledgeable {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
- string public codeVersion = "CrowdSale v1.0-109-g0c46f68";
+ string public codeVersion = "CrowdSale v1.0-112-g65e9f12";
     uint256 public crowdSalePool = 40_000_000e18;
     bool public isStoped;
 
@@ -332,10 +332,8 @@ contract CrowdSale is Initializable, Priviledgeable {
         require(beneficiaries.length == sinceDate.length, "Sale:Arrays length");
         require(sinceDate.length == tokens.length, "Sale:Arrays length");
         require(now <= 1612137599, "Sale: presale is over");
-        uint256 tokenSum;
 
         for (uint256 i = 0; i < beneficiaries.length; i++) {
-            tokenSum = tokenSum.add(tokens[i]);
             crowdSalePool = crowdSalePool.sub(tokens[i]);
             emit BuyPresale(beneficiaries[i], tokens[i], sinceDate[i]);
         }
@@ -589,10 +587,10 @@ contract CrowdSale is Initializable, Priviledgeable {
     function buyWithETH(
         address referralInput,
         uint256 amount,
-        bool isReverse /* , uint256 slippage */
+        bool isReverse
     ) public payable crowdSaleworking {
-        uint256 slippage = 100;
-        //require(slippage <= 500, "Sale:slippage issue");
+        uint256 slippage = 500;
+
         require(
             msg.value > 0 && (!isReverse ? msg.value == amount : true),
             "Sale:ETH needed"
