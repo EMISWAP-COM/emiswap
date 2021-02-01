@@ -107,14 +107,14 @@ First, setup environment: set Injected Web3 and login to Metamask main admin acc
  
 ### Proxy admin contract
 0. Switch to SOLIDITY COMPILER tab.
-1. Switch to _EmiVotingProxyAdmin.sol_ in opened file list tabs.
-2. Press big blue button *Compile EmiVotingProxyAdmin.sol*.
+1. Switch to _EmiVotableProxyAdmin.Full.sol_ in opened file list tabs.
+2. Press big blue button *Compile EmiVotableProxyAdmin.Full.sol*.
 3. Go to DEPLOY and RUN TRANSACTION tab.
-4. Select *EmiVotingProxyAdmin* from Contract field.
+4. Select *EmiVotableProxyAdmin* from Contract field.
 5. Change account address to upgrade admin account if needed.
 6. Set address_vc parameter to emiVotingImpl address.
 7. Push Deploy button.
-8. On "Deployed Contracts" section -> EmiVotingProxyAdmin AT... write down "emiVotableProxyAdmin address".
+8. On "Deployed Contracts" section -> EmiVotableProxyAdmin AT... write down "emiVotableProxyAdmin address".
 
 ### Add proxy admin to Voting contract
 If upgrade proxy account differ from main system account, we need to setup admin privileges to upgrade account. To do so:

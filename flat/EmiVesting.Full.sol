@@ -562,25 +562,6 @@ pragma solidity ^0.6.2;
  *
  ************************************************************************/
 interface IEmiVesting {
-    function freeze(
-        address beneficiary,
-        uint256 tokens,
-        uint256 category
-    ) external;
-
-    function freezeVirtual(
-        address beneficiary,
-        uint256 tokens,
-        uint256 category
-    ) external;
-
-    function freezeVirtualWithCrowdsale(
-        address beneficiary,
-        uint32 sinceDate,
-        uint256 tokens,
-        uint256 category
-    ) external;
-
     function balanceOf(address beneficiary) external view returns (uint256);
 
     function getCrowdsaleLimit() external view returns (uint256);
@@ -598,17 +579,44 @@ pragma solidity ^0.6.0;
 interface IESW {
     function name() external returns (string memory);
 
-    function balanceOf(address account) external view returns (uint256);
-
     function symbol() external returns (string memory);
 
     function decimals() external returns (uint8);
 
     function initialSupply() external returns (uint256);
 
-    function burn(address account, uint256 amount) external;
+    function balanceOf(address account) external view returns (uint256);
+
+    function currentCrowdsaleLimit() external view returns (uint256);
+
+    function rawBalanceOf(address account) external view returns (uint256);
+
+    function setVesting(address _vesting) external;
+
+    function mintAndFreeze(
+        address recipient,
+        uint256 amount,
+        uint256 category
+    ) external;
+
+    function mintVirtualAndFreeze(
+        address recipient,
+        uint256 amount,
+        uint256 category
+    ) external;
+
+    function mintVirtualAndFreezePresale(
+        address recipient,
+        uint32 sinceDate,
+        uint256 amount,
+        uint256 category
+    ) external;
 
     function mintClaimed(address recipient, uint256 amount) external;
+
+    function burn(uint256 amount) external;
+
+    function burnFromVesting(uint256 amount) external;
 
     function getPriorVotes(address account, uint256 blockNumber)
         external
@@ -748,7 +756,7 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
- string public codeVersion = "EmiVesting v1.0-58-gd991927";
+ string public codeVersion = "EmiVesting v1.0-113-g96f8394";
 
     //-----------------------------------------------------------------------------------
     // Smart contract Constructor
@@ -954,87 +962,6 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
         return currentCrowdsaleLimit;
     }
 
-    function freeze(
-        address beneficiary,
-        uint256 tokens,
-        uint256 category
-    ) external override onlyAdmin {
-        require(beneficiary != address(0), "Address should not be zero");
-        require(tokens > 0, "Token amount should be positive non-zero");
-        require(
-            currentCrowdsaleLimit >= tokens,
-            "Crowdsale tokens limit reached"
-        );
-        require(category < CATEGORY_COUNT, "Wrong category idx");
-
-        return;
-    }
-
-    // freeze presale tokens from specified date
-    function freezePresale(
-        address beneficiary,
-        uint256 sinceDate,
-        uint256 tokens,
-        uint256 category
-    ) external onlyAdmin {
-        require(beneficiary != address(0), "Address should not be zero");
-        require(tokens > 0, "Token amount should be positive non-zero");
-        require(
-            currentCrowdsaleLimit >= tokens,
-            "Crowdsale tokens limit reached"
-        );
-        require(category < CATEGORY_COUNT, "Wrong category idx");
-
-        return;
-    }
-
-    // freeze presale tokens from specified date
-    function freezeBulk(
-        address[] calldata beneficiaries,
-        uint256[] calldata sinceDate,
-        uint256[] calldata tokens,
-        uint256 category
-    ) external onlyAdmin {
-        require(beneficiaries.length > 0, "Array should not be empty");
-        require(
-            beneficiaries.length == sinceDate.length,
-            "Arrays should be of equal length"
-        );
-        require(
-            sinceDate.length == tokens.length,
-            "Arrays should be of equal length"
-        );
-
-        return;
-    }
-
-    // freeze presale tokens from current date without crowdSaleLimit updates
-    function freezeVirtual(
-        address beneficiary,
-        uint256 tokens,
-        uint256 category
-    ) external override onlyAdmin {
-        require(beneficiary != address(0), "Address should not be zero");
-        require(tokens > 0, "Token amount should be positive non-zero");
-        require(category < CATEGORY_COUNT, "Wrong category idx");
-
-        return;
-    }
-
-    // freeze presale tokens from specified date with crowdsale limit updates
-    function freezeVirtualWithCrowdsale(
-        address beneficiary,
-        uint32 sinceDate,
-        uint256 tokens,
-        uint256 category
-    ) external override onlyAdmin {
-        require(beneficiary != address(0), "Address should not be zero");
-        require(tokens > 0, "Token amount should be positive non-zero");
-        require(category < CATEGORY_COUNT, "Wrong category idx");
-
-        return;
-    }
-
     function claim() external returns (bool) {
         (uint256 _totalBalance, uint256 _lockedBalance) =
             _getBalance(msg.sender, false);
@@ -1096,6 +1023,11 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
         }
     }
 
+    function burn() public onlyAdmin {
+        uint256 bal = IESW(_token).balanceOf(address(this));
+        IESW(_token).burnFromVesting(bal);
+    }
+
     function burnLock(address _beneficiary, uint256 idx) public onlyAdmin {
         require(_beneficiary != address(0), "Address should not be zero");
         require(idx < _locksTable[_beneficiary].length, "Wrong lock index");
@@ -1129,7 +1061,7 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
 
             uint256 totalBalance =
                 lrec.amountLocked - (periodAmount * periodsWithdrawn);
-            IESW(_token).burn(address(this), totalBalance);
+            IESW(_token).burnFromVesting(totalBalance);
         }
         delete _locksTable[_beneficiary][idx];
     }
