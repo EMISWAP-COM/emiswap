@@ -19,7 +19,7 @@ contract EmiPrice is Initializable, Priviledgeable {
     uint256 constant MARKET_UNISWAP = 1;
     uint256 constant MARKET_1INCH = 2;
 
- string public codeVersion = "EmiPrice v1.0-118-gfc65556";
+ string public codeVersion = "EmiPrice v1.0-122-ge855d30";
 
     /**
      * @dev Upgradeable proxy constructor replacement
@@ -121,20 +121,8 @@ contract EmiPrice is Initializable, Priviledgeable {
             if (address(_p) == address(0)) {
                 _prices[i] = 0;
             } else {
-                uint256 reserv0 = _p.tokens(0).balanceOf(address(_p));
-                uint256 reserv1 = _p.tokens(1).balanceOf(address(_p));
-
-                if (reserv1 == 0 || reserv0 == 0) {
-                    _prices[i] = 0; // special case
-                } else {
-                    if (_p.tokens(0) == IERC20(_DAI)) {
-                        // token0 is DAI, divide by it
-                        _prices[i] = reserv1.mul(100000).div(reserv0);
-                    } else {
-                        // token1 is DAI, divide by it
-                        _prices[i] = reserv0.mul(100000).div(reserv1);
-                    }
-                }
+                (_prices[i], ) = _p.getReturn(IERC20(_coins[i]), IERC20(_DAI), 10**uint256(ERC20(_coins[i]).decimals()));
+                _prices[i] = _prices[i].mul(10000);
             }
         }
     }
@@ -149,14 +137,14 @@ contract EmiPrice is Initializable, Priviledgeable {
             return;
         }
         for (uint256 i = 0; i < _coins.length; i++) {
-            uint8 decimals = IERC20(_coins[i]).decimals();
             (_prices[i], ) = _factory.getExpectedReturn(
                 IERC20(_coins[i]),
                 IERC20(_DAI),
-                10**decimals,
+                10**uint256(ERC20(_coins[i]).decimals()),
                 1,
                 0
             );
+            _prices[i] = _prices[i].mul(10000);
         }
     }
 }
