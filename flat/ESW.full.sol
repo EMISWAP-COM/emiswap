@@ -75,11 +75,9 @@ pragma solidity ^0.6.2;
  *
  ************************************************************************/
 interface IEmiVesting {
-  function freeze(address beneficiary, uint tokens, uint category) external;
-  function freezeVirtual(address beneficiary, uint tokens, uint category) external;
-  function freezeVirtualWithCrowdsale(address beneficiary, uint32 sinceDate, uint tokens, uint category) external;
-  function balanceOf(address beneficiary) external view returns (uint);
-  function getCrowdsaleLimit() external view returns (uint);
+    function balanceOf(address beneficiary) external view returns (uint256);
+
+    function getCrowdsaleLimit() external view returns (uint256);
 }
 
 // File: @openzeppelin/contracts/math/SafeMath.sol
@@ -252,49 +250,48 @@ pragma solidity ^0.6.2;
 
 abstract contract Priviledgeable {
     using SafeMath for uint256;
-    using SafeMath for uint;
+    using SafeMath for uint256;
 
     event PriviledgeGranted(address indexed admin);
     event PriviledgeRevoked(address indexed admin);
 
     modifier onlyAdmin() {
-        require(_priviledgeTable[msg.sender], "Priviledgeable: caller is not the owner");
+        require(
+            _priviledgeTable[msg.sender],
+            "Priviledgeable: caller is not the owner"
+        );
         _;
     }
 
     mapping(address => bool) private _priviledgeTable;
 
-    constructor () internal {
-      _priviledgeTable[msg.sender] = true;
+    constructor() internal {
+        _priviledgeTable[msg.sender] = true;
     }
 
-    function addAdmin(address _admin) external onlyAdmin returns (bool)
-    {
-      require(_admin!=address(0), "Admin address cannot be 0");
-      return _addAdmin(_admin);
+    function addAdmin(address _admin) external onlyAdmin returns (bool) {
+        require(_admin != address(0), "Admin address cannot be 0");
+        return _addAdmin(_admin);
     }
 
-    function removeAdmin(address _admin) external onlyAdmin returns (bool)
-    {
-      require(_admin!=address(0), "Admin address cannot be 0");
-      _priviledgeTable[_admin] = false;
-      emit PriviledgeRevoked(_admin);
+    function removeAdmin(address _admin) external onlyAdmin returns (bool) {
+        require(_admin != address(0), "Admin address cannot be 0");
+        _priviledgeTable[_admin] = false;
+        emit PriviledgeRevoked(_admin);
 
-      return true;
+        return true;
     }
 
-    function isAdmin(address _who) external view returns (bool)
-    {
-       return _priviledgeTable[_who];
+    function isAdmin(address _who) external view returns (bool) {
+        return _priviledgeTable[_who];
     }
 
     //-----------
     // internals
     //-----------
-    function _addAdmin(address _admin) internal returns (bool)
-    {
-      _priviledgeTable[_admin] = true;
-      emit PriviledgeGranted(_admin);
+    function _addAdmin(address _admin) internal returns (bool) {
+        _priviledgeTable[_admin] = true;
+        emit PriviledgeGranted(_admin);
     }
 }
 
@@ -608,346 +605,409 @@ pragma solidity ^0.6.0;
  * allowances. See {IERC20-approve}.
  */
 contract ProxiedERC20 is Context, IERC20 {
-  using SafeMath for uint256;
-  using Address for address;
+    using SafeMath for uint256;
+    using Address for address;
 
-  mapping(address => uint256) private _balances;
+    mapping(address => uint256) private _balances;
 
-  mapping(address => mapping(address => uint256)) private _allowances;
+    mapping(address => mapping(address => uint256)) private _allowances;
 
-  uint256 private _totalSupply;
+    uint256 private _totalSupply;
 
-  string private _name;
-  string private _symbol;
-  uint8 private _decimals;
-  uint8 private _intialized;
+    string private _name;
+    string private _symbol;
+    uint8 private _decimals;
+    uint8 private _intialized;
 
-  /**
-   * @dev Sets the values for {name} and {symbol}, initializes {decimals} with
-   * a default value of 18.
-   *
-   * To select a different value for {decimals}, use {_setupDecimals}.
-   *
-   * All three of these values are immutable: they can only be set once during
-   * construction.
-   */
-  function _initialize(
-    string memory name,
-    string memory symbol,
-    uint8 decimals
-  ) internal {
-    require(_intialized == 0, "Already intialize");
-    _name = name;
-    _symbol = symbol;
-    _decimals = decimals;
-    _intialized = 1;
-  }
+    /**
+     * @dev Sets the values for {name} and {symbol}, initializes {decimals} with
+     * a default value of 18.
+     *
+     * To select a different value for {decimals}, use {_setupDecimals}.
+     *
+     * All three of these values are immutable: they can only be set once during
+     * construction.
+     */
+    function _initialize(
+        string memory name,
+        string memory symbol,
+        uint8 decimals
+    ) internal {
+        require(_intialized == 0, "Already intialize");
+        _name = name;
+        _symbol = symbol;
+        _decimals = decimals;
+        _intialized = 1;
+    }
 
-  /**
-   * @dev Returns the name of the token.
-   */
-  function _updateTokenName(string memory newName, string memory newSymbol) internal {
-    _name = newName;
-    _symbol = newSymbol;
-  }
+    /**
+     * @dev Returns the name of the token.
+     */
+    function _updateTokenName(string memory newName, string memory newSymbol)
+        internal
+    {
+        _name = newName;
+        _symbol = newSymbol;
+    }
 
-  /**
-   * @dev Returns the name of the token.
-   */
-  function name() public view returns (string memory) {
-    return _name;
-  }
+    /**
+     * @dev Returns the name of the token.
+     */
+    function name() public view returns (string memory) {
+        return _name;
+    }
 
-  /**
-   * @dev Returns the symbol of the token, usually a shorter version of the
-   * name.
-   */
-  function symbol() public view returns (string memory) {
-    return _symbol;
-  }
+    /**
+     * @dev Returns the symbol of the token, usually a shorter version of the
+     * name.
+     */
+    function symbol() public view returns (string memory) {
+        return _symbol;
+    }
 
-  /**
-   * @dev Returns the number of decimals used to get its user representation.
-   * For example, if `decimals` equals `2`, a balance of `505` tokens should
-   * be displayed to a user as `5,05` (`505 / 10 ** 2`).
-   *
-   * Tokens usually opt for a value of 18, imitating the relationship between
-   * Ether and Wei. This is the value {ERC20} uses, unless {_setupDecimals} is
-   * called.
-   *
-   * NOTE: This information is only used for _display_ purposes: it in
-   * no way affects any of the arithmetic of the contract, including
-   * {IERC20-balanceOf} and {IERC20-transfer}.
-   */
-  function decimals() public view returns (uint8) {
-    return _decimals;
-  }
+    /**
+     * @dev Returns the number of decimals used to get its user representation.
+     * For example, if `decimals` equals `2`, a balance of `505` tokens should
+     * be displayed to a user as `5,05` (`505 / 10 ** 2`).
+     *
+     * Tokens usually opt for a value of 18, imitating the relationship between
+     * Ether and Wei. This is the value {ERC20} uses, unless {_setupDecimals} is
+     * called.
+     *
+     * NOTE: This information is only used for _display_ purposes: it in
+     * no way affects any of the arithmetic of the contract, including
+     * {IERC20-balanceOf} and {IERC20-transfer}.
+     */
+    function decimals() public view returns (uint8) {
+        return _decimals;
+    }
 
-  /**
-   * @dev See {IERC20-totalSupply}.
-   */
-  function totalSupply() public override view returns (uint256) {
-    return _totalSupply;
-  }
+    /**
+     * @dev See {IERC20-totalSupply}.
+     */
+    function totalSupply() public view override returns (uint256) {
+        return _totalSupply;
+    }
 
-  /**
-   * @dev See {IERC20-balanceOf}.
-   */
-  function balanceOf(address account) public virtual override view returns (uint256) {
-    return _balances[account];
-  }
+    /**
+     * @dev See {IERC20-balanceOf}.
+     */
+    function balanceOf(address account)
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
+        return _balances[account];
+    }
 
-  /**
-   * @dev See {IERC20-transfer}.
-   *
-   * Requirements:
-   *
-   * - `recipient` cannot be the zero address.
-   * - the caller must have a balance of at least `amount`.
-   */
-  function transfer(address recipient, uint256 amount)
-    public
-    virtual
-    override
-    returns (bool)
-  {
-    _transfer(_msgSender(), recipient, amount);
-    return true;
-  }
+    /**
+     * @dev See {IERC20-transfer}.
+     *
+     * Requirements:
+     *
+     * - `recipient` cannot be the zero address.
+     * - the caller must have a balance of at least `amount`.
+     */
+    function transfer(address recipient, uint256 amount)
+        public
+        virtual
+        override
+        returns (bool)
+    {
+        _transfer(_msgSender(), recipient, amount);
+        return true;
+    }
 
-  /**
-   * @dev See {IERC20-allowance}.
-   */
-  function allowance(address owner, address spender)
-    public
-    virtual
-    override
-    view
-    returns (uint256)
-  {
-    return _allowances[owner][spender];
-  }
+    /**
+     * @dev See {IERC20-allowance}.
+     */
+    function allowance(address owner, address spender)
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
+        return _allowances[owner][spender];
+    }
 
-  /**
-   * @dev See {IERC20-approve}.
-   *
-   * Requirements:
-   *
-   * - `spender` cannot be the zero address.
-   */
-  function approve(address spender, uint256 amount)
-    public
-    virtual
-    override
-    returns (bool)
-  {
-    _approve(_msgSender(), spender, amount);
-    return true;
-  }
+    /**
+     * @dev See {IERC20-approve}.
+     *
+     * Requirements:
+     *
+     * - `spender` cannot be the zero address.
+     */
+    function approve(address spender, uint256 amount)
+        public
+        virtual
+        override
+        returns (bool)
+    {
+        _approve(_msgSender(), spender, amount);
+        return true;
+    }
 
-  /**
-   * @dev See {IERC20-transferFrom}.
-   *
-   * Emits an {Approval} event indicating the updated allowance. This is not
-   * required by the EIP. See the note at the beginning of {ERC20};
-   *
-   * Requirements:
-   * - `sender` and `recipient` cannot be the zero address.
-   * - `sender` must have a balance of at least `amount`.
-   * - the caller must have allowance for ``sender``'s tokens of at least
-   * `amount`.
-   */
-  function transferFrom(
-    address sender,
-    address recipient,
-    uint256 amount
-  ) public virtual override returns (bool) {
-    _transfer(sender, recipient, amount);
-    _approve(
-      sender,
-      _msgSender(),
-      _allowances[sender][_msgSender()].sub(
-        amount,
-        "ERC20: transfer amount exceeds allowance"
-      )
-    );
-    return true;
-  }
+    /**
+     * @dev See {IERC20-transferFrom}.
+     *
+     * Emits an {Approval} event indicating the updated allowance. This is not
+     * required by the EIP. See the note at the beginning of {ERC20};
+     *
+     * Requirements:
+     * - `sender` and `recipient` cannot be the zero address.
+     * - `sender` must have a balance of at least `amount`.
+     * - the caller must have allowance for ``sender``'s tokens of at least
+     * `amount`.
+     */
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) public virtual override returns (bool) {
+        _transfer(sender, recipient, amount);
+        _approve(
+            sender,
+            _msgSender(),
+            _allowances[sender][_msgSender()].sub(
+                amount,
+                "ERC20: transfer amount exceeds allowance"
+            )
+        );
+        return true;
+    }
 
-  /**
-   * @dev Atomically increases the allowance granted to `spender` by the caller.
-   *
-   * This is an alternative to {approve} that can be used as a mitigation for
-   * problems described in {IERC20-approve}.
-   *
-   * Emits an {Approval} event indicating the updated allowance.
-   *
-   * Requirements:
-   *
-   * - `spender` cannot be the zero address.
-   */
-  function increaseAllowance(address spender, uint256 addedValue)
-    public
-    virtual
-    returns (bool)
-  {
-    _approve(
-      _msgSender(),
-      spender,
-      _allowances[_msgSender()][spender].add(addedValue)
-    );
-    return true;
-  }
+    /**
+     * @dev Atomically increases the allowance granted to `spender` by the caller.
+     *
+     * This is an alternative to {approve} that can be used as a mitigation for
+     * problems described in {IERC20-approve}.
+     *
+     * Emits an {Approval} event indicating the updated allowance.
+     *
+     * Requirements:
+     *
+     * - `spender` cannot be the zero address.
+     */
+    function increaseAllowance(address spender, uint256 addedValue)
+        public
+        virtual
+        returns (bool)
+    {
+        _approve(
+            _msgSender(),
+            spender,
+            _allowances[_msgSender()][spender].add(addedValue)
+        );
+        return true;
+    }
 
-  /**
-   * @dev Atomically decreases the allowance granted to `spender` by the caller.
-   *
-   * This is an alternative to {approve} that can be used as a mitigation for
-   * problems described in {IERC20-approve}.
-   *
-   * Emits an {Approval} event indicating the updated allowance.
-   *
-   * Requirements:
-   *
-   * - `spender` cannot be the zero address.
-   * - `spender` must have allowance for the caller of at least
-   * `subtractedValue`.
-   */
-  function decreaseAllowance(address spender, uint256 subtractedValue)
-    public
-    virtual
-    returns (bool)
-  {
-    _approve(
-      _msgSender(),
-      spender,
-      _allowances[_msgSender()][spender].sub(
-        subtractedValue,
-        "ERC20: decreased allowance below zero"
-      )
-    );
-    return true;
-  }
+    /**
+     * @dev Atomically decreases the allowance granted to `spender` by the caller.
+     *
+     * This is an alternative to {approve} that can be used as a mitigation for
+     * problems described in {IERC20-approve}.
+     *
+     * Emits an {Approval} event indicating the updated allowance.
+     *
+     * Requirements:
+     *
+     * - `spender` cannot be the zero address.
+     * - `spender` must have allowance for the caller of at least
+     * `subtractedValue`.
+     */
+    function decreaseAllowance(address spender, uint256 subtractedValue)
+        public
+        virtual
+        returns (bool)
+    {
+        _approve(
+            _msgSender(),
+            spender,
+            _allowances[_msgSender()][spender].sub(
+                subtractedValue,
+                "ERC20: decreased allowance below zero"
+            )
+        );
+        return true;
+    }
 
-  /**
-   * @dev Moves tokens `amount` from `sender` to `recipient`.
-   *
-   * This is internal function is equivalent to {transfer}, and can be used to
-   * e.g. implement automatic token fees, slashing mechanisms, etc.
-   *
-   * Emits a {Transfer} event.
-   *
-   * Requirements:
-   *
-   * - `sender` cannot be the zero address.
-   * - `recipient` cannot be the zero address.
-   * - `sender` must have a balance of at least `amount`.
-   */
-  function _transfer(
-    address sender,
-    address recipient,
-    uint256 amount
-  ) internal virtual {
-    require(sender != address(0), "ERC20: transfer from the zero address");
-    require(recipient != address(0), "ERC20: transfer to the zero address");
+    /**
+     * @dev Moves tokens `amount` from `sender` to `recipient`.
+     *
+     * This is internal function is equivalent to {transfer}, and can be used to
+     * e.g. implement automatic token fees, slashing mechanisms, etc.
+     *
+     * Emits a {Transfer} event.
+     *
+     * Requirements:
+     *
+     * - `sender` cannot be the zero address.
+     * - `recipient` cannot be the zero address.
+     * - `sender` must have a balance of at least `amount`.
+     */
+    function _transfer(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) internal virtual {
+        require(sender != address(0), "ERC20: transfer from the zero address");
+        require(recipient != address(0), "ERC20: transfer to the zero address");
 
-    _beforeTokenTransfer(sender, recipient, amount);
+        _beforeTokenTransfer(sender, recipient, amount);
 
-    _balances[sender] = _balances[sender].sub(
-      amount,
-      "ERC20: transfer amount exceeds balance"
-    );
-    _balances[recipient] = _balances[recipient].add(amount);
-    emit Transfer(sender, recipient, amount);
-  }
+        _balances[sender] = _balances[sender].sub(
+            amount,
+            "ERC20: transfer amount exceeds balance"
+        );
+        _balances[recipient] = _balances[recipient].add(amount);
+        emit Transfer(sender, recipient, amount);
+    }
 
-  /** @dev Creates `amount` tokens and assigns them to `account`, increasing
-   * the total supply.
-   *
-   * Emits a {Transfer} event with `from` set to the zero address.
-   *
-   * Requirements
-   *
-   * - `to` cannot be the zero address.
-   */
-  function _mint(address account, uint256 amount) internal virtual {
-    require(account != address(0), "ERC20: mint to the zero address");
+    /** @dev Creates `amount` tokens and assigns them to `account`, increasing
+     * the total supply.
+     *
+     * Emits a {Transfer} event with `from` set to the zero address.
+     *
+     * Requirements
+     *
+     * - `to` cannot be the zero address.
+     */
+    function _mint(address account, uint256 amount) internal virtual {
+        require(account != address(0), "ERC20: mint to the zero address");
 
-    _beforeTokenTransfer(address(0), account, amount);
+        _beforeTokenTransfer(address(0), account, amount);
 
-    _totalSupply = _totalSupply.add(amount);
-    _balances[account] = _balances[account].add(amount);
-    emit Transfer(address(0), account, amount);
-  }
+        _totalSupply = _totalSupply.add(amount);
+        _balances[account] = _balances[account].add(amount);
+        emit Transfer(address(0), account, amount);
+    }
 
-  /**
-   * @dev Destroys `amount` tokens from `account`, reducing the
-   * total supply.
-   *
-   * Emits a {Transfer} event with `to` set to the zero address.
-   *
-   * Requirements
-   *
-   * - `account` cannot be the zero address.
-   * - `account` must have at least `amount` tokens.
-   */
-  function _burn(address account, uint256 amount) internal virtual {
-    require(account != address(0), "ERC20: burn from the zero address");
+    /**
+     * @dev Destroys `amount` tokens from `account`, reducing the
+     * total supply.
+     *
+     * Emits a {Transfer} event with `to` set to the zero address.
+     *
+     * Requirements
+     *
+     * - `account` cannot be the zero address.
+     * - `account` must have at least `amount` tokens.
+     */
+    function _burn(address account, uint256 amount) internal virtual {
+        require(account != address(0), "ERC20: burn from the zero address");
 
-    _beforeTokenTransfer(account, address(0), amount);
+        _beforeTokenTransfer(account, address(0), amount);
 
-    _balances[account] = _balances[account].sub(
-      amount,
-      "ERC20: burn amount exceeds balance"
-    );
-    _totalSupply = _totalSupply.sub(amount);
-    emit Transfer(account, address(0), amount);
-  }
+        _balances[account] = _balances[account].sub(
+            amount,
+            "ERC20: burn amount exceeds balance"
+        );
+        _totalSupply = _totalSupply.sub(amount);
+        emit Transfer(account, address(0), amount);
+    }
 
-  /**
-   * @dev Sets `amount` as the allowance of `spender` over the `owner`s tokens.
-   *
-   * This is internal function is equivalent to `approve`, and can be used to
-   * e.g. set automatic allowances for certain subsystems, etc.
-   *
-   * Emits an {Approval} event.
-   *
-   * Requirements:
-   *
-   * - `owner` cannot be the zero address.
-   * - `spender` cannot be the zero address.
-   */
-  function _approve(
-    address owner,
-    address spender,
-    uint256 amount
-  ) internal virtual {
-    require(owner != address(0), "ERC20: approve from the zero address");
-    require(spender != address(0), "ERC20: approve to the zero address");
+    /**
+     * @dev Sets `amount` as the allowance of `spender` over the `owner`s tokens.
+     *
+     * This is internal function is equivalent to `approve`, and can be used to
+     * e.g. set automatic allowances for certain subsystems, etc.
+     *
+     * Emits an {Approval} event.
+     *
+     * Requirements:
+     *
+     * - `owner` cannot be the zero address.
+     * - `spender` cannot be the zero address.
+     */
+    function _approve(
+        address owner,
+        address spender,
+        uint256 amount
+    ) internal virtual {
+        require(owner != address(0), "ERC20: approve from the zero address");
+        require(spender != address(0), "ERC20: approve to the zero address");
 
-    _allowances[owner][spender] = amount;
-    emit Approval(owner, spender, amount);
-  }
+        _allowances[owner][spender] = amount;
+        emit Approval(owner, spender, amount);
+    }
 
-  /**
-   * @dev Hook that is called before any transfer of tokens. This includes
-   * minting and burning.
-   *
-   * Calling conditions:
-   *
-   * - when `from` and `to` are both non-zero, `amount` of ``from``'s tokens
-   * will be to transferred to `to`.
-   * - when `from` is zero, `amount` tokens will be minted for `to`.
-   * - when `to` is zero, `amount` of ``from``'s tokens will be burned.
-   * - `from` and `to` are never both zero.
-   *
-   * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
-   */
-  function _beforeTokenTransfer(
-    address from,
-    address to,
-    uint256 amount
-  ) internal virtual {}
+    /**
+     * @dev Hook that is called before any transfer of tokens. This includes
+     * minting and burning.
+     *
+     * Calling conditions:
+     *
+     * - when `from` and `to` are both non-zero, `amount` of ``from``'s tokens
+     * will be to transferred to `to`.
+     * - when `from` is zero, `amount` tokens will be minted for `to`.
+     * - when `to` is zero, `amount` of ``from``'s tokens will be burned.
+     * - `from` and `to` are never both zero.
+     *
+     * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
+     */
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal virtual {}
+}
+
+// File: contracts/libraries/OracleSign.sol
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.6.2;
+
+abstract contract OracleSign {
+    function _splitSignature(bytes memory sig)
+        internal
+        pure
+        returns (
+            uint8,
+            bytes32,
+            bytes32
+        )
+    {
+        require(sig.length == 65, "Incorrect signature length");
+
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+
+        assembly {
+            //first 32 bytes, after the length prefix
+            r := mload(add(sig, 0x20))
+            //next 32 bytes
+            s := mload(add(sig, 0x40))
+            //final byte, first of next 32 bytes
+            v := byte(0, mload(add(sig, 0x60)))
+        }
+
+        return (v, r, s);
+    }
+
+    function _recoverSigner(bytes32 message, bytes memory sig)
+        internal
+        pure
+        returns (address)
+    {
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+
+        (v, r, s) = _splitSignature(sig);
+
+        return ecrecover(message, v, r, s);
+    }
+
+    function _prefixed(bytes32 hash) internal pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
+            );
+    }
 }
 
 // File: contracts/ESW.sol
@@ -959,135 +1019,201 @@ pragma solidity ^0.6.2;
 
 
 
-contract ESW is ProxiedERC20, Initializable, Priviledgeable {
-  address public dividendToken;
-  address public vesting;
-  uint256 internal _initialSupply;
-  mapping(address => uint256) internal _mintLimit;
-  mapping(address => bool) internal _mintGranted;
 
-  // !!!In updates to contracts set new variables strictly below this line!!!
-  //-----------------------------------------------------------------------------------
- string public codeVersion = "ESW v1.0-39-gbe96add";
-  uint256 constant public MAXIMUM_SUPPLY = 200_000_000e18; 
-  
-  modifier mintGranted() {
-    require(_mintGranted[msg.sender], "ESW mint: caller is not alowed!");
-    _;
-  }
+contract ESW is ProxiedERC20, Initializable, Priviledgeable, OracleSign {
+    address public dividendToken;
+    address public vesting;
+    uint256 internal _initialSupply;
+    mapping(address => uint256) internal _mintLimit;
+    mapping(address => bool) internal _mintGranted; // <-- been used in previouse implementation, now just reserved at proxy storage
 
-  function initialize() public virtual {
-    _initialize("EmiDAO Token", "ESW", 18);
-    _addAdmin(msg.sender);
-  }
+    // !!!In updates to contracts set new variables strictly below this line!!!
+    //-----------------------------------------------------------------------------------
+ string public codeVersion = "ESW v1.0-118-gfc65556";
+    uint256 public constant MAXIMUM_SUPPLY = 200_000_000e18;
+    bool public isFirstMinter = true;
+    address public constant firstMinter =
+        0xdeb5A983AdC9b25b8A96ae43a65953Ded3939de6; // set to Oracle
+    address public constant secondMinter =
+        0x9Cf73e538acC5B2ea51396eA1a6DE505f6a68f2b; //set to EmiVesting
+    uint256 public minterChangeBlock;
 
-  function updateTokenName(string memory newName, string memory newSymbol) public onlyAdmin {
-    _updateTokenName(newName, newSymbol);
-  }
+    event minterSwitch(address newMinter, uint256 afterBlock);
 
-  function grantMint(address _newIssuer) public onlyAdmin {
-    require(_newIssuer != address(0), "ESW: Zero address not allowed");
-    _mintGranted[_newIssuer] = true;
-  }
+    mapping(address => uint256) public walletNonce;
 
-  function revokeMint(address _revokeIssuer) public onlyAdmin {
-    require(_revokeIssuer != address(0), "ESW: Zero address not allowed");
-    if (_mintGranted[_revokeIssuer]) {
-      _mintGranted[_revokeIssuer] = false;
+    function initialize() public virtual initializer {
+        _initialize("EmiDAO Token", "ESW", 18);
+        _addAdmin(msg.sender);
     }
-  }
 
-  function setVesting(address _vesting) public onlyAdmin {
-    require(_vesting != address(0), "Set vesting contract address");
-    vesting = _vesting;
-    grantMint(_vesting);
-  }
+    /*********************** admin functions *****************************/
 
-  function initialSupply() public view returns (uint256) {
-    return _initialSupply;
-  }
-
-  function balanceOf2(address account) public view returns (uint256) {
-    return super.balanceOf(account).add(IEmiVesting(vesting).balanceOf(account));
-  }
-
-  function balanceOf(address account) public override view returns (uint256) {
-    return super.balanceOf(account);
-  }  
-
-  function setDividendToken(address _dividendToken) onlyAdmin public {
-    dividendToken = _dividendToken;
-  }
-
-  function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
-    super.transfer(recipient, amount);
-    return true;
-  }
-
-  function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
-    super.transferFrom(sender, recipient, amount);
-    return true;
-  }
-
-  function getMintLimit(address account) public view onlyAdmin returns(uint256) {
-    return _mintLimit[account];
-  }
-
-  /******************************************************************
-  * set mint limit for exact contract wallets  
-  *******************************************************************/
-  function setMintLimit(address account, uint256 amount) public onlyAdmin {
-    _mintLimit[account] = amount;
-    if (amount > 0) {
-      grantMint(account);
-    } else {
-      revokeMint(account);
+    function updateTokenName(string memory newName, string memory newSymbol)
+        public
+        onlyAdmin
+    {
+        _updateTokenName(newName, newSymbol);
     }
-  }
 
-  function _mint(address recipient, uint256 amount) override internal {
-    require(totalSupply().add(amount) <= MAXIMUM_SUPPLY, "ESW: Maximum supply exceeded");
-    _mintLimit[msg.sender] = _mintLimit[msg.sender].sub(amount);
-    super._mint(recipient, amount);
-  }
+    /**
+     * switchMinter - function for switching between two registered minters
+     * @param isSetFirst - true - set first / false - set second minter
+     */
 
-  /************************************************************
-  * mint with start vesting for the recipient, 
-  * 
-  *************************************************************/
-  function mintAndFreeze(address recipient, uint256 amount, uint256 category) external mintGranted() {
-    IEmiVesting(vesting).freeze(recipient, amount, category);
-    _mint(vesting, amount);
-  }
+    function switchMinter(bool isSetFirst) public onlyAdmin {
+        isFirstMinter = isSetFirst;
+        minterChangeBlock = block.number + 6646; // 6646 ~24 hours
+        emit minterSwitch(
+            (isSetFirst ? firstMinter : secondMinter),
+            minterChangeBlock
+        );
+    }
 
-  /************************************************************
-  * mint only claimed from vesting for the recipient 
-  * 
-  *************************************************************/
-  function mintClaimed(address recipient, uint256 amount) external mintGranted() {
-    _mint(recipient, amount);
-  }
+    /**
+     * set mint limit for exact contract wallets
+     * @param account - wallet to set mint limit
+     * @param amount - mint limit value
+     */
 
-  /************************************************************
-  * mint virtual with start vesting for the recipient, 
-  * 
-  *************************************************************/
-  function mintVirtualAndFreeze(address recipient, uint256 amount, uint256 category) external mintGranted() {
-    IEmiVesting(vesting).freezeVirtual(recipient, amount, category);
-  }
+    function setMintLimit(address account, uint256 amount) public onlyAdmin {
+        _mintLimit[account] = amount;
+    }
 
-  /************************************************************
-  * mint virtual with start vesting for the presale tokens
-  * 
-  *************************************************************/
-  function mintVirtualAndFreezePresale(address recipient, uint32 sinceDate, uint256 amount, uint256 category) external mintGranted() {
-    IEmiVesting(vesting).freezeVirtualWithCrowdsale(recipient, sinceDate, amount, category);
-  }  
+    function transfer(address recipient, uint256 amount)
+        public
+        virtual
+        override
+        returns (bool)
+    {
+        super.transfer(recipient, amount);
+        return true;
+    }
 
-  /*
-  * Get currentCrowdsaleLimit
-  */
-  function currentCrowdsaleLimit() external view returns( uint256 ) {
-    return( IEmiVesting(vesting).getCrowdsaleLimit() );
-  }
+    /*********************** public functions *****************************/
+
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) public virtual override returns (bool) {
+        super.transferFrom(sender, recipient, amount);
+        return true;
+    }
+
+    function burn(uint256 amount) public {
+        super._burn(msg.sender, amount);
+    }
+
+    function burnFromVesting(uint256 amount) external {
+        require(msg.sender == vesting, "Only vesting!");
+        burn(amount);
+    }
+
+    /**
+     * mintSigned - oracle signed function allow user to mint ESW tokens
+     * @param recipient - user's wallet for receiving tokens
+     * @param amount - amount to mint
+     * @param nonce - user's mint request number, for security purpose
+     * @param sig - oracle signature, oracle allowance for user to mint tokens
+     */
+
+    function mintSigned(
+        address recipient,
+        uint256 amount,
+        uint256 nonce,
+        bytes memory sig
+    ) public {
+        require(recipient == msg.sender, "ESW:sender");
+        // check sign
+        bytes32 message =
+            _prefixed(
+                keccak256(abi.encodePacked(recipient, amount, nonce, this))
+            );
+
+        require(
+            _recoverSigner(message, sig) == getOracle() &&
+                walletNonce[msg.sender] < nonce,
+            "ESW:sign"
+        );
+
+        walletNonce[msg.sender] = nonce;
+
+        _mintAllowed(getOracle(), recipient, amount);
+    }
+
+    /*********************** view functions *****************************/
+
+    function initialSupply() public view returns (uint256) {
+        return _initialSupply;
+    }
+
+    function balanceOf(address account) public view override returns (uint256) {
+        return super.balanceOf(account);
+    }
+
+    /**
+     * getMintLimit - read mint limit for wallets
+     * @param account - wallet address
+     * @return - mintlimit for requested wallet
+     */
+
+    function getMintLimit(address account)
+        public
+        view
+        onlyAdmin
+        returns (uint256)
+    {
+        return _mintLimit[account];
+    }
+
+    function getWalletNonce() public view returns (uint256) {
+        return walletNonce[msg.sender];
+    }
+
+    /**
+     *first minter address after minterChangeBlock, second before minterChangeBlock
+     *second minter address after minterChangeBlock, first before minterChangeBlock
+     */
+    function getOracle() public view returns (address) {
+        return (
+            (
+                isFirstMinter
+                    ? (
+                        block.number >= minterChangeBlock
+                            ? firstMinter
+                            : secondMinter
+                    )
+                    : (
+                        block.number >= minterChangeBlock
+                            ? secondMinter
+                            : firstMinter
+                    )
+            )
+        );
+    }
+
+    /*********************** internal functions *****************************/
+
+    function _mintAllowed(
+        address allowedMinter,
+        address recipient,
+        uint256 amount
+    ) internal {
+        require(
+            totalSupply().add(amount) <= MAXIMUM_SUPPLY,
+            "ESW:supply_exceeded"
+        );
+        _mintLimit[allowedMinter] = _mintLimit[allowedMinter].sub(amount);
+        super._mint(recipient, amount);
+    }
+
+    /************************************************** TEST !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+    function setVesting(address _vesting) public onlyAdmin {
+        vesting = _vesting;
+    }
+
+    function mintToVesting(uint256 amount) public onlyAdmin {
+        super._mint(vesting, amount);
+    }
 }

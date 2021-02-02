@@ -15,7 +15,7 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
     using SafeMath for uint256;
     using Address for address;
 
- string public codeVersion = "EmiVoting v1.0-112-g65e9f12";
+ string public codeVersion = "EmiVoting v1.0-118-gfc65556";
 
     /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
     function quorumVotes() public pure returns (uint256) {
@@ -281,7 +281,7 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
         Proposal storage proposal = proposals[proposalId];
         proposal.executed = true;
         for (uint256 i = 0; i < proposal.targets.length; i++) {
-            timelock.executeTransaction{value:proposal.values[i]}(
+            timelock.executeTransaction{value: proposal.values[i]}(
                 proposal.targets[i],
                 proposal.values[i],
                 proposal.signatures[i],

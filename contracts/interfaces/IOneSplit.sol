@@ -11,10 +11,8 @@ interface IOneSplit {
         uint256 amount,
         uint256 parts,
         uint256 flags
-    ) external
-      view
-      returns(
-          uint256 returnAmount,
-          uint256[] memory distribution
-      );
+    )
+        external
+        view
+        returns (uint256 returnAmount, uint256[] memory distribution);
 }
