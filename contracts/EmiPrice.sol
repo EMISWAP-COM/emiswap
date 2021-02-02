@@ -141,7 +141,8 @@ contract EmiPrice is Initializable, Priviledgeable {
             return;
         }
         for (uint256 i = 0; i < _coins.length; i++) {
-            (_prices[i],) = _factory.getExpectedReturn(IERC20(_coins[i]), IERC20(_DAI), 1, 0, 0);
+            uint8 decimals = IERC20(_coins[i]).decimals();
+            (_prices[i],) = _factory.getExpectedReturn(IERC20(_coins[i]), IERC20(_DAI), 10**decimals, 0, 0);
         }
     }
 
