@@ -154,7 +154,7 @@ contract EmiPrice is Initializable, Priviledgeable {
                 IERC20(_coins[i]),
                 IERC20(_DAI),
                 10**decimals,
-                0,
+                1,
                 0
             );
         }
