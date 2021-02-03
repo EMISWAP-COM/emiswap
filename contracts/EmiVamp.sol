@@ -8,6 +8,7 @@ import "./libraries/Priviledgeable.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "./interfaces/IEmiRouter.sol";
 import "./interfaces/IEmiswap.sol";
+import "./interfaces/IEmiVoting.sol";
 import "./libraries/TransferHelper.sol";
 
 /**
@@ -109,10 +110,13 @@ contract EmiVamp is Initializable, Priviledgeable {
     /**
      * @dev Change emirouter address
      */
+    function changeRouter(uint _proposalId) onlyAdmin external {
+        address _newRouter;
 
-    function changeRouter(address _newEmiRouter) external {
-        require(msg.sender == _voting, "Only voting can change router");
-        ourRouter = IEmiRouter(_newEmiRouter);
+        _newRouter = IEmiVoting(_voting).getVotingResult(_proposalId);
+        require(_newRouter != address(0), "New Router address is wrong");
+
+        ourRouter = IEmiRouter(_newRouter);
     }
 
     // Deposit LP tokens to us
