@@ -91,6 +91,7 @@ contract EmiPrice is Initializable, Priviledgeable {
 
         for (uint256 i = 0; i < _coins.length; i++) {
             _p = IUniswapV2Pair(_factory.getPair(_coins[i], _DAI));
+            uint256 decimal = ERC20(_coins[i]).decimals();
             if (address(_p) == address(0)) {
                 _prices[i] = 0;
             } else {
@@ -99,8 +100,8 @@ contract EmiPrice is Initializable, Priviledgeable {
                     _prices[i] = 0; // special case
                 } else {
                     _prices[i] = address(_coins[i]) < address(_DAI)
-                        ? reserv1.mul(100000).div(reserv0)
-                        : reserv0.mul(100000).div(reserv1);
+                        ? reserv1.mul(10**(23-decimal)).div(reserv0)
+                        : reserv0.mul(10**(23-decimal)).div(reserv1);
                 }
             }
         }
@@ -121,20 +122,8 @@ contract EmiPrice is Initializable, Priviledgeable {
             if (address(_p) == address(0)) {
                 _prices[i] = 0;
             } else {
-                uint256 reserv0 = _p.tokens(0).balanceOf(address(_p));
-                uint256 reserv1 = _p.tokens(1).balanceOf(address(_p));
-
-                if (reserv1 == 0 || reserv0 == 0) {
-                    _prices[i] = 0; // special case
-                } else {
-                    if (_p.tokens(0) == IERC20(_DAI)) {
-                        // token0 is DAI, divide by it
-                        _prices[i] = reserv1.mul(100000).div(reserv0);
-                    } else {
-                        // token1 is DAI, divide by it
-                        _prices[i] = reserv0.mul(100000).div(reserv1);
-                    }
-                }
+                (_prices[i], ) = _p.getReturn(IERC20(_coins[i]), IERC20(_DAI), 10**uint256(ERC20(_coins[i]).decimals()));
+                _prices[i] = _prices[i].div(10**13);
             }
         }
     }
@@ -152,10 +141,11 @@ contract EmiPrice is Initializable, Priviledgeable {
             (_prices[i], ) = _factory.getExpectedReturn(
                 IERC20(_coins[i]),
                 IERC20(_DAI),
+                10**uint256(ERC20(_coins[i]).decimals()),
                 1,
-                0,
                 0
             );
+            _prices[i] = _prices[i].div(10**13); // 18 decimal places minus 5 places for multiples
         }
     }
 }
