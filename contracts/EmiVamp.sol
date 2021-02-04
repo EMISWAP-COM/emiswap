@@ -8,6 +8,7 @@ import "./libraries/Priviledgeable.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "./interfaces/IEmiRouter.sol";
 import "./interfaces/IEmiswap.sol";
+import "./interfaces/IEmiVoting.sol";
 import "./libraries/TransferHelper.sol";
 
 /**
@@ -34,17 +35,21 @@ contract EmiVamp is Initializable, Priviledgeable {
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
 
+    address _voting;
+
     /**
      * @dev Implementation of {UpgradeableProxy} type of constructors
      */
     function initialize(
         address[] memory _lptokens,
         uint8[] memory _types,
-        address _ourrouter
+        address _ourrouter,
+        address _ourvoting
     ) public initializer {
         require(_lptokens.length > 0, "EmiVamp: length>0!");
         require(_lptokens.length == _types.length, "EmiVamp: lengths!");
         require(_ourrouter != address(0), "EmiVamp: router!");
+        require(_ourvoting != address(0), "EmiVamp: voting!");
 
         for (uint256 i = 0; i < _lptokens.length; i++) {
             lpTokensInfo.push(
@@ -105,9 +110,13 @@ contract EmiVamp is Initializable, Priviledgeable {
     /**
      * @dev Change emirouter address
      */
+    function changeRouter(uint256 _proposalId) external onlyAdmin {
+        address _newRouter;
 
-    function changeRouter(address _newEmiRouter) external onlyAdmin {
-        ourRouter = IEmiRouter(_newEmiRouter);
+        _newRouter = IEmiVoting(_voting).getVotingResult(_proposalId);
+        require(_newRouter != address(0), "New Router address is wrong");
+
+        ourRouter = IEmiRouter(_newRouter);
     }
 
     // Deposit LP tokens to us

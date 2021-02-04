@@ -1,4 +1,4 @@
-// File: @openzeppelin/contracts/GSN/Context.sol
+
 
 // SPDX-License-Identifier: MIT
 
@@ -25,7 +25,7 @@ abstract contract Context {
     }
 }
 
-// File: @openzeppelin/contracts/access/Ownable.sol
+// File: @openzeppelin\contracts\access\Ownable.sol
 
 // SPDX-License-Identifier: MIT
 
@@ -95,7 +95,9 @@ abstract contract Ownable is Context {
     }
 }
 
-// File: @openzeppelin/contracts/token/ERC20/IERC20.sol
+// File: node_modules\@openzeppelin\contracts\token\ERC20\IERC20.sol
+
+// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -174,6 +176,8 @@ interface IERC20 {
 }
 
 // File: @openzeppelin/contracts/math/SafeMath.sol
+
+// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -333,7 +337,9 @@ library SafeMath {
     }
 }
 
-// File: @openzeppelin/contracts/token/ERC20/ERC20.sol
+// File: @openzeppelin\contracts\token\ERC20\ERC20.sol
+
+// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -639,7 +645,251 @@ contract ERC20 is Context, IERC20 {
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual { }
 }
 
-// File: @openzeppelin/contracts/utils/Address.sol
+// File: @openzeppelin\contracts\math\SafeMath.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity >=0.6.0 <0.8.0;
+
+/**
+ * @dev Wrappers over Solidity's arithmetic operations with added overflow
+ * checks.
+ *
+ * Arithmetic operations in Solidity wrap on overflow. This can easily result
+ * in bugs, because programmers usually assume that an overflow raises an
+ * error, which is the standard behavior in high level programming languages.
+ * `SafeMath` restores this intuition by reverting the transaction when an
+ * operation overflows.
+ *
+ * Using this library instead of the unchecked operations eliminates an entire
+ * class of bugs, so it's recommended to use it always.
+ */
+library SafeMath {
+    /**
+     * @dev Returns the addition of two unsigned integers, reverting on
+     * overflow.
+     *
+     * Counterpart to Solidity's `+` operator.
+     *
+     * Requirements:
+     *
+     * - Addition cannot overflow.
+     */
+    function add(uint256 a, uint256 b) internal pure returns (uint256) {
+        uint256 c = a + b;
+        require(c >= a, "SafeMath: addition overflow");
+
+        return c;
+    }
+
+    /**
+     * @dev Returns the subtraction of two unsigned integers, reverting on
+     * overflow (when the result is negative).
+     *
+     * Counterpart to Solidity's `-` operator.
+     *
+     * Requirements:
+     *
+     * - Subtraction cannot overflow.
+     */
+    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+        return sub(a, b, "SafeMath: subtraction overflow");
+    }
+
+    /**
+     * @dev Returns the subtraction of two unsigned integers, reverting with custom message on
+     * overflow (when the result is negative).
+     *
+     * Counterpart to Solidity's `-` operator.
+     *
+     * Requirements:
+     *
+     * - Subtraction cannot overflow.
+     */
+    function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
+        require(b <= a, errorMessage);
+        uint256 c = a - b;
+
+        return c;
+    }
+
+    /**
+     * @dev Returns the multiplication of two unsigned integers, reverting on
+     * overflow.
+     *
+     * Counterpart to Solidity's `*` operator.
+     *
+     * Requirements:
+     *
+     * - Multiplication cannot overflow.
+     */
+    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+        // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
+        // benefit is lost if 'b' is also tested.
+        // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
+        if (a == 0) {
+            return 0;
+        }
+
+        uint256 c = a * b;
+        require(c / a == b, "SafeMath: multiplication overflow");
+
+        return c;
+    }
+
+    /**
+     * @dev Returns the integer division of two unsigned integers. Reverts on
+     * division by zero. The result is rounded towards zero.
+     *
+     * Counterpart to Solidity's `/` operator. Note: this function uses a
+     * `revert` opcode (which leaves remaining gas untouched) while Solidity
+     * uses an invalid opcode to revert (consuming all remaining gas).
+     *
+     * Requirements:
+     *
+     * - The divisor cannot be zero.
+     */
+    function div(uint256 a, uint256 b) internal pure returns (uint256) {
+        return div(a, b, "SafeMath: division by zero");
+    }
+
+    /**
+     * @dev Returns the integer division of two unsigned integers. Reverts with custom message on
+     * division by zero. The result is rounded towards zero.
+     *
+     * Counterpart to Solidity's `/` operator. Note: this function uses a
+     * `revert` opcode (which leaves remaining gas untouched) while Solidity
+     * uses an invalid opcode to revert (consuming all remaining gas).
+     *
+     * Requirements:
+     *
+     * - The divisor cannot be zero.
+     */
+    function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
+        require(b > 0, errorMessage);
+        uint256 c = a / b;
+        // assert(a == b * c + a % b); // There is no case in which this doesn't hold
+
+        return c;
+    }
+
+    /**
+     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),
+     * Reverts when dividing by zero.
+     *
+     * Counterpart to Solidity's `%` operator. This function uses a `revert`
+     * opcode (which leaves remaining gas untouched) while Solidity uses an
+     * invalid opcode to revert (consuming all remaining gas).
+     *
+     * Requirements:
+     *
+     * - The divisor cannot be zero.
+     */
+    function mod(uint256 a, uint256 b) internal pure returns (uint256) {
+        return mod(a, b, "SafeMath: modulo by zero");
+    }
+
+    /**
+     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),
+     * Reverts with custom message when dividing by zero.
+     *
+     * Counterpart to Solidity's `%` operator. This function uses a `revert`
+     * opcode (which leaves remaining gas untouched) while Solidity uses an
+     * invalid opcode to revert (consuming all remaining gas).
+     *
+     * Requirements:
+     *
+     * - The divisor cannot be zero.
+     */
+    function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
+        require(b != 0, errorMessage);
+        return a % b;
+    }
+}
+
+// File: @openzeppelin\contracts\token\ERC20\IERC20.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity >=0.6.0 <0.8.0;
+
+/**
+ * @dev Interface of the ERC20 standard as defined in the EIP.
+ */
+interface IERC20 {
+    /**
+     * @dev Returns the amount of tokens in existence.
+     */
+    function totalSupply() external view returns (uint256);
+
+    /**
+     * @dev Returns the amount of tokens owned by `account`.
+     */
+    function balanceOf(address account) external view returns (uint256);
+
+    /**
+     * @dev Moves `amount` tokens from the caller's account to `recipient`.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a {Transfer} event.
+     */
+    function transfer(address recipient, uint256 amount) external returns (bool);
+
+    /**
+     * @dev Returns the remaining number of tokens that `spender` will be
+     * allowed to spend on behalf of `owner` through {transferFrom}. This is
+     * zero by default.
+     *
+     * This value changes when {approve} or {transferFrom} are called.
+     */
+    function allowance(address owner, address spender) external view returns (uint256);
+
+    /**
+     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * IMPORTANT: Beware that changing an allowance with this method brings the risk
+     * that someone may use both the old and the new allowance by unfortunate
+     * transaction ordering. One possible solution to mitigate this race
+     * condition is to first reduce the spender's allowance to 0 and set the
+     * desired value afterwards:
+     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
+     *
+     * Emits an {Approval} event.
+     */
+    function approve(address spender, uint256 amount) external returns (bool);
+
+    /**
+     * @dev Moves `amount` tokens from `sender` to `recipient` using the
+     * allowance mechanism. `amount` is then deducted from the caller's
+     * allowance.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a {Transfer} event.
+     */
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+
+    /**
+     * @dev Emitted when `value` tokens are moved from one account (`from`) to
+     * another (`to`).
+     *
+     * Note that `value` may be zero.
+     */
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    /**
+     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
+     * a call to {approve}. `value` is the new allowance.
+     */
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+}
+
+// File: node_modules\@openzeppelin\contracts\utils\Address.sol
+
+// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.2 <0.8.0;
 
@@ -805,7 +1055,7 @@ library Address {
     }
 }
 
-// File: @openzeppelin/contracts/token/ERC20/SafeERC20.sol
+// File: @openzeppelin\contracts\token\ERC20\SafeERC20.sol
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -880,7 +1130,7 @@ library SafeERC20 {
     }
 }
 
-// File: contracts/libraries/UniERC20.sol
+// File: contracts\libraries\UniERC20.sol
 
 pragma solidity ^0.6.0;
 
@@ -1002,56 +1252,538 @@ library UniERC20 {
 
 // File: contracts/interfaces/IEmiswap.sol
 
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.0;
 
-
-interface IEmiswapRegistry {
-    function pools(IERC20 token1, IERC20 token2)
-        external
-        view
-        returns (IEmiswap);
-
-    function isPool(address addr) external view returns (bool);
-
-    function deploy(IERC20 tokenA, IERC20 tokenB) external returns (IEmiswap);
-}
-
-interface IEmiswap {
+interface IFactory {
     function fee() external view returns (uint256);
 
-    function tokens(uint256 i) external view returns (IERC20);
+    function feeVault() external view returns (uint256);
+
+    function addressVault() external view returns (address);
+}
+
+library VirtualBalance {
+    using SafeMath for uint256;
+
+    struct Data {
+        uint216 balance;
+        uint40 time;
+    }
+
+    uint256 public constant DECAY_PERIOD = 5 minutes;
+
+    function set(VirtualBalance.Data storage self, uint256 balance) internal {
+        self.balance = uint216(balance);
+        self.time = uint40(block.timestamp);
+    }
+
+    function update(VirtualBalance.Data storage self, uint256 realBalance)
+        internal
+    {
+        set(self, current(self, realBalance));
+    }
+
+    function scale(
+        VirtualBalance.Data storage self,
+        uint256 realBalance,
+        uint256 num,
+        uint256 denom
+    ) internal {
+        set(
+            self,
+            current(self, realBalance).mul(num).add(denom.sub(1)).div(denom)
+        );
+    }
+
+    function current(VirtualBalance.Data memory self, uint256 realBalance)
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 timePassed =
+            Math.min(DECAY_PERIOD, block.timestamp.sub(self.time));
+        uint256 timeRemain = DECAY_PERIOD.sub(timePassed);
+        return
+            uint256(self.balance)
+                .mul(timeRemain)
+                .add(realBalance.mul(timePassed))
+                .div(DECAY_PERIOD);
+    }
+}
+
+contract Emiswap is ERC20, ReentrancyGuard, Ownable {
+    using Sqrt for uint256;
+    using SafeMath for uint256;
+    using UniERC20 for IERC20;
+    using VirtualBalance for VirtualBalance.Data;
+
+    struct Balances {
+        uint256 src;
+        uint256 dst;
+    }
+
+    struct SwapVolumes {
+        uint128 confirmed;
+        uint128 result;
+    }
+
+    event Deposited(address indexed account, uint256 amount, address referral);
+
+    event Withdrawn(address indexed account, uint256 amount);
+
+    event Swapped(
+        address indexed account,
+        address indexed src,
+        address indexed dst,
+        uint256 amount,
+        uint256 result,
+        uint256 srcBalance,
+        uint256 dstBalance,
+        uint256 totalSupply,
+        address referral
+    );
+
+    event Swapped2(
+        address indexed account,
+        address indexed to,
+        uint256 resultVault
+    );
+
+    uint256 public constant REFERRAL_SHARE = 20; // 1/share = 5% of LPs revenue
+    uint256 public constant BASE_SUPPLY = 1000; // Total supply on first deposit
+    uint256 public constant FEE_DENOMINATOR = 1e18;
+
+    IFactory public factory;
+    IERC20[] public tokens;
+    mapping(IERC20 => bool) public isToken;
+    mapping(IERC20 => SwapVolumes) public volumes;
+    mapping(IERC20 => VirtualBalance.Data) public virtualBalancesForAddition;
+    mapping(IERC20 => VirtualBalance.Data) public virtualBalancesForRemoval;
+
+    constructor() public ERC20("Emiswap LP token", "EMI LP") {
+        factory = IFactory(msg.sender);
+    }
+
+    // called once by the factory at time of deployment
+    function initialize(IERC20[] calldata assets) external {
+        require(msg.sender == address(factory), "Emiswap: FORBIDDEN"); // sufficient check
+        require(assets.length == 2, "Emiswap: only 2 tokens allowed");
+
+        tokens = assets;
+        for (uint256 i = 0; i < assets.length; i++) {
+            require(!isToken[assets[i]], "Emiswap: duplicate tokens");
+            isToken[assets[i]] = true;
+        }
+    }
+
+    function fee() public view returns (uint256) {
+        return factory.fee();
+    }
+
+    function feeVault() public view returns (uint256) {
+        return factory.feeVault();
+    }
+
+    function addressVault() public view returns (address) {
+        return factory.addressVault();
+    }
+
+    function getTokens() external view returns (IERC20[] memory) {
+        return tokens;
+    }
+
+    function decayPeriod() external pure returns (uint256) {
+        return VirtualBalance.DECAY_PERIOD;
+    }
+
+    function getBalanceForAddition(IERC20 token) public view returns (uint256) {
+        uint256 balance = token.uniBalanceOf(address(this));
+        return
+            Math.max(
+                virtualBalancesForAddition[token].current(balance),
+                balance
+            );
+    }
+
+    function getBalanceForRemoval(IERC20 token) public view returns (uint256) {
+        uint256 balance = token.uniBalanceOf(address(this));
+        return
+            Math.min(
+                virtualBalancesForRemoval[token].current(balance),
+                balance
+            );
+    }
+
+    function getReturn(
+        IERC20 src,
+        IERC20 dst,
+        uint256 amount
+    ) external view returns (uint256, uint256) {
+        return
+            _getReturn(
+                src,
+                dst,
+                amount,
+                getBalanceForAddition(src),
+                getBalanceForRemoval(dst)
+            );
+    }
 
     function deposit(
         uint256[] calldata amounts,
         uint256[] calldata minAmounts,
         address referral
-    ) external payable returns (uint256 fairSupply);
+    ) external nonReentrant returns (uint256 fairSupply) {
+        IERC20[] memory _tokens = tokens;
+        require(
+            (amounts.length > 0) && (amounts.length == _tokens.length),
+            "Emiswap: wrong amounts length"
+        );
+        require(
+            (amounts[0] > 0) && (amounts[1] > 0),
+            "Emiswap: wrong value usage"
+        );
 
-    function withdraw(uint256 amount, uint256[] calldata minReturns) external;
+        uint256[] memory realBalances = new uint256[](amounts.length);
+        for (uint256 i = 0; i < realBalances.length; i++) {
+            realBalances[i] = _tokens[i].uniBalanceOf(address(this));
+        }
 
-    function getBalanceForAddition(IERC20 token)
+        uint256 totalSupply = totalSupply();
+        if (totalSupply == 0) {
+            fairSupply = BASE_SUPPLY.mul(99);
+            _mint(address(this), BASE_SUPPLY); // Donate up to 1%
+
+            // Use the greatest token amount but not less than 99k for the initial supply
+            for (uint256 i = 0; i < amounts.length; i++) {
+                fairSupply = Math.max(fairSupply, amounts[i]);
+            }
+        } else {
+            // Pre-compute fair supply
+            fairSupply = type(uint256).max;
+            for (uint256 i = 0; i < amounts.length; i++) {
+                fairSupply = Math.min(
+                    fairSupply,
+                    totalSupply.mul(amounts[i]).div(realBalances[i])
+                );
+            }
+        }
+
+        uint256 fairSupplyCached = fairSupply;
+        for (uint256 i = 0; i < amounts.length; i++) {
+            require(amounts[i] > 0, "Emiswap: amount is zero");
+            uint256 amount =
+                (totalSupply == 0)
+                    ? amounts[i]
+                    : realBalances[i]
+                        .mul(fairSupplyCached)
+                        .add(totalSupply - 1)
+                        .div(totalSupply);
+            require(amount >= minAmounts[i], "Emiswap: minAmount not reached");
+
+            _tokens[i].uniTransferFromSenderToThis(amount);
+            if (totalSupply > 0) {
+                uint256 confirmed =
+                    _tokens[i].uniBalanceOf(address(this)).sub(realBalances[i]);
+                fairSupply = Math.min(
+                    fairSupply,
+                    totalSupply.mul(confirmed).div(realBalances[i])
+                );
+            }
+        }
+
+        if (totalSupply > 0) {
+            for (uint256 i = 0; i < amounts.length; i++) {
+                virtualBalancesForRemoval[_tokens[i]].scale(
+                    realBalances[i],
+                    totalSupply.add(fairSupply),
+                    totalSupply
+                );
+                virtualBalancesForAddition[_tokens[i]].scale(
+                    realBalances[i],
+                    totalSupply.add(fairSupply),
+                    totalSupply
+                );
+            }
+        }
+
+        require(fairSupply > 0, "Emniswap: result is not enough");
+        _mint(msg.sender, fairSupply);
+
+        emit Deposited(msg.sender, fairSupply, referral);
+    }
+
+    function withdraw(uint256 amount, uint256[] calldata minReturns)
         external
-        view
-        returns (uint256);
+        nonReentrant
+    {
+        uint256 totalSupply = totalSupply();
+        _burn(msg.sender, amount);
 
-    function getBalanceForRemoval(IERC20 token) external view returns (uint256);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            IERC20 token = tokens[i];
 
-    function getReturn(
-        IERC20 fromToken,
-        IERC20 destToken,
-        uint256 amount
-    ) external view returns (uint256 returnAmount);
+            uint256 preBalance = token.uniBalanceOf(address(this));
+            uint256 value = preBalance.mul(amount).div(totalSupply);
+            token.uniTransfer(msg.sender, value);
+            require(
+                i >= minReturns.length || value >= minReturns[i],
+                "Emiswap: result is not enough"
+            );
+
+            virtualBalancesForAddition[token].scale(
+                preBalance,
+                totalSupply.sub(amount),
+                totalSupply
+            );
+            virtualBalancesForRemoval[token].scale(
+                preBalance,
+                totalSupply.sub(amount),
+                totalSupply
+            );
+        }
+
+        emit Withdrawn(msg.sender, amount);
+    }
 
     function swap(
-        IERC20 fromToken,
-        IERC20 destToken,
+        IERC20 src,
+        IERC20 dst,
         uint256 amount,
         uint256 minReturn,
         address to,
         address referral
-    ) external payable returns (uint256 returnAmount);
+    ) external nonReentrant returns (uint256 result) {
+        require(address(src) != address(0), "Emiswap: only tokens allowed");
 
-    function initialize(IERC20[] calldata assets) external;
+        Balances memory balances =
+            Balances({
+                src: src.uniBalanceOf(address(this)),
+                dst: dst.uniBalanceOf(address(this))
+            });
+
+        // catch possible airdrops and external balance changes for deflationary tokens
+        uint256 srcAdditionBalance =
+            Math.max(
+                virtualBalancesForAddition[src].current(balances.src),
+                balances.src
+            );
+        uint256 dstRemovalBalance =
+            Math.min(
+                virtualBalancesForRemoval[dst].current(balances.dst),
+                balances.dst
+            );
+
+        src.uniTransferFromSenderToThis(amount);
+        uint256 confirmed = src.uniBalanceOf(address(this)).sub(balances.src);
+
+        uint256 resultVault;
+        (result, resultVault) = _getReturn(
+            src,
+            dst,
+            confirmed,
+            srcAdditionBalance,
+            dstRemovalBalance
+        );
+        require(
+            result > 0 && result >= minReturn,
+            "Emiswap: return is not enough"
+        );
+        dst.uniTransfer(payable(to), result);
+        if (resultVault > 0) {
+            dst.uniTransfer(payable(addressVault()), resultVault);
+        }
+
+        // Update virtual balances to the same direction only at imbalanced state
+        if (srcAdditionBalance != balances.src) {
+            virtualBalancesForAddition[src].set(
+                srcAdditionBalance.add(confirmed)
+            );
+        }
+        if (dstRemovalBalance != balances.dst) {
+            virtualBalancesForRemoval[dst].set(dstRemovalBalance.sub(result));
+        }
+
+        // Update virtual balances to the opposite direction
+        virtualBalancesForRemoval[src].update(balances.src);
+        virtualBalancesForAddition[dst].update(balances.dst);
+
+        emit Swapped(
+            msg.sender,
+            address(src),
+            address(dst),
+            confirmed,
+            result,
+            balances.src,
+            balances.dst,
+            totalSupply(),
+            referral
+        );
+        emit Swapped2(msg.sender, to, resultVault);
+
+        // Overflow of uint128 is desired
+        volumes[src].confirmed += uint128(confirmed);
+        volumes[src].result += uint128(result);
+    }
+
+    function rescueFunds(IERC20 token, uint256 amount)
+        external
+        nonReentrant
+        onlyOwner
+    {
+        uint256[] memory balances = new uint256[](tokens.length);
+        for (uint256 i = 0; i < balances.length; i++) {
+            balances[i] = tokens[i].uniBalanceOf(address(this));
+        }
+
+        token.uniTransfer(msg.sender, amount);
+
+        for (uint256 i = 0; i < balances.length; i++) {
+            require(
+                tokens[i].uniBalanceOf(address(this)) >= balances[i],
+                "Emiswap: access denied"
+            );
+        }
+        require(
+            balanceOf(address(this)) >= BASE_SUPPLY,
+            "Emiswap: access denied"
+        );
+    }
+
+    function _getReturn(
+        IERC20 src,
+        IERC20 dst,
+        uint256 amount,
+        uint256 srcBalance,
+        uint256 dstBalance
+    ) internal view returns (uint256, uint256) {
+        if (isToken[src] && isToken[dst] && src != dst && amount > 0) {
+            uint256 taxedAmount =
+                amount.sub(amount.mul(fee()).div(FEE_DENOMINATOR));
+            uint256 resWFee =
+                taxedAmount.mul(dstBalance).div(srcBalance.add(taxedAmount));
+            uint256 resWOFee =
+                amount.mul(dstBalance).div(srcBalance.add(amount));
+            uint256 resVault =
+                (
+                    feeVault() == 0
+                        ? 0
+                        : resWOFee.sub(resWFee).div(fee().div(feeVault()))
+                );
+
+            return (resWFee, resVault);
+        }
+    }
+}
+
+// File: contracts\EmiFactory.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.6.0;
+
+contract EmiFactory is Ownable {
+    using UniERC20 for IERC20;
+
+    mapping(address => bool) private _adminTable;
+
+    modifier onlyAdmin() {
+        require(_adminTable[msg.sender], "Admin: caller is not admin");
+        _;
+    }
+
+    event Deployed(
+        address indexed emiswap,
+        address indexed token1,
+        address indexed token2
+    );
+
+    event adminGranted(address indexed admin, bool isGranted);
+
+    uint256 public constant MAX_FEE = 0.003e18; // 0.3%
+
+    uint256 public fee;
+    uint256 public feeVault;
+    address public addressVault;
+    Emiswap[] public allPools;
+    mapping(Emiswap => bool) public isPool;
+    mapping(IERC20 => mapping(IERC20 => Emiswap)) public pools;
+
+    function getAllPools() external view returns (Emiswap[] memory) {
+        return allPools;
+    }
+
+    function setFee(uint256 newFee) external onlyAdmin {
+        require(newFee <= MAX_FEE, "Factory: fee should be <= 0.3%");
+        fee = newFee;
+    }
+
+    function setFeeVault(uint256 newFeeVault) external onlyAdmin {
+        require(newFeeVault < fee, "Factory: vault fee");
+        feeVault = newFeeVault;
+    }
+
+    function setaddressVault(address newAddressVault) external onlyAdmin {
+        require(newAddressVault != address(0), "Factory: vault");
+        addressVault = newAddressVault;
+    }
+
+    function setAdminGrant(address newAdmin, bool isGranted)
+        external
+        onlyOwner
+    {
+        require(newAdmin != address(0), "Admin address 0");
+        _adminTable[newAdmin] = isGranted;
+        emit adminGranted(newAdmin, isGranted);
+    }
+
+    function deploy(IERC20 tokenA, IERC20 tokenB)
+        external
+        returns (Emiswap pool)
+    {
+        require(
+            address(tokenA) != address(0) && address(tokenB) != address(0),
+            "Factory:no 0x address"
+        );
+        require(tokenA != tokenB, "Factory:no same tokens");
+        require(
+            pools[tokenA][tokenB] == Emiswap(0),
+            "Factory:pool already exists"
+        );
+
+        (IERC20 token1, IERC20 token2) = sortTokens(tokenA, tokenB);
+        IERC20[] memory tokens = new IERC20[](2);
+        tokens[0] = token1;
+        tokens[1] = token2;
+
+        /////////// abi.encodePacked(bytecode, abi.encode(arg1, arg2))
+        bytes memory bytecode = abi.encodePacked(type(Emiswap).creationCode);
+
+        bytes32 salt = keccak256(abi.encodePacked(token1, token2));
+        assembly {
+            pool := create2(0, add(bytecode, 32), mload(bytecode), salt)
+        }
+        Emiswap(pool).initialize(tokens);
+
+        pool.transferOwnership(owner());
+        pools[token1][token2] = pool;
+        pools[token2][token1] = pool;
+        allPools.push(pool);
+        isPool[pool] = true;
+
+        emit Deployed(address(pool), address(token1), address(token2));
+    }
+
+    function sortTokens(IERC20 tokenA, IERC20 tokenB)
+        public
+        pure
+        returns (IERC20, IERC20)
+    {
+        if (tokenA < tokenB) {
+            return (tokenA, tokenB);
+        }
+        return (tokenB, tokenA);
+    }
 }
 
 // File: @openzeppelin/contracts/utils/ReentrancyGuard.sol

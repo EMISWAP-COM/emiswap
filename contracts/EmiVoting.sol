@@ -281,7 +281,7 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
         Proposal storage proposal = proposals[proposalId];
         proposal.executed = true;
         for (uint256 i = 0; i < proposal.targets.length; i++) {
-            timelock.executeTransaction.value(proposal.values[i])(
+            timelock.executeTransaction{value: proposal.values[i]}(
                 proposal.targets[i],
                 proposal.values[i],
                 proposal.signatures[i],
@@ -301,10 +301,8 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
 
         Proposal storage proposal = proposals[proposalId];
         require(
-            msg.sender == guardian ||
-                comp.getPriorVotes(proposal.proposer, block.number.sub(1)) <
-                proposalThreshold(),
-            "EmiVoting::cancel: proposer above threshold"
+            msg.sender == guardian,
+            "EmiVoting::cancel: priviledged operation"
         );
 
         proposal.canceled = true;

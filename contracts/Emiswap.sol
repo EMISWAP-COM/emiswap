@@ -119,7 +119,7 @@ contract Emiswap is ERC20, ReentrancyGuard, Ownable {
     }
 
     // called once by the factory at time of deployment
-    function initialize(IERC20[] memory assets) external {
+    function initialize(IERC20[] calldata assets) external {
         require(msg.sender == address(factory), "Emiswap: FORBIDDEN"); // sufficient check
         require(assets.length == 2, "Emiswap: only 2 tokens allowed");
 
@@ -267,7 +267,7 @@ contract Emiswap is ERC20, ReentrancyGuard, Ownable {
         emit Deposited(msg.sender, fairSupply, referral);
     }
 
-    function withdraw(uint256 amount, uint256[] memory minReturns)
+    function withdraw(uint256 amount, uint256[] calldata minReturns)
         external
         nonReentrant
     {

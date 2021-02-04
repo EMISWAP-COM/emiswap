@@ -25,7 +25,7 @@ const { BN } = web3.utils;
 
 module.exports = async function (deployer, network, accounts) {
     await deployer.deploy(Migrations);
-    console.log('==================================== deploy DEX migrations start ===')
+    console.log('==================================== deploy DEX event migrations start ===')
     if (network === 'test' || network === 'soliditycoverage') {
         return;
     }
@@ -54,7 +54,7 @@ module.exports = async function (deployer, network, accounts) {
 
     /* EmiPrice */
     await EmiPrice_deployed.initialize(UniswapV2Factory_deployed.address, UniswapV2Factory_deployed.address, 
-        UniswapV2Factory_deployed.address, MockWETH_deployed.address);
+        UniswapV2Factory_deployed.address, MockDAI_deployed.address);
 
     /* EmiFactory init */
     await EmiFactory_deployed.setAdminGrant(accounts[0], true);
