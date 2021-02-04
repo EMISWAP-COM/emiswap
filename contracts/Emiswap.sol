@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-
 pragma solidity ^0.6.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -116,16 +114,15 @@ contract Emiswap is ERC20, ReentrancyGuard, Ownable {
     mapping(IERC20 => VirtualBalance.Data) public virtualBalancesForAddition;
     mapping(IERC20 => VirtualBalance.Data) public virtualBalancesForRemoval;
 
-    constructor(
-        IERC20[] memory assets,
-        string memory name,
-        string memory symbol
-    ) public ERC20(name, symbol) {
-        require(bytes(name).length > 0, "Emiswap: name is empty");
-        require(bytes(symbol).length > 0, "Emiswap: symbol is empty");
+    constructor() public ERC20("Emiswap LP token", "EMI LP") {
+        factory = IFactory(msg.sender);
+    }
+
+    // called once by the factory at time of deployment
+    function initialize(IERC20[] calldata assets) external {
+        require(msg.sender == address(factory), "Emiswap: FORBIDDEN"); // sufficient check
         require(assets.length == 2, "Emiswap: only 2 tokens allowed");
 
-        factory = IFactory(msg.sender);
         tokens = assets;
         for (uint256 i = 0; i < assets.length; i++) {
             require(!isToken[assets[i]], "Emiswap: duplicate tokens");
@@ -270,7 +267,7 @@ contract Emiswap is ERC20, ReentrancyGuard, Ownable {
         emit Deposited(msg.sender, fairSupply, referral);
     }
 
-    function withdraw(uint256 amount, uint256[] memory minReturns)
+    function withdraw(uint256 amount, uint256[] calldata minReturns)
         external
         nonReentrant
     {

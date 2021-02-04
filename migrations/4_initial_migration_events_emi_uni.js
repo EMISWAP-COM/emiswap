@@ -25,7 +25,7 @@ const { BN } = web3.utils;
 
 module.exports = async function (deployer, network, accounts) {
     await deployer.deploy(Migrations);
-    console.log('==================================== deploy DEX migrations start ===')
+    console.log('==================================== deploy DEX event migrations start ===')
     if (network === 'test' || network === 'soliditycoverage') {
         return;
     }
@@ -54,7 +54,7 @@ module.exports = async function (deployer, network, accounts) {
 
     /* EmiPrice */
     await EmiPrice_deployed.initialize(UniswapV2Factory_deployed.address, UniswapV2Factory_deployed.address, 
-        UniswapV2Factory_deployed.address, MockWETH_deployed.address);
+        UniswapV2Factory_deployed.address, MockDAI_deployed.address);
 
     /* EmiFactory init */
     await EmiFactory_deployed.setAdminGrant(accounts[0], true);
@@ -149,7 +149,8 @@ module.exports = async function (deployer, network, accounts) {
     await MockUSDC_deployed.transfer(uniswapPairDAIUSDC.address, value100USDC);
     await uniswapPairDAIUSDC.mint(accounts[0]);
 
-    await ESW_deployed.setVesting(EmiVesting_deployed.address);
+    // removed
+    //await ESW_deployed.setVesting(EmiVesting_deployed.address); 
     await ESW_deployed.setMintLimit(crowdSale_deployed.address, new BN('40000000').mul(new BN(10).pow(new BN(18))).toString());
     
     // Make crowdsale know about token
@@ -175,6 +176,10 @@ module.exports = async function (deployer, network, accounts) {
         "\n\n Added liquidity WETH-DAI (LP tokens) =", liquidityWETH_DAI.div(new BN(10).pow(new BN(18))).toString(),
         "\n Added liquidity DAI-WBTC (LP tokens) =", liquidityDAI_WBTC.div(new BN(10).pow(new BN(18))).toString(),
         "\n Added liquidity USDC-WBTC (LP tokens) =", liquidityUSDC_WBTC.div(new BN(10).pow(new BN(6))).toString(),
+        "\n WETH-DAI address", (await EmiSwap.at(await EmiFactory_deployed.pools(MockWETH_deployed.address, MockDAI_deployed.address))).address,
+        "\n DAI-WBTC address", (await EmiSwap.at(await EmiFactory_deployed.pools(MockWBTC_deployed.address, MockDAI_deployed.address))).address,
+        "\n USDC-WBTC address", (await EmiSwap.at(await EmiFactory_deployed.pools(MockWBTC_deployed.address, MockUSDC_deployed.address))).address,
+
         "\n\n---------- UNISWAP ----------------------------------------------------",
         "\nUniswapV2Factory", UniswapV2Factory_deployed.address,
         "\n\n DAI-WETH pair => 400:1",
@@ -197,7 +202,9 @@ module.exports = async function (deployer, network, accounts) {
 
     // Approve for remove liauiduty
     let WETHDAI_pair = await EmiSwap.at(await EmiFactory_deployed.pools(MockWETH_deployed.address, MockDAI_deployed.address));
-    console.log('\nLP balance before remove liquidity', (await WETHDAI_pair.balanceOf(accounts[0])).toString(),
+    console.log(
+        '\n WETH-DAI pair address', WETHDAI_pair.address,
+        '\nLP balance before remove liquidity', (await WETHDAI_pair.balanceOf(accounts[0])).toString(),
         '\nWETH balance', (await MockWETH_deployed.balanceOf(accounts[0])).toString(),
         '\nDAI balance', (await MockDAI_deployed.balanceOf(accounts[0])).toString() );
 
@@ -224,7 +231,7 @@ module.exports = async function (deployer, network, accounts) {
     // 0xD6C45e77fab68193847f19Ce839fa3320D5Aa796
     // 0xe29ec5380C08A2a68D4AB3ad765f51801Ded674B
     // 0x573A865d71E3c78fd5a4b6cB1cFF8421F0C3aa74
-    for (const iterator of ['0xD6C45e77fab68193847f19Ce839fa3320D5Aa796', '0xe29ec5380C08A2a68D4AB3ad765f51801Ded674B', '0x573A865d71E3c78fd5a4b6cB1cFF8421F0C3aa74', '0xd67C3f117B90C0930CeAf80325c83416dfF57bec']) {
+    for (const iterator of ['0x2286FdF5A6B7Ab1BEb7fffBAb15db7Ff9358a9fa', '0xe29ec5380C08A2a68D4AB3ad765f51801Ded674B', '0x573A865d71E3c78fd5a4b6cB1cFF8421F0C3aa74', '0xd67C3f117B90C0930CeAf80325c83416dfF57bec']) {
         console.log('transfer tokens for', iterator)
         await MockUSDC_deployed.transfer(iterator, new BN(1000000).mul(new BN(10).pow(new BN(await MockUSDC_deployed.decimals()))));
         await MockEMRX_deployed.transfer(iterator, new BN(1000000).mul(new BN(10).pow(new BN(await MockEMRX_deployed.decimals()))));

@@ -19,7 +19,7 @@ module.exports = async function (deployer, network, accounts) {
     }
 
     let EmiFactory_deployed = await deployer.deploy(EmiFactory);
-    let MockWETH_deployed     = await deployer.deploy(MockWETH);    
+    let MockWETH_deployed     = await deployer.deploy(MockWETH);
     let MockDAI_deployed = await deployer.deploy(MockDAI);
     let MockWBTC_deployed = await deployer.deploy(MockWBTC);
     let MockUSDC_deployed = await deployer.deploy(MockUSDC);

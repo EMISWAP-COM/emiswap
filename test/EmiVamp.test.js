@@ -17,6 +17,8 @@ const MockWBTC = contract.fromArtifact('MockWBTC');
 const EmiVamp = contract.fromArtifact('EmiVamp');
 const Token = contract.fromArtifact('TokenMock');
 const TokenWETH = contract.fromArtifact('MockWETH');
+const EmiVoting = contract.fromArtifact('EmiVoting');
+const Timelock = contract.fromArtifact('Timelock');
 
 const { web3 } = MockUSDX;
 
@@ -36,6 +38,8 @@ let usdz;
 let weth;
 let wbtc;
 let vamp;
+let emiVote;
+let timelock;
 
 const money = {
     ether,
@@ -124,7 +128,7 @@ describe('EmiVamp test', function () {
         await usdx.transfer(uniswapPairUSDX_WETH.address, usdxToPair_USDXWETH);
         await weth.deposit({ value: wethToPair_USDXWETH });
         await weth.transfer(uniswapPairUSDX_WETH.address, wethToPair_USDXWETH);
-        await uniswapPairUSDX_WETH.mint(alice);
+        await uniswapPairUSDX_WETH.mint(alice); 
 // Init router
         this.factory = await EmiFactory.new();
 
@@ -135,8 +139,10 @@ describe('EmiVamp test', function () {
         await this.factory.setaddressVault(clarc, {from: TestOwner});
 
         this.router = await EmiRouter.new(this.factory.address, weth.address);
+        this.timelock = await Timelock.new(TestOwner, 60*60*24*4);
+        this.emiVote = await EmiVoting.new(this.timelock.address, usdx.address, TestOwner);
 
-        await vamp.initialize([pairAddress, pairAddressUSDX_WETH], [0, 0], this.router.address, {from:henry});
+        await vamp.initialize([pairAddress, pairAddressUSDX_WETH], [0, 0], this.router.address, this.emiVote.address, {from:henry});
         await uniswapPair.approve(vamp.address, '1000000000000000000000000000', {from: alice});
         await uniswapPair.approve(this.router.address, '1000000000000000000000000000', {from: alice});
         await weth.approve(this.router.address, '1000000000000000000000000000', {from: alice});

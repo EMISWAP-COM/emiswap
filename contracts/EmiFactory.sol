@@ -3,7 +3,9 @@
 pragma solidity ^0.6.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./libraries/UniERC20.sol";
+import "./interfaces/IEmiswap.sol";
 import "./Emiswap.sol";
 
 contract EmiFactory is Ownable {
@@ -65,10 +67,14 @@ contract EmiFactory is Ownable {
         external
         returns (Emiswap pool)
     {
-        require(tokenA != tokenB, "Factory: not support same tokens");
+        require(
+            address(tokenA) != address(0) && address(tokenB) != address(0),
+            "Factory:no 0x address"
+        );
+        require(tokenA != tokenB, "Factory:no same tokens");
         require(
             pools[tokenA][tokenB] == Emiswap(0),
-            "Factory: pool already exists"
+            "Factory:pool already exists"
         );
 
         (IERC20 token1, IERC20 token2) = sortTokens(tokenA, tokenB);
@@ -76,16 +82,14 @@ contract EmiFactory is Ownable {
         tokens[0] = token1;
         tokens[1] = token2;
 
-        string memory symbol1 = token1.uniSymbol();
-        string memory symbol2 = token2.uniSymbol();
+        /////////// abi.encodePacked(bytecode, abi.encode(arg1, arg2))
+        bytes memory bytecode = abi.encodePacked(type(Emiswap).creationCode);
 
-        pool = new Emiswap(
-            tokens,
-            string(
-                abi.encodePacked("Emiswap V1 (", symbol1, "-", symbol2, ")")
-            ),
-            string(abi.encodePacked("EMI-V1-", symbol1, "-", symbol2))
-        );
+        bytes32 salt = keccak256(abi.encodePacked(token1, token2));
+        assembly {
+            pool := create2(0, add(bytecode, 32), mload(bytecode), salt)
+        }
+        Emiswap(pool).initialize(tokens);
 
         pool.transferOwnership(owner());
         pools[token1][token2] = pool;

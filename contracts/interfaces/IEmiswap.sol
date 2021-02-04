@@ -49,4 +49,6 @@ interface IEmiswap {
         address to,
         address referral
     ) external payable returns (uint256 returnAmount);
+
+    function initialize(IERC20[] memory assets) external;
 }
