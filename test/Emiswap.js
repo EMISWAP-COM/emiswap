@@ -63,7 +63,7 @@ const Factory = contract.fromArtifact('FactoryMock');
 const Emiswap = contract.fromArtifact('EmiswapMock');
 const Token = contract.fromArtifact('TokenMock');
 
-describe('Emiswap', function () {
+describe.skip('Emiswap', function () {
     const [_, wallet1, wallet2, wallet3] = accounts;
     beforeEach(async function () {
         this.DAI = await Token.new('DAI', 'DAI', 18);

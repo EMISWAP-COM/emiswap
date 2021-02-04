@@ -14,6 +14,7 @@
         "chai-bignumber": "^3.0.0",
         "dotenv": "^8.2.0",
         "ethers": "^5.0.26",
+        "moment": "^2.29.1",
         "web3": "^1.3.3"
     },
     "devDependencies": {
@@ -100,6 +101,7 @@
         "dist:emivault": "node update-version.js && truffle-flattener ./contracts/EmiVault.sol > ./flat/EmiVault.Full.sol",
         "dist:emiprice": "node update-version.js && truffle-flattener ./contracts/EmiPrice.sol > ./flat/EmiPrice.Full.sol",
         "dist:timelock": "node update-version.js && truffle-flattener ./contracts/Timelock.sol > ./flat/Timelock.Full.sol",
+        "dist:tokenmock": "node update-version.js && truffle-flattener ./contracts/mocks/TokenMock.sol > ./flat/mocks/TokenMock.Full.sol",
         "prettier": "prettier --write 'contracts/**/*.sol'"
     }
 }
