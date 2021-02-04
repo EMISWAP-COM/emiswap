@@ -13,7 +13,7 @@ contract EmiVault is Initializable, Priviledgeable, OracleSign {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    string public codeVersion = "EmiVault v1.0-127-g56655fe";
+ string public codeVersion = "EmiVault v1.0-132-gb870593";
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
 

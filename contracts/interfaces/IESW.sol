@@ -12,43 +12,11 @@ interface IESW {
 
     function decimals() external returns (uint8);
 
-    function initialSupply() external returns (uint256);
-
     function balanceOf(address account) external view returns (uint256);
-
-    function currentCrowdsaleLimit() external view returns (uint256);
-
-    function rawBalanceOf(address account) external view returns (uint256);
-
-    function setVesting(address _vesting) external;
-
-    function mintAndFreeze(
-        address recipient,
-        uint256 amount,
-        uint256 category
-    ) external;
-
-    function mintVirtualAndFreeze(
-        address recipient,
-        uint256 amount,
-        uint256 category
-    ) external;
-
-    function mintVirtualAndFreezePresale(
-        address recipient,
-        uint32 sinceDate,
-        uint256 amount,
-        uint256 category
-    ) external;
 
     function mintClaimed(address recipient, uint256 amount) external;
 
     function burn(uint256 amount) external;
 
     function burnFromVesting(uint256 amount) external;
-
-    function getPriorVotes(address account, uint256 blockNumber)
-        external
-        view
-        returns (uint96);
 }

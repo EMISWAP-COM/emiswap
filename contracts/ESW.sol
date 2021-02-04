@@ -16,7 +16,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable, OracleSign {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
-    string public codeVersion = "ESW v1.0-127-g56655fe";
+ string public codeVersion = "ESW v1.0-132-gb870593";
     uint256 public constant MAXIMUM_SUPPLY = 200_000_000e18;
     bool public isFirstMinter = true;
     address public constant firstMinter =
