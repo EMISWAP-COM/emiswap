@@ -19,7 +19,7 @@ contract EmiPrice is Initializable, Priviledgeable {
     uint256 constant MARKET_UNISWAP = 1;
     uint256 constant MARKET_1INCH = 2;
 
- string public codeVersion = "EmiPrice v1.0-119-gc0db3fb";
+ string public codeVersion = "EmiPrice v1.0-126-gbb3749f";
 
     /**
      * @dev Upgradeable proxy constructor replacement
@@ -100,8 +100,8 @@ contract EmiPrice is Initializable, Priviledgeable {
                     _prices[i] = 0; // special case
                 } else {
                     _prices[i] = address(_coins[i]) < address(_DAI)
-                        ? reserv1.mul(10**(23-decimal)).div(reserv0)
-                        : reserv0.mul(10**(23-decimal)).div(reserv1);
+                        ? reserv1.mul(10**(23 - decimal)).div(reserv0)
+                        : reserv0.mul(10**(23 - decimal)).div(reserv1);
                 }
             }
         }
@@ -122,7 +122,11 @@ contract EmiPrice is Initializable, Priviledgeable {
             if (address(_p) == address(0)) {
                 _prices[i] = 0;
             } else {
-                (_prices[i], ) = _p.getReturn(IERC20(_coins[i]), IERC20(_DAI), 10**uint256(ERC20(_coins[i]).decimals()));
+                (_prices[i], ) = _p.getReturn(
+                    IERC20(_coins[i]),
+                    IERC20(_DAI),
+                    10**uint256(ERC20(_coins[i]).decimals())
+                );
                 _prices[i] = _prices[i].div(10**13);
             }
         }

@@ -27,7 +27,7 @@ contract EmiVamp is Initializable, Priviledgeable {
     // Info of each third-party lp-token.
     LPTokenInfo[] public lpTokensInfo;
 
- string public codeVersion = "EmiVamp v1.0-119-gc0db3fb";
+ string public codeVersion = "EmiVamp v1.0-126-gbb3749f";
     IEmiRouter public ourRouter;
 
     event Deposit(address indexed user, address indexed token, uint256 amount);
@@ -110,7 +110,7 @@ contract EmiVamp is Initializable, Priviledgeable {
     /**
      * @dev Change emirouter address
      */
-    function changeRouter(uint _proposalId) onlyAdmin external {
+    function changeRouter(uint256 _proposalId) external onlyAdmin {
         address _newRouter;
 
         _newRouter = IEmiVoting(_voting).getVotingResult(_proposalId);
