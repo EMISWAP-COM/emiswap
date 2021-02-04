@@ -36,7 +36,7 @@ const { BN,
       this.emiVote = await EmiVoting.new(this.timelock.address, this.usdx.address, initialOwner);
     });
 
-    describe('From ground zero we', async function () {  
+    describe('From ground zero we', async function () {
       it('Can start new voting as admin', async function () {
           r = await this.emiVote.propose([this.timelock.address],[0],['Signature'],['0x1111'],'Test proposal', 40);
           expectEvent.inLogs(r.logs,'ProposalCreated');
@@ -52,32 +52,32 @@ const { BN,
         console.log('State: %d',b);
         assert.equal(b, 0);
       });
-    
+
       it('Can get voting result after time passes', async function () {
-        let blkNum = await time.latestBlock();
+        let blkNum = parseInt(await time.latestBlock());
         r = await this.emiVote.propose([this.timelock.address],[0],['Signature'],['0x1111'],'Test proposal', 20);
         expectEvent.inLogs(r.logs,'ProposalCreated');
         let pid = r.logs[0].args.id;
-        console.log('Block proposed 1: %d', await time.latestBlock());
+        console.log('Block proposed 1: %d', blkNum);
 
-	await time.advanceBlockTo(blkNum + 17); // skip some blocks
+	await time.advanceBlockTo(blkNum + 8); // skip some blocks
         await this.emiVote.castVote(pid, true, {from: userBob});
-        await time.advanceBlockTo(blkNum + 30);
+        await time.advanceBlockTo(blkNum + 12);
         let b = await this.emiVote.state(pid);
         console.log('State: %s', b);
         assert.equal(b, 1);
-        await time.advanceBlockTo(blkNum + 45);
+        await time.advanceBlockTo(blkNum + 30);
         b = await this.emiVote.state(pid);
         console.log('State: %s', b);
         assert.equal(b, 4);
       });
   
       it('Can get voting results', async function () {
-        let blkNum = await time.latestBlock();
+        let blkNum = parseInt(await time.latestBlock());
         r = await this.emiVote.propose([this.timelock.address],[0],['Signature'],['0x1111'],'Test proposal 2', 20);
         expectEvent.inLogs(r.logs,'ProposalCreated');
         let pid = r.logs[0].args.id;
-        console.log('Block proposed 2: %d', await time.latestBlock());
+        console.log('Block proposed 2: %d', blkNum);
 
 	await time.advanceBlockTo(blkNum + 20); // skip some blocks
         await this.emiVote.castVote(pid, true, {from: userBob});

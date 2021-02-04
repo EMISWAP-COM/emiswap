@@ -106,7 +106,7 @@ describe('CrowdSale Test', function () {
         this.emiVestImpl = await EmiVesting.new();
         this.emiVestImpl2 = await EmiVesting.new();
 
-        
+
         this.timelock = await Timelock.new(initialOwner, 60*60*24*4);
         this.emiVoting = await EmiVoting.new(this.timelock.address, usdx.address, initialOwner);
         this.emiProxyAdmin = await EmiVotableProxyAdmin.new(this.emiVoting.address, {from: proxyAdmin});
@@ -126,9 +126,9 @@ describe('CrowdSale Test', function () {
         let rr = await Proxy.new(this.refImpl.address, this.emiProxyAdmin.address, initData, {from: proxyAdmin});
         this.emiVest = await EmiVesting.at(t.address);
         ref = await Referral.at(rr.address);
-        
+
         //await esw.setVesting(this.emiVest.address, {from: proxyAdmin});
-        
+
         let initDataCrowdSale = this.crowdSaleImpl.contract.methods.initialize(
             esw.address, uniswapFactory.address, ref.address, weth.address, foundation, team).encodeABI();
 
@@ -150,7 +150,7 @@ describe('CrowdSale Test', function () {
         await ref.setAdminOnce({from: RefAdmin});
         await ref.grantRef(crowdSale.address, {from: RefAdmin});
         await ref.grantRef(RefAdmin, {from: RefAdmin});
-        
+
         /* USDX - USDZ pair (DAI - USDC) */
         await uniswapFactory.createPair(usdx.address, usdz.address);
         const pairAddress = await uniswapFactory.getPair(usdx.address, usdz.address);
@@ -168,7 +168,7 @@ describe('CrowdSale Test', function () {
 
         const usdxToPAir = new BN(100).mul(new BN(10).pow(new BN(await usdx.decimals()))).toString();
         const usdzToPAir = new BN(101).mul(new BN(10).pow(new BN(await usdz.decimals()))).toString();
-    
+
         const usdxToPAir_USDXWETH = new BN(400).mul(new BN(10).pow(new BN(await usdx.decimals()))).toString();
         const wethToPAir_USDXWETH = new BN(1).mul(new BN(10).pow(new BN(await weth.decimals()))).toString();
 
@@ -185,11 +185,11 @@ describe('CrowdSale Test', function () {
         await weth.deposit({ value: wethToPAir_USDXWETH });
         await weth.transfer(uniswapPairUSDX_WETH.address, wethToPAir_USDXWETH);
         await uniswapPairUSDX_WETH.mint(alice);
-    
+
         await usdx.transfer(uniswapPairUSDX_WBTC.address, usdxToPAir_USDXWBTC);
         await wbtc.transfer(uniswapPairUSDX_WBTC.address, wbtcToPAir_USDXWBTC);
         await uniswapPairUSDX_WBTC.mint(alice);
-        
+
         // Make crowdsale know about token
         await crowdSale.fetchCoin(usdx.address, 1100, 1, {from: proxyAdmin}); // DAI always first, 1 ESW = 0.11 DAI, 1 DAI=1/0.11=9.090909091 ESW
         await crowdSale.fetchCoin(usdy.address, 2750, 1, {from: proxyAdmin}); // EMRX = 0.4 DAI, 1 DAI = 1/0.4 EMRX = 2.5 EMRX, 1 ESW = 0.11*2.5 EMRX = 0.275EMRX, 1 EMRX=1/0.275=3.636363636 ESW

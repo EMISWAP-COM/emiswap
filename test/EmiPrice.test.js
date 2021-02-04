@@ -69,6 +69,7 @@ describe('EmiPrice test', function () {
         wbtc = await MockWBTC.new();
         price = await EmiPrice.new();
 
+        console.log('123');
         await price.initialize(uniswapFactory.address, uniswapFactory.address, uniswapFactory.address, weth.address);
 
         /* USDX - USDZ pair (DAI - USDC) */
