@@ -35,7 +35,7 @@ const { BN,
       this.timelock = await Timelock.new(initialOwner, 60*60*24*4);
       this.emiVote = await EmiVoting.new(this.timelock.address, this.usdx.address, initialOwner);
     });
-  
+
     describe('From ground zero we', async function () {  
       it('Can start new voting as admin', async function () {
           r = await this.emiVote.propose([this.timelock.address],[0],['Signature'],['0x1111'],'Test proposal', 40);
@@ -54,32 +54,34 @@ const { BN,
       });
     
       it('Can get voting result after time passes', async function () {
+        let blkNum = await time.latestBlock();
         r = await this.emiVote.propose([this.timelock.address],[0],['Signature'],['0x1111'],'Test proposal', 20);
         expectEvent.inLogs(r.logs,'ProposalCreated');
         let pid = r.logs[0].args.id;
         console.log('Block proposed 1: %d', await time.latestBlock());
 
-	await time.advanceBlockTo(17); // skip some blocks
+	await time.advanceBlockTo(blkNum + 17); // skip some blocks
         await this.emiVote.castVote(pid, true, {from: userBob});
-        await time.advanceBlockTo(30);
+        await time.advanceBlockTo(blkNum + 30);
         let b = await this.emiVote.state(pid);
         console.log('State: %s', b);
         assert.equal(b, 1);
-        await time.advanceBlockTo(45);
+        await time.advanceBlockTo(blkNum + 45);
         b = await this.emiVote.state(pid);
         console.log('State: %s', b);
         assert.equal(b, 4);
       });
   
       it('Can get voting results', async function () {
+        let blkNum = await time.latestBlock();
         r = await this.emiVote.propose([this.timelock.address],[0],['Signature'],['0x1111'],'Test proposal 2', 20);
         expectEvent.inLogs(r.logs,'ProposalCreated');
         let pid = r.logs[0].args.id;
         console.log('Block proposed 2: %d', await time.latestBlock());
 
-	await time.advanceBlockTo(54); // skip some blocks
+	await time.advanceBlockTo(blkNum + 20); // skip some blocks
         await this.emiVote.castVote(pid, true, {from: userBob});
-        await time.advanceBlockTo(94);
+        await time.advanceBlockTo(blkNum + 50);
         let b = await this.emiVote.getVotingResult(pid);
         console.log(b);
         assert.equal(b, this.timelock.address);

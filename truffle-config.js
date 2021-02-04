@@ -57,6 +57,7 @@ module.exports = {
             network_id: '*',
         },
         test: {
+            networkCheckTimeout: 100000,
             provider() {
                 // eslint-disable-next-line global-require
                 const { provider } = require('@openzeppelin/test-environment');
