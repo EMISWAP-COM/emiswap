@@ -16,7 +16,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable, OracleSign {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
- string public codeVersion = "ESW v1.0-126-gbb3749f";
+    string public codeVersion = "ESW v1.0-127-g56655fe";
     uint256 public constant MAXIMUM_SUPPLY = 200_000_000e18;
     bool public isFirstMinter = true;
     address public constant firstMinter =
@@ -25,7 +25,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable, OracleSign {
         0x67C32CC1276392846c1a859697dB8bCFc0c7D0C8; //set to EmiVesting
     uint256 public minterChangeBlock;
 
-    event minterSwitch(address newMinter, uint256 afterBlock);
+    event MinterSwitch(address newMinter, uint256 afterBlock);
 
     mapping(address => uint256) public walletNonce;
 
@@ -51,7 +51,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable, OracleSign {
     function switchMinter(bool isSetFirst) public onlyAdmin {
         isFirstMinter = isSetFirst;
         minterChangeBlock = block.number + 6646; // 6646 ~24 hours
-        emit minterSwitch(
+        emit MinterSwitch(
             (isSetFirst ? firstMinter : secondMinter),
             minterChangeBlock
         );
@@ -145,12 +145,7 @@ contract ESW is ProxiedERC20, Initializable, Priviledgeable, OracleSign {
      * @return - mintlimit for requested wallet
      */
 
-    function getMintLimit(address account)
-        public
-        view
-        onlyAdmin
-        returns (uint256)
-    {
+    function getMintLimit(address account) public view returns (uint256) {
         return _mintLimit[account];
     }
 

@@ -57,7 +57,7 @@ contract CrowdSale is Initializable, Priviledgeable {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
- string public codeVersion = "CrowdSale v1.0-126-gbb3749f";
+    string public codeVersion = "CrowdSale v1.0-127-g56655fe";
     uint256 public crowdSalePool = 40_000_000e18;
     bool public isStoped;
 
@@ -146,10 +146,9 @@ contract CrowdSale is Initializable, Priviledgeable {
     }
 
     /**
-     * set new crowdsale pool size, only decreasing allowed
+     * set new crowdsale pool size
      */
     function setPoolsize(uint256 _newcrowdSalePool) public onlyAdmin {
-        //require(_newcrowdSalePool < crowdSalePool, "CrowdSale: avoid pool increase");
         crowdSalePool = _newcrowdSalePool;
     }
 
