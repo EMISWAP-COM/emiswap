@@ -1,4 +1,5 @@
 const { constants, time, ether, expectRevert } = require('@openzeppelin/test-helpers');
+const expectEvent = require('@openzeppelin/test-helpers/src/expectEvent');
 const { expect, assert } = require('chai');
 
 const { contract } = require('./twrapper');
@@ -100,7 +101,8 @@ describe('EmiRouter', function () {
                 money.weth('1'),
                 money.dai('400'),
                 money.zero,
-                money.zero, 
+                money.zero,
+                wallet3,
                 { from: wallet1 });
                         
             this.emiswap = await this.factory.pools(this.WETH.address, this.DAI.address);
@@ -108,6 +110,14 @@ describe('EmiRouter', function () {
             const liquidity = await this.router.getLiquidity(this.WETH.address, this.DAI.address, { from: wallet1 });
             expect(liquidity).to.be.bignumber.equal(money.dai('400'));
             console.log("First pair creation with liquidity , gasUsed =", res.receipt.gasUsed);
+
+            console.log('ref wallet', wallet3, 'res', (await res));
+
+            /* await expectEvent(
+                res.receipt,
+                'Deposited',
+                {account: wallet1, amount: this.LPtoken.toString(), referral: wallet3}
+            ); */
         })
         it('create add liquidity ERC-20 - ERC-20', async function () {
             const DAIfirstdeposite = await this.DAI.balanceOf(this.emiswap);
@@ -122,7 +132,8 @@ describe('EmiRouter', function () {
                 money.weth('1'),
                 money.dai('400'),
                 money.zero,
-                money.zero, 
+                money.zero,
+                wallet3,
                 { from: wallet2 });
 
             const DAIseconddeposite = await this.DAI.balanceOf(this.emiswap);
@@ -194,6 +205,7 @@ describe('EmiRouter', function () {
                 money.dai('400'),
                 money.dai('100'),
                 money.weth('1'),//money.weth('0.9'),
+                wallet3,
                 { value: money.eth('1'), from: wallet1 });
                     
             this.emiswap = await this.factory.pools(this.WETH.address, this.DAI.address);
@@ -208,6 +220,7 @@ describe('EmiRouter', function () {
                 money.dai('400'),
                 money.dai('100'),
                 money.weth('0.9'),
+                wallet3,
                 { value: money.eth('1'), from: wallet2 });
 
             this.emiswap = await this.factory.pools(this.WETH.address, this.DAI.address);
@@ -307,6 +320,7 @@ describe('EmiRouter', function () {
                 money.dai( '1000000'),
                 money.zero,
                 money.zero,
+                wallet1,
                 { from: wallet3 });
 
             this.emiswap = await this.factory.pools(this.USDC.address, this.DAI.address);

@@ -214,6 +214,7 @@ contract EmiRouter {
      * @param amountBDesired desired amount of second token
      * @param amountAMin minimum amount of first token
      * @param amountBMin minimum amount of second token
+     * @param ref referral address
      * @return amountA added liquidity of first token
      * @return amountB added liquidity of second token
      * @return liquidity
@@ -225,7 +226,8 @@ contract EmiRouter {
         uint256 amountADesired,
         uint256 amountBDesired,
         uint256 amountAMin,
-        uint256 amountBMin
+        uint256 amountBMin,
+        address ref
     )
         external
         returns (
@@ -279,11 +281,7 @@ contract EmiRouter {
         }
 
         //emit Log(amounts[0], amounts[1]);
-        liquidity = IEmiswap(pairContract).deposit(
-            amounts,
-            minAmounts,
-            address(0)
-        );
+        liquidity = IEmiswap(pairContract).deposit(amounts, minAmounts, ref);
         TransferHelper.safeTransfer(
             address(pairContract),
             msg.sender,
@@ -296,6 +294,7 @@ contract EmiRouter {
      * @param amountTokenDesired desired amount of token
      * @param amountTokenMin minimum amount of token
      * @param amountETHMin minimum amount of ETH
+     * @param ref referral address
      * @return amountToken added liquidity of token
      * @return amountETH added liquidity of ETH
      * @return liquidity
@@ -304,7 +303,8 @@ contract EmiRouter {
         address token,
         uint256 amountTokenDesired,
         uint256 amountTokenMin,
-        uint256 amountETHMin
+        uint256 amountETHMin,
+        address ref
     )
         external
         payable
@@ -350,11 +350,7 @@ contract EmiRouter {
             minAmounts[0] = amountETHMin;
             minAmounts[1] = amountTokenMin;
         }
-        liquidity = IEmiswap(pairContract).deposit(
-            amounts,
-            minAmounts,
-            address(0)
-        );
+        liquidity = IEmiswap(pairContract).deposit(amounts, minAmounts, ref);
         TransferHelper.safeTransfer(
             address(pairContract),
             msg.sender,
