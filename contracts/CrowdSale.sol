@@ -57,7 +57,7 @@ contract CrowdSale is Initializable, Priviledgeable {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
- string public codeVersion = "CrowdSale v1.0-133-g79f1439";
+    string public codeVersion = "CrowdSale v1.0-134-g33bd1b9";
     uint256 public crowdSalePool = 40_000_000e18;
     bool public isStoped;
 
@@ -447,6 +447,7 @@ contract CrowdSale is Initializable, Priviledgeable {
         address referralInput,
         bool isReverse
     ) public crowdSaleworking {
+        require(referralInput != msg.sender, "Sale:ref!");
         require(amount > 0, "Sale:amount needed");
         require(
             coinAddress == _coins[coinIndex[coinAddress]].token,
@@ -589,6 +590,8 @@ contract CrowdSale is Initializable, Priviledgeable {
         bool isReverse
     ) public payable crowdSaleworking {
         uint256 slippage = 500;
+
+        require(referralInput != msg.sender, "Sale:ref!");
 
         require(
             msg.value > 0 && (!isReverse ? msg.value == amount : true),

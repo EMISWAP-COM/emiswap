@@ -19,7 +19,7 @@ contract EmiPrice is Initializable, Priviledgeable {
     uint256 constant MARKET_UNISWAP = 1;
     uint256 constant MARKET_1INCH = 2;
 
- string public codeVersion = "EmiPrice v1.0-133-g79f1439";
+    string public codeVersion = "EmiPrice v1.0-134-g33bd1b9";
 
     /**
      * @dev Upgradeable proxy constructor replacement

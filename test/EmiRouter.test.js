@@ -110,14 +110,6 @@ describe('EmiRouter', function () {
             const liquidity = await this.router.getLiquidity(this.WETH.address, this.DAI.address, { from: wallet1 });
             expect(liquidity).to.be.bignumber.equal(money.dai('400'));
             console.log("First pair creation with liquidity , gasUsed =", res.receipt.gasUsed);
-
-            console.log('ref wallet', wallet3, 'res', (await res));
-
-            /* await expectEvent(
-                res.receipt,
-                'Deposited',
-                {account: wallet1, amount: this.LPtoken.toString(), referral: wallet3}
-            ); */
         })
         it('create add liquidity ERC-20 - ERC-20', async function () {
             const DAIfirstdeposite = await this.DAI.balanceOf(this.emiswap);
