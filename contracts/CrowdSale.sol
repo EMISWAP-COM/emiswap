@@ -57,7 +57,7 @@ contract CrowdSale is Initializable, Priviledgeable {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
- string public codeVersion = "CrowdSale v1.0-138-g57c48e2";
+ string public codeVersion = "CrowdSale v1.0-135-g59718c6";
     uint256 public crowdSalePool = 40_000_000e18;
     bool public isStoped;
 
@@ -330,7 +330,7 @@ contract CrowdSale is Initializable, Priviledgeable {
         require(beneficiaries.length > 0, "Sale:Array empty");
         require(beneficiaries.length == sinceDate.length, "Sale:Arrays length");
         require(sinceDate.length == tokens.length, "Sale:Arrays length");
-        require(now <= 1612656000, "Sale: presale is over"); // 07 feb 2021 00:00 GMT
+        require(now <= 	1613340000, "Sale: presale is over"); // 15 feb 2021 00:00 GMT
 
         for (uint256 i = 0; i < beneficiaries.length; i++) {
             crowdSalePool = crowdSalePool.sub(tokens[i]);
@@ -447,6 +447,7 @@ contract CrowdSale is Initializable, Priviledgeable {
         address referralInput,
         bool isReverse
     ) public crowdSaleworking {
+        require(referralInput != msg.sender, "Sale:ref!");
         require(amount > 0, "Sale:amount needed");
         require(
             coinAddress == _coins[coinIndex[coinAddress]].token,
@@ -589,6 +590,8 @@ contract CrowdSale is Initializable, Priviledgeable {
         bool isReverse
     ) public payable crowdSaleworking {
         uint256 slippage = 500;
+
+        require(referralInput != msg.sender, "Sale:ref!");
 
         require(
             msg.value > 0 && (!isReverse ? msg.value == amount : true),

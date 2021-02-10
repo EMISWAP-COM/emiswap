@@ -378,6 +378,13 @@ describe('CrowdSale Test', function () {
                 'Sale:0 ETH'
             );
         });
+        it('buyWithETHReverse: should not buy with self referral', async function () {
+            this.isPreview = true;
+            await expectRevert(
+                crowdSale.buyWithETH(bob, money.eth('1'), false, { from: bob, value: money.eth('1')}),
+                'Sale:ref!'
+            );
+        });
         it('buyWithETHView: should preview buy 19047619 ESW for ETH', async function () { // close to 40000000 ~= 19047619*1.05*2
             this.isPreview = true;
             let expectedESW = money.ether('5238.095225').toString(); // 19047619 ESW = 5238.095225ETH * 400USD/ETH / 0.11DAI/ESW
@@ -523,6 +530,12 @@ describe('CrowdSale Test', function () {
             await expectRevert(
                 crowdSale.buy(usdx.address, money.dai('0'), ZERO_ADDRESS, false, { from: alice }),
                 'Sale:amount needed'
+            );
+        });
+        it('should revert for buy ESW with self referral ', async function () {
+            await expectRevert(
+                crowdSale.buy(usdx.address, money.dai('1'), alice, false, { from: alice }),
+                'Sale:ref!'
             );
         });
         it('should revert for buy ESW with tokens more than allowence', async function () { 
