@@ -56,7 +56,7 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
-    string public codeVersion = "EmiVesting v1.0-134-g33bd1b9";
+ string public codeVersion = "EmiVesting v1.0-135-g59718c6";
 
     //-----------------------------------------------------------------------------------
     // Smart contract Constructor

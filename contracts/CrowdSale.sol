@@ -57,7 +57,7 @@ contract CrowdSale is Initializable, Priviledgeable {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
-    string public codeVersion = "CrowdSale v1.0-134-g33bd1b9";
+ string public codeVersion = "CrowdSale v1.0-135-g59718c6";
     uint256 public crowdSalePool = 40_000_000e18;
     bool public isStoped;
 
@@ -330,7 +330,7 @@ contract CrowdSale is Initializable, Priviledgeable {
         require(beneficiaries.length > 0, "Sale:Array empty");
         require(beneficiaries.length == sinceDate.length, "Sale:Arrays length");
         require(sinceDate.length == tokens.length, "Sale:Arrays length");
-        require(now <= 1612656000, "Sale: presale is over"); // 07 feb 2021 00:00 GMT
+        require(now <= 	1613340000, "Sale: presale is over"); // 15 feb 2021 00:00 GMT
 
         for (uint256 i = 0; i < beneficiaries.length; i++) {
             crowdSalePool = crowdSalePool.sub(tokens[i]);
