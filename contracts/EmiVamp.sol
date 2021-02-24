@@ -27,7 +27,7 @@ contract EmiVamp is Initializable, Priviledgeable {
     // Info of each third-party lp-token.
     LPTokenInfo[] public lpTokensInfo;
 
- string public codeVersion = "EmiVamp v1.0-135-g59718c6";
+ string public codeVersion = "EmiVamp v1.0-137-gf94b488";
     IEmiRouter public ourRouter;
 
     event Deposit(address indexed user, address indexed token, uint256 amount);
@@ -69,6 +69,20 @@ contract EmiVamp is Initializable, Priviledgeable {
 
     function lpTokensInfoLength() external view returns (uint256) {
         return lpTokensInfo.length;
+    }
+
+    /**
+     *  @dev Returns pair base tokens
+     */
+    function lpTokenDetailedInfo(uint256 _pid) external view returns (address, address) {
+      require(_pid < lpTokensInfo.length);
+      if (lpTokens[_pid].tokenType == 0) { // this is uniswap
+        IUniswapV2Pair lpToken = IUniswapV2Pair(lpTokensInfo[_pid].lpToken);
+        return (lpToken.token0(), lpToken.token1());
+      } else { // this is mooniswap
+        IEmiswap lpToken = IEmiswap(lpTokensInfo[_pid].lpToken);
+        return (lpToken.tokens(0), lpToken.tokens(1));
+      }
     }
 
     /**
