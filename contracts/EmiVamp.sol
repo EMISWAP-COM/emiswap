@@ -76,12 +76,12 @@ contract EmiVamp is Initializable, Priviledgeable {
      */
     function lpTokenDetailedInfo(uint256 _pid) external view returns (address, address) {
       require(_pid < lpTokensInfo.length);
-      if (lpTokens[_pid].tokenType == 0) { // this is uniswap
+      if (lpTokensInfo[_pid].tokenType == 0) { // this is uniswap
         IUniswapV2Pair lpToken = IUniswapV2Pair(lpTokensInfo[_pid].lpToken);
         return (lpToken.token0(), lpToken.token1());
       } else { // this is mooniswap
         IEmiswap lpToken = IEmiswap(lpTokensInfo[_pid].lpToken);
-        return (lpToken.tokens(0), lpToken.tokens(1));
+        return (address(lpToken.tokens(0)), address(lpToken.tokens(1)));
       }
     }
 
