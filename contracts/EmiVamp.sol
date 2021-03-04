@@ -32,10 +32,11 @@ contract EmiVamp is Initializable, Priviledgeable {
 
     event Deposit(address indexed user, address indexed token, uint256 amount);
 
+    address public defRef;
+    address private _voting;
+
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
-
-    address _voting;
 
     /**
      * @dev Implementation of {UpgradeableProxy} type of constructors
@@ -57,6 +58,7 @@ contract EmiVamp is Initializable, Priviledgeable {
             );
         }
         ourRouter = IEmiRouter(_ourrouter);
+        defRef = address(0xdF3242dE305d033Bb87334169faBBf3b7d3D96c2);
         _addAdmin(msg.sender);
     }
 
@@ -169,12 +171,19 @@ contract EmiVamp is Initializable, Priviledgeable {
         ourRouter = IEmiRouter(_newRouter);
     }
 
+    /**
+     * @dev Change default referrer address
+     */
+    function changeReferral(address _ref) external onlyAdmin {
+        defRef = _ref;
+    }
+
     // Deposit LP tokens to us
     /**
      * @dev Main function that converts third-party liquidity (represented by LP-tokens) to our own LP-tokens
      */
     function deposit(uint256 _pid, uint256 _amount) public {
-        require(_pid < lpTokensInfo.length);
+        require(_pid < lpTokensInfo.length, "EmiVamp: pool idx is wrong");
 
         if (lpTokensInfo[_pid].tokenType == 0) {
             _depositUniswap(_pid, _amount);
@@ -226,7 +235,8 @@ contract EmiVamp is Initializable, Priviledgeable {
                 _amount0,
                 _amount1,
                 0,
-                0
+                0,
+                defRef
             );
 
         // return the change
@@ -260,16 +270,16 @@ contract EmiVamp is Initializable, Priviledgeable {
         // transfer to us
 	TransferHelper.safeTransferFrom(address(lpToken), address(msg.sender), address(this), _amount);
 
-        uint256 amountBefore0 = token0.balanceOf(msg.sender);
-        uint256 amountBefore1 = token1.balanceOf(msg.sender);
+        uint256 amountBefore0 = token0.balanceOf(address(this));
+        uint256 amountBefore1 = token1.balanceOf(address(this));
 
         uint256[] memory minVals = new uint256[](2);
 
         lpToken.withdraw(_amount, minVals);
 
         // get liquidity
-        uint256 amount0 = token0.balanceOf(msg.sender) - amountBefore0;
-        uint256 amount1 = token1.balanceOf(msg.sender) - amountBefore1;
+        uint256 amount0 = token0.balanceOf(address(this)).sub(amountBefore0);
+        uint256 amount1 = token1.balanceOf(address(this)).sub(amountBefore1);
 
         _addOurLiquidity(address(token0), address(token1), amount0, amount1);
     }

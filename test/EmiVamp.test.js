@@ -40,6 +40,7 @@ let wbtc;
 let vamp;
 let emiVote;
 let timelock;
+let mooniPair;
 
 const money = {
     ether,
@@ -109,6 +110,7 @@ describe('EmiVamp test', function () {
         await uPair2.mint(bob);
 
         await weth.deposit({ value: wethToPair });
+        await weth.deposit({ value: '10000000000000000' });
         await weth.transfer(uniswapPair.address, wethToPair);
         await usdz.transfer(uniswapPair.address, usdzToPair);
         await uniswapPair.mint(alice);
@@ -129,6 +131,9 @@ describe('EmiVamp test', function () {
         await weth.deposit({ value: wethToPair_USDXWETH });
         await weth.transfer(uniswapPairUSDX_WETH.address, wethToPair_USDXWETH);
         await uniswapPairUSDX_WETH.mint(alice); 
+        await usdx.transfer(alice, '1000000000000');
+        await weth.transfer(alice, '1000000000');
+
 // Init router
         this.factory = await EmiFactory.new();
 
@@ -142,15 +147,20 @@ describe('EmiVamp test', function () {
         this.timelock = await Timelock.new(TestOwner, 60*60*24*4);
         this.emiVote = await EmiVoting.new(this.timelock.address, usdx.address, TestOwner);
 
-        await vamp.initialize([pairAddress, pairAddressUSDX_WETH], [0, 0], this.router.address, this.emiVote.address, {from:henry});
         await uniswapPair.approve(vamp.address, '1000000000000000000000000000', {from: alice});
         await uniswapPair.approve(this.router.address, '1000000000000000000000000000', {from: alice});
         await weth.approve(this.router.address, '1000000000000000000000000000', {from: alice});
-        await usdz.approve(this.router.address, '1000000000000000000000000000', {from: alice});
         await usdx.approve(this.router.address, '1000000000000000000000000000', {from: alice});
-        await weth.approve(vamp.address, '1000000000000000000000000000', {from: alice});
-        await usdz.approve(vamp.address, '1000000000000000000000000000', {from: alice});
-        await usdx.approve(vamp.address, '1000000000000000000000000000', {from: alice});
+
+        let t = await this.router.addLiquidity(usdx.address, weth.address, '10000000', '100000', 0, 0, henry, {from: alice} );
+        let p_a = await this.factory.pools(usdx.address, weth.address);
+
+        mooniPair = await Emiswap.at(p_a);
+
+        await mooniPair.approve(vamp.address, '1000000000000000000000000000', {from: alice});
+
+        await vamp.initialize([mooniPair.address, pairAddress, pairAddressUSDX_WETH], [1, 0, 0], this.router.address, this.emiVote.address, {from:henry});
+
     });
     describe('Process allowed tokens lists', ()=> {
       it('should successfully get tokens list length under admin', async function () {
@@ -183,10 +193,10 @@ describe('EmiVamp test', function () {
       it('should allow to list LP-tokens', async function () {
         let b = await vamp.lpTokensInfoLength();
         console.log(b);
-        assert.equal(b, 2);
-	b = await vamp.lpTokensInfo(0);
-        assert.equal(b.lpToken, uniswapPair.address);
+        assert.equal(b, 3);
 	b = await vamp.lpTokensInfo(1);
+        assert.equal(b.lpToken, uniswapPair.address);
+	b = await vamp.lpTokensInfo(2);
         assert.equal(b.lpToken, uniswapPairUSDX_WETH.address);
       });
       it('should succeed to list tokens under non-admin wallet', async function () {
@@ -196,13 +206,22 @@ describe('EmiVamp test', function () {
       });
     });
     describe('Deposit LP-tokens to our contract', ()=> {
-      it('should be transferring tokens successfully', async function () {
+      it('should be transferring Uniswap tokens successfully', async function () {
         let r = await uniswapPair.getReserves();
         console.log('Pair rsv: %d, %d', r[0].toString(), r[1].toString());
         let b = await uniswapPair.balanceOf(alice);
         console.log('Alice has %d LP-tokens', b);
-        let tx = await vamp.deposit(0, 40000000, {from: alice});
+        let tx = await vamp.deposit(1, 40000000, {from: alice});
         console.log('Gas used for LP-tokens transfer: ' + tx.receipt.gasUsed);
       });
+      it('should be transferring Mooniswap tokens successfully', async function () {
+        console.log('MooniPair address is %s', mooniPair);
+        let b = await mooniPair.balanceOf(alice);
+        console.log('Alice has %d LP-tokens', b);
+        let tx = await vamp.deposit(0, 1000000, {from: alice});
+        console.log('Gas used for LP-tokens transfer: ' + tx.receipt.gasUsed);
+      });
+
+
     });
 });
