@@ -6,17 +6,24 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155Burnable.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155Pausable.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155Holder.sol";
 
-
 contract EmiNFT is ERC1155Burnable, ERC1155Pausable, ERC1155Holder {
-    constructor (string memory uri_) public ERC1155(uri_)
-    {
-    }
+    constructor(string memory uri_) public ERC1155(uri_) {}
 
-    function mint(address to, uint256 id, uint256 value, bytes memory data) public {
+    function mint(
+        address to,
+        uint256 id,
+        uint256 value,
+        bytes memory data
+    ) public {
         _mint(to, id, value, data);
     }
 
-    function mintBatch(address to, uint256[] memory ids, uint256[] memory values, bytes memory data) public {
+    function mintBatch(
+        address to,
+        uint256[] memory ids,
+        uint256[] memory values,
+        bytes memory data
+    ) public {
         _mintBatch(to, ids, values, data);
     }
 
@@ -35,10 +42,7 @@ contract EmiNFT is ERC1155Burnable, ERC1155Pausable, ERC1155Holder {
         uint256[] memory ids,
         uint256[] memory amounts,
         bytes memory data
-    )
-        internal virtual override(ERC1155, ERC1155Pausable)
-    {
+    ) internal virtual override(ERC1155, ERC1155Pausable) {
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
-
 }

@@ -27,7 +27,7 @@ contract EmiVamp is Initializable, Priviledgeable {
     // Info of each third-party lp-token.
     LPTokenInfo[] public lpTokensInfo;
 
- string public codeVersion = "EmiVamp v1.0-137-gf94b488";
+    string public codeVersion = "EmiVamp v1.0-137-gf94b488";
     IEmiRouter public ourRouter;
 
     event Deposit(address indexed user, address indexed token, uint256 amount);
@@ -74,15 +74,21 @@ contract EmiVamp is Initializable, Priviledgeable {
     /**
      *  @dev Returns pair base tokens
      */
-    function lpTokenDetailedInfo(uint256 _pid) external view returns (address, address) {
-      require(_pid < lpTokensInfo.length);
-      if (lpTokensInfo[_pid].tokenType == 0) { // this is uniswap
-        IUniswapV2Pair lpToken = IUniswapV2Pair(lpTokensInfo[_pid].lpToken);
-        return (lpToken.token0(), lpToken.token1());
-      } else { // this is mooniswap
-        IEmiswap lpToken = IEmiswap(lpTokensInfo[_pid].lpToken);
-        return (address(lpToken.tokens(0)), address(lpToken.tokens(1)));
-      }
+    function lpTokenDetailedInfo(uint256 _pid)
+        external
+        view
+        returns (address, address)
+    {
+        require(_pid < lpTokensInfo.length);
+        if (lpTokensInfo[_pid].tokenType == 0) {
+            // this is uniswap
+            IUniswapV2Pair lpToken = IUniswapV2Pair(lpTokensInfo[_pid].lpToken);
+            return (lpToken.token0(), lpToken.token1());
+        } else {
+            // this is mooniswap
+            IEmiswap lpToken = IEmiswap(lpTokensInfo[_pid].lpToken);
+            return (address(lpToken.tokens(0)), address(lpToken.tokens(1)));
+        }
     }
 
     /**
@@ -97,6 +103,15 @@ contract EmiVamp is Initializable, Priviledgeable {
             }
         }
         allowedTokens.push(IERC20(_token));
+    }
+
+    /**
+     * @dev Remove entry from the list of allowed tokens
+     */
+    function removeAllowedToken(uint _idx) external onlyAdmin {
+        require(_idx < allowedTokens.length, "EmiVamp: wrong idx");
+
+	delete allowedTokens[_idx];
     }
 
     /**
@@ -119,6 +134,27 @@ contract EmiVamp is Initializable, Priviledgeable {
             LPTokenInfo({lpToken: _token, tokenType: _tokenType})
         );
         return lpTokensInfo.length;
+    }
+
+    /**
+     * @dev Remove entry from the list of convertible LP-tokens
+     */
+    function removeLPToken(uint _idx) external onlyAdmin {
+        require(_idx < lpTokensInfo.length, "EmiVamp: wrong idx");
+
+	delete lpTokensInfo[_idx];
+    }
+
+    /**
+     * @dev Remove entry from the list of convertible LP-tokens
+     */
+    function changeLPToken(uint _idx, address _token, uint16 _tokenType) external onlyAdmin {
+        require(_idx < lpTokensInfo.length, "EmiVamp: wrong idx");
+        require(_token != address(0), "EmiVamp: token=0!");
+        require(_tokenType < 2, "EmiVamp: wrong tokenType");
+
+        lpTokensInfo[_idx].lpToken = _token;
+        lpTokensInfo[_idx].tokenType = _tokenType;
     }
 
     /**
@@ -161,7 +197,7 @@ contract EmiVamp is Initializable, Priviledgeable {
         IERC20 token1 = IERC20(lpToken.token1());
 
         // transfer to us
-        lpToken.transferFrom(address(msg.sender), address(lpToken), _amount);
+	TransferHelper.safeTransferFrom(address(lpToken), address(msg.sender), address(lpToken), _amount);
 
         // get liquidity
         (uint256 amountIn0, uint256 amountIn1) = lpToken.burn(address(this));
@@ -222,6 +258,8 @@ contract EmiVamp is Initializable, Priviledgeable {
         IERC20 token1 = IERC20(lpToken.tokens(1));
 
         // transfer to us
+	TransferHelper.safeTransferFrom(address(lpToken), address(msg.sender), address(this), _amount);
+
         uint256 amountBefore0 = token0.balanceOf(msg.sender);
         uint256 amountBefore1 = token1.balanceOf(msg.sender);
 
