@@ -7,8 +7,8 @@ import "./uniswapv2/interfaces/IUniswapV2Factory.sol";
 import "./libraries/Priviledgeable.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "./interfaces/IEmiRouter.sol";
-import "./interfaces/IEmiswap.sol";
 import "./interfaces/IEmiVoting.sol";
+import "./interfaces/IMooniswap.sol";
 import "./libraries/TransferHelper.sol";
 
 /**
@@ -88,8 +88,9 @@ contract EmiVamp is Initializable, Priviledgeable {
             return (lpToken.token0(), lpToken.token1());
         } else {
             // this is mooniswap
-            IEmiswap lpToken = IEmiswap(lpTokensInfo[_pid].lpToken);
-            return (address(lpToken.tokens(0)), address(lpToken.tokens(1)));
+            IMooniswap lpToken = IMooniswap(lpTokensInfo[_pid].lpToken);
+            IERC20[] memory t = lpToken.getTokens();
+            return (address(t[0]), address(t[1]));
         }
     }
 
@@ -240,19 +241,19 @@ contract EmiVamp is Initializable, Priviledgeable {
             );
 
         // return the change
-        if (amountOut0 - _amount0 > 0) {
+        if (amountOut0 > _amount0) {
             TransferHelper.safeTransfer(
                 _token0,
                 address(msg.sender),
-                amountOut0 - _amount0
+                amountOut0.sub(_amount0)
             );
         }
 
-        if (amountOut1 - _amount1 > 0) {
+        if (amountOut1 > _amount1) {
             TransferHelper.safeTransfer(
                 _token1,
                 address(msg.sender),
-                amountOut1 - _amount1
+                amountOut1.sub(_amount1)
             );
         }
     }
@@ -261,11 +262,12 @@ contract EmiVamp is Initializable, Priviledgeable {
      * @dev Actual function that converts third-party Mooniswap liquidity (represented by LP-tokens) to our own LP-tokens
      */
     function _depositMooniswap(uint256 _pid, uint256 _amount) internal {
-        IEmiswap lpToken = IEmiswap(lpTokensInfo[_pid].lpToken);
+        IMooniswap lpToken = IMooniswap(lpTokensInfo[_pid].lpToken);
+        IERC20[] memory t = lpToken.getTokens();
 
         // check pair existance
-        IERC20 token0 = IERC20(lpToken.tokens(0));
-        IERC20 token1 = IERC20(lpToken.tokens(1));
+        IERC20 token0 = IERC20(t[0]);
+        IERC20 token1 = IERC20(t[1]);
 
         // transfer to us
 	TransferHelper.safeTransferFrom(address(lpToken), address(msg.sender), address(this), _amount);
@@ -296,9 +298,23 @@ contract EmiVamp is Initializable, Priviledgeable {
         require(_token1 != address(0));
 
         for (uint16 i = 0; i < lpTokensInfo.length; i++) {
-            IUniswapV2Pair lpt = IUniswapV2Pair(lpTokensInfo[i].lpToken);
-            address t0 = lpt.token0();
-            address t1 = lpt.token1();
+            address t0 = address(0);
+            address t1 = address(0);
+
+            if (lpTokensInfo[i].tokenType == 0) {
+              IUniswapV2Pair lpt = IUniswapV2Pair(lpTokensInfo[i].lpToken);
+              t0 = lpt.token0();
+              t1 = lpt.token1();
+            } else if (lpTokensInfo[i].tokenType == 1) {
+              IMooniswap lpToken = IMooniswap(lpTokensInfo[i].lpToken);
+
+              IERC20[] memory t = lpToken.getTokens();
+
+              t0 = address(t[0]);
+              t1 = address(t[1]);
+            } else {
+                return 0;
+            }
 
             if (
                 (t0 == _token0 && t1 == _token1) ||

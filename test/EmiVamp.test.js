@@ -221,7 +221,5 @@ describe('EmiVamp test', function () {
         let tx = await vamp.deposit(0, 1000000, {from: alice});
         console.log('Gas used for LP-tokens transfer: ' + tx.receipt.gasUsed);
       });
-
-
     });
 });
