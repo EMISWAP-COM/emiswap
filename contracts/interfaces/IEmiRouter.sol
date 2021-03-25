@@ -2,10 +2,21 @@
 
 pragma solidity >=0.6.2;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 interface IEmiRouter {
     function factory() external pure returns (address);
 
     function WETH() external pure returns (address);
+
+    function getReserves(IERC20 token0, IERC20 token1)
+        external
+        view
+        returns (
+            uint256 _reserve0,
+            uint256 _reserve1,
+            address poolAddresss
+        );
 
     function addLiquidity(
         address tokenA,

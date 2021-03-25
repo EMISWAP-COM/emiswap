@@ -229,8 +229,8 @@ contract EmiVamp is Initializable, Priviledgeable {
         TransferHelper.safeApprove(_token0, address(ourRouter), _amount0);
         TransferHelper.safeApprove(_token1, address(ourRouter), _amount1);
 
-        (uint256 amountOut0, uint256 amountOut1, ) =
-            ourRouter.addLiquidity(
+        (uint256 amountOut0, uint256 amountOut1, uint256 liquidityOut) =
+            ourRouter.addLiquidity(                  
                 address(_token0),
                 address(_token1),
                 _amount0,
@@ -240,20 +240,28 @@ contract EmiVamp is Initializable, Priviledgeable {
                 defRef
             );
 
+        (,,address _pair) = ourRouter.getReserves(IERC20(_token0), IERC20(_token1));
+
+        TransferHelper.safeTransfer(
+            _pair,
+            msg.sender,
+            liquidityOut
+        );
+
         // return the change
-        if (amountOut0 > _amount0) {
+        if (amountOut0 < _amount0) { // consumed less tokens 0 than given
             TransferHelper.safeTransfer(
                 _token0,
                 address(msg.sender),
-                amountOut0.sub(_amount0)
+                _amount0.sub(amountOut0)
             );
         }
 
-        if (amountOut1 > _amount1) {
+        if (amountOut1 < _amount1) { // consumed less tokens 1 than given
             TransferHelper.safeTransfer(
                 _token1,
                 address(msg.sender),
-                amountOut1.sub(_amount1)
+                _amount1.sub(amountOut1)
             );
         }
     }
