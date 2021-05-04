@@ -12,7 +12,6 @@ import "./libraries/Priviledgeable.sol";
 
 contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
     using SafeMath for uint256;
-    using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     //-----------------------------------------------------------------------------------
