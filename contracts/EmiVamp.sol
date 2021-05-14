@@ -313,7 +313,7 @@ contract EmiVamp is Initializable, Priviledgeable {
                 (t0 == _token0 && t1 == _token1) ||
                 (t1 == _token0 && t0 == _token1)
             ) {
-                return i;
+                return 1;
             }
         }
         return 0;
