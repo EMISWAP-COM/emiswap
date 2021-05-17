@@ -15,7 +15,7 @@ contract EmiVoting is IEmiVoting, Initializable, Priviledgeable {
     using SafeMath for uint256;
     using Address for address;
 
- string public codeVersion = "EmiVoting v1.0-135-g59718c6";
+    string public codeVersion = "EmiVoting v1.0-137-gf94b488";
 
     /// @notice The number of votes in support of a proposal required in order for a quorum to be reached and for a vote to succeed
     function quorumVotes() public pure returns (uint256) {
