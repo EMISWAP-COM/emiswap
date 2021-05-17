@@ -68,3 +68,23 @@ function transferAnyERC20Token(address tokenAddress, address beneficiary, uint t
     function getAllowedTokensLength() external view returns (uint256);
     function changeRouter(uint _proposalId) onlyAdmin external;
 ```
+
+## Deploy
+### EmiVamp, via Remix
+0. Switch to SOLIDITY COMPILER tab.
+1. Switch to _EmiVamp.sol_ in opened file list tabs.
+2. Press big blue button *Compile EmiVamp.sol*.
+3. Go to DEPLOY and RUN TRANSACTION tab.
+4. Select *EmiVamp* from Contract field.
+5. Push Deploy button.
+6. On "Deployed Contracts" section -> EmiVamp AT... write down emiVamp address.
+7. Set configuration values - initial LP tokens list, router address, voting address:
+    1. Open EmiVamp AT section, select initialize function.
+    2. Enter parameters: LP token addresses, types (0-Uniswap, 1-Mooniswap), router address, voting address.
+    3. Press transact button
+
+## Add LP token
+1. On "Deployed Contracts" section -> open EmiVamp AT....
+2. Select addLPToken method,
+    1. Enter parameters: LP token address, type (0-Uniswap, 1-Mooniswap).
+    2. Press transact button
