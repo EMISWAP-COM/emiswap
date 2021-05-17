@@ -1,9 +1,11 @@
 {
-  "extends": "solhint:recommended",
-  "rules": {
-    "no-inline-assembly": "off",
-    "not-rely-on-time": "off",
-    "compiler-version": ["error", "^0.6.0"],
-    "private-vars-leading-underscore": "error"
-  }
+    "extends": "solhint:recommended",
+    "plugins": [],
+    "rules": {
+      "avoid-throw": "off",
+      "avoid-suicide": "error",
+      "avoid-sha3": "warn",
+      "compiler-version": ["error", "^0.6.0"],
+      "private-vars-leading-underscore": "error"
+    }
 }

@@ -330,7 +330,7 @@ contract CrowdSale is Initializable, Priviledgeable {
         require(beneficiaries.length > 0, "Sale:Array empty");
         require(beneficiaries.length == sinceDate.length, "Sale:Arrays length");
         require(sinceDate.length == tokens.length, "Sale:Arrays length");
-        require(now <= 	1613340000, "Sale: presale is over"); // 15 feb 2021 00:00 GMT
+        require(now <= 1613340000, "Sale: presale is over"); // 15 feb 2021 00:00 GMT
 
         for (uint256 i = 0; i < beneficiaries.length; i++) {
             crowdSalePool = crowdSalePool.sub(tokens[i]);
