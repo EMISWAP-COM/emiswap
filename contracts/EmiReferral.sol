@@ -13,7 +13,7 @@ contract EmiReferral is Initializable {
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
 
-    string public codeVersion = "EmiReferral v1.0-137-gf94b488";
+ string public codeVersion = "EmiReferral v1.0-147-ge81080c";
 
     mapping(address => bool) private _refGranted;
     mapping(address => bool) private _adminTable;
