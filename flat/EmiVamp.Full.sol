@@ -886,125 +886,60 @@ abstract contract ReentrancyGuard {
     }
 }
 
-// File: contracts/interfaces/IEmiRouter.sol
+// File: contracts/interfaces/IEmiswap.sol
 
 // SPDX-License-Identifier: UNLICENSED
 
-pragma solidity >=0.6.2;
+pragma solidity ^0.6.0;
 
 
-interface IEmiRouter {
-    function factory() external pure returns (address);
-
-    function WETH() external pure returns (address);
-
-    function getReserves(IERC20 token0, IERC20 token1)
+interface IEmiswapRegistry {
+    function pools(IERC20 token1, IERC20 token2)
         external
         view
-        returns (
-            uint256 _reserve0,
-            uint256 _reserve1,
-            address poolAddresss
-        );
+        returns (IEmiswap);
 
-    function addLiquidity(
-        address tokenA,
-        address tokenB,
-        uint256 amountADesired,
-        uint256 amountBDesired,
-        uint256 amountAMin,
-        uint256 amountBMin,
-        address ref
-    )
+    function isPool(address addr) external view returns (bool);
+
+    function deploy(IERC20 tokenA, IERC20 tokenB) external returns (IEmiswap);
+}
+
+interface IEmiswap {
+    function fee() external view returns (uint256);
+
+    function tokens(uint256 i) external view returns (IERC20);
+
+    function deposit(
+        uint256[] calldata amounts,
+        uint256[] calldata minAmounts,
+        address referral
+    ) external payable returns (uint256 fairSupply);
+
+    function withdraw(uint256 amount, uint256[] calldata minReturns) external;
+
+    function getBalanceForAddition(IERC20 token)
         external
-        returns (
-            uint256 amountA,
-            uint256 amountB,
-            uint256 liquidity
-        );
+        view
+        returns (uint256);
 
-    function swapExactTokensForTokens(
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
+    function getBalanceForRemoval(IERC20 token) external view returns (uint256);
+
+    function getReturn(
+        IERC20 fromToken,
+        IERC20 destToken,
+        uint256 amount
+    ) external view returns (uint256 returnAmount);
+
+    function swap(
+        IERC20 fromToken,
+        IERC20 destToken,
+        uint256 amount,
+        uint256 minReturn,
         address to,
-        address ref
-    ) external returns (uint256[] memory amounts);
+        address referral
+    ) external payable returns (uint256 returnAmount);
 
-    function swapTokensForExactTokens(
-        uint256 amountOut,
-        uint256 amountInMax,
-        address[] calldata path,
-        address[] calldata pathDAI
-    ) external returns (uint256[] memory amounts);
-
-    function swapExactETHForTokens(
-        uint256 amountOutMin,
-        address[] calldata path,
-        address[] calldata pathDAI
-    ) external payable returns (uint256[] memory amounts);
-
-    function swapTokensForExactETH(
-        uint256 amountOut,
-        uint256 amountInMax,
-        address[] calldata path,
-        address[] calldata pathDAI
-    ) external returns (uint256[] memory amounts);
-
-    function swapExactTokensForETH(
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address[] calldata pathDAI
-    ) external returns (uint256[] memory amounts);
-
-    function swapETHForExactTokens(
-        uint256 amountOut,
-        address[] calldata path,
-        address[] calldata pathDAI
-    ) external payable returns (uint256[] memory amounts);
-
-    function getAmountOut(
-        uint256 amountIn,
-        uint256 reserveIn,
-        uint256 reserveOut
-    ) external view returns (uint256 amountOut);
-
-    function getAmountIn(
-        uint256 amountOut,
-        uint256 reserveIn,
-        uint256 reserveOut
-    ) external view returns (uint256 amountIn);
-
-    function getAmountsOut(uint256 amountIn, address[] calldata path)
-        external
-        view
-        returns (uint256[] memory amounts);
-
-    function getAmountsIn(uint256 amountOut, address[] calldata path)
-        external
-        view
-        returns (uint256[] memory amounts);
-
-    function swapExactTokensForTokensSupportingFeeOnTransferTokens(
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address[] calldata pathDAI
-    ) external;
-
-    function swapExactETHForTokensSupportingFeeOnTransferTokens(
-        uint256 amountOutMin,
-        address[] calldata path,
-        address[] calldata pathDAI
-    ) external payable;
-
-    function swapExactTokensForETHSupportingFeeOnTransferTokens(
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address[] calldata path,
-        address[] calldata pathDAI
-    ) external;
+    function initialize(IERC20[] calldata assets) external;
 }
 
 // File: contracts/interfaces/IEmiVoting.sol
@@ -1082,10 +1017,203 @@ library TransferHelper {
     }
 }
 
+// File: contracts/libraries/EmiswapLib.sol
+
+// SPDX-License-Identifier: UNLICENSED
+
+pragma solidity ^0.6.0;
+
+
+
+
+library EmiswapLib {
+    using SafeMath for uint256;
+    uint256 public constant FEE_DENOMINATOR = 1e18;
+
+    function previewSwapExactTokenForToken(
+        address factory,
+        address tokenFrom,
+        address tokenTo,
+        uint256 ammountFrom
+    ) internal view returns (uint256 ammountTo) {
+        IEmiswap pairContract =
+            IEmiswapRegistry(factory).pools(IERC20(tokenFrom), IERC20(tokenTo));
+
+        if (pairContract != IEmiswap(0)) {
+            ammountTo = pairContract.getReturn(
+                IERC20(tokenFrom),
+                IERC20(tokenTo),
+                ammountFrom
+            );
+        }
+    }
+
+    /**************************************************************************************
+     * get preview result of virtual swap by route of tokens
+     **************************************************************************************/
+    function previewSwapbyRoute(
+        address factory,
+        address[] memory path,
+        uint256 ammountFrom
+    ) internal view returns (uint256 ammountTo) {
+        for (uint256 i = 0; i < path.length - 1; i++) {
+            if (path.length >= 2) {
+                ammountTo = previewSwapExactTokenForToken(
+                    factory,
+                    path[i],
+                    path[i + 1],
+                    ammountFrom
+                );
+
+                if (i == (path.length - 2)) {
+                    return (ammountTo);
+                } else {
+                    ammountFrom = ammountTo;
+                }
+            }
+        }
+    }
+
+    function fee(address factory) internal view returns (uint256) {
+        return IEmiswap(factory).fee();
+    }
+
+    // given an output amount of an asset and pair reserves, returns a required input amount of the other asset
+    function getAmountIn(
+        address factory,
+        uint256 amountOut,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) internal view returns (uint256 amountIn) {
+        require(amountOut > 0, "EmiswapLibrary: INSUFFICIENT_OUTPUT_AMOUNT");
+        require(
+            reserveIn > 0 && reserveOut > 0,
+            "EmiswapLibrary: INSUFFICIENT_LIQUIDITY"
+        );
+        uint256 numerator = reserveIn.mul(amountOut).mul(1000);
+        uint256 denominator =
+            reserveOut.sub(amountOut).mul(
+                uint256(1000000000000000000).sub(fee(factory)).div(1e15)
+            ); // 997
+        amountIn = (numerator / denominator).add(1);
+    }
+
+    // given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset
+    function getAmountOut(
+        address factory,
+        uint256 amountIn,
+        uint256 reserveIn,
+        uint256 reserveOut
+    ) internal view returns (uint256 amountOut) {
+        if (amountIn == 0 || reserveIn == 0 || reserveOut == 0) {
+            return (0);
+        }
+
+        uint256 amountInWithFee =
+            amountIn.mul(
+                uint256(1000000000000000000).sub(fee(factory)).div(1e15)
+            ); //997
+        uint256 numerator = amountInWithFee.mul(reserveOut);
+        uint256 denominator = reserveIn.mul(1000).add(amountInWithFee);
+        amountOut = (denominator == 0 ? 0 : amountOut =
+            numerator /
+            denominator);
+    }
+
+    // performs chained getAmountIn calculations on any number of pairs
+    function getAmountsIn(
+        address factory,
+        uint256 amountOut,
+        address[] memory path
+    ) internal view returns (uint256[] memory amounts) {
+        require(path.length >= 2, "EmiswapLibrary: INVALID_PATH");
+        amounts = new uint256[](path.length);
+        amounts[amounts.length - 1] = amountOut;
+        for (uint256 i = path.length - 1; i > 0; i--) {
+            IEmiswap pairContract =
+                IEmiswapRegistry(factory).pools(
+                    IERC20(IERC20(path[i])),
+                    IERC20(path[i - 1])
+                );
+
+            uint256 reserveIn;
+            uint256 reserveOut;
+
+            if (address(pairContract) != address(0)) {
+                reserveIn = IEmiswap(pairContract).getBalanceForAddition(
+                    IERC20(path[i - 1])
+                );
+                reserveOut = IEmiswap(pairContract).getBalanceForRemoval(
+                    IERC20(path[i])
+                );
+            }
+
+            amounts[i - 1] = getAmountIn(
+                factory,
+                amounts[i],
+                reserveIn,
+                reserveOut
+            );
+        }
+    }
+
+    // performs chained getAmountOut calculations on any number of pairs
+    function getAmountsOut(
+        address factory,
+        uint256 amountIn,
+        address[] memory path
+    ) internal view returns (uint256[] memory amounts) {
+        require(path.length >= 2, "EmiswapLibrary: INVALID_PATH");
+        amounts = new uint256[](path.length);
+        amounts[0] = amountIn;
+        for (uint256 i = 0; i < path.length - 1; i++) {
+            IEmiswap pairContract =
+                IEmiswapRegistry(factory).pools(
+                    IERC20(IERC20(path[i])),
+                    IERC20(path[i + 1])
+                );
+
+            uint256 reserveIn;
+            uint256 reserveOut;
+
+            if (address(pairContract) != address(0)) {
+                reserveIn = IEmiswap(pairContract).getBalanceForAddition(
+                    IERC20(path[i])
+                );
+                reserveOut = IEmiswap(pairContract).getBalanceForRemoval(
+                    IERC20(path[i + 1])
+                );
+            }
+
+            amounts[i + 1] = getAmountOut(
+                factory,
+                amounts[i],
+                reserveIn,
+                reserveOut
+            );
+        }
+    }
+
+    // given some amount of an asset and pair reserves, returns an equivalent amount of the other asset
+    function quote(
+        uint256 amountA,
+        uint256 reserveA,
+        uint256 reserveB
+    ) internal pure returns (uint256 amountB) {
+        require(amountA > 0, "EmiswapLibrary: INSUFFICIENT_AMOUNT");
+        require(
+            reserveA > 0 && reserveB > 0,
+            "EmiswapLibrary: INSUFFICIENT_LIQUIDITY"
+        );
+        amountB = amountA.mul(reserveB) / reserveA;
+    }
+}
+
 // File: contracts/EmiVamp.sol
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.2;
+
 
 
 
@@ -1108,14 +1236,12 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
         uint16 tokenType; // Token type: 0 - uniswap (default), 1 - mooniswap
     }
 
-    IERC20[] public allowedTokens; // List of tokens that we accept
-
     // Info of each third-party lp-token.
     LPTokenInfo[] public lpTokensInfo;
 
- string public codeVersion = "EmiVamp v1.0-144-g4b797b8";
-    IEmiRouter public ourRouter;
 
+ string public codeVersion = "EmiVamp v1.0-159-g102f789";
+    address public ourFactory;
     event Deposit(address indexed user, address indexed token, uint256 amount);
 
     address public defRef;
@@ -1130,14 +1256,13 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
     function initialize(
         address[] memory _lptokens,
         uint8[] memory _types,
-        address _ourrouter,
+        address _ourfactory,
         address _ourvoting
     ) public initializer {
-        require(
-            _lptokens.length > 0 && _lptokens.length == _types.length,
-            "EmiVamp: lengths!"
-        );
-        require(_ourrouter != address(0), "EmiVamp: router!");
+
+        require(_lptokens.length > 0, "EmiVamp: length>0!");
+        require(_lptokens.length == _types.length, "EmiVamp: lengths!");
+        require(_ourfactory != address(0), "EmiVamp: factory!");
         require(_ourvoting != address(0), "EmiVamp: voting!");
 
         for (uint256 i = 0; i < _lptokens.length; i++) {
@@ -1145,18 +1270,14 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
                 LPTokenInfo({lpToken: _lptokens[i], tokenType: _types[i]})
             );
         }
-        ourRouter = IEmiRouter(_ourrouter);
+        ourFactory = _ourfactory;
         defRef = address(0xdF3242dE305d033Bb87334169faBBf3b7d3D96c2);
         _addAdmin(msg.sender);
     }
 
     /**
-     * @dev Returns length of allowed tokens private array
+     * @dev Returns length of LP-tokens private array
      */
-    function getAllowedTokensLength() external view returns (uint256) {
-        return allowedTokens.length;
-    }
-
     function lpTokensInfoLength() external view returns (uint256) {
         return lpTokensInfo.length;
     }
@@ -1169,7 +1290,9 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
         view
         returns (address, address)
     {
-        require(_pid < lpTokensInfo.length, "EmiVamp: incorrect pid");
+
+        require(_pid < lpTokensInfo.length, "EmiVamp: Wrong lpToken idx");
+
         if (lpTokensInfo[_pid].tokenType == 0) {
             // this is uniswap
             IUniswapV2Pair lpToken = IUniswapV2Pair(lpTokensInfo[_pid].lpToken);
@@ -1183,29 +1306,7 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
     }
 
     /**
-     * @dev Adds new entry to the list of allowed tokens (if it is not exist yet)
-     */
-    function addAllowedToken(address _token) external onlyAdmin {
-        require(_token != address(0), "EmiVamp: 0x address");
 
-        for (uint256 i = 0; i < allowedTokens.length; i++) {
-            if (address(allowedTokens[i]) == _token) {
-                return;
-            }
-        }
-        allowedTokens.push(IERC20(_token));
-    }
-
-    /**
-     * @dev Remove entry from the list of allowed tokens
-     */
-    function removeAllowedToken(uint256 _idx) external onlyAdmin {
-        require(_idx < allowedTokens.length, "EmiVamp: wrong idx");
-
-        delete allowedTokens[_idx];
-    }
-
-    /**
      * @dev Adds new entry to the list of convertible LP-tokens
      */
     function addLPToken(address _token, uint16 _tokenType)
@@ -1213,8 +1314,9 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
         onlyAdmin
         returns (uint256)
     {
-        require(_token != address(0), "EmiVamp: 0x address");
-        require(_tokenType < 2, "EmiVamp: incorrect tokentype");
+
+        require(_token != address(0), "EmiVamp: Token address cannot be 0");
+        require(_tokenType < 2, "EmiVamp: Wrong type");
 
         for (uint256 i = 0; i < lpTokensInfo.length; i++) {
             if (lpTokensInfo[i].lpToken == _token) {
@@ -1237,7 +1339,7 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
     }
 
     /**
-     * @dev Remove entry from the list of convertible LP-tokens
+     * @dev Change entry from the list of convertible LP-tokens
      */
     function changeLPToken(
         uint256 _idx,
@@ -1253,15 +1355,15 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
     }
 
     /**
-     * @dev Change emirouter address
+     * @dev Change emifactory address
      */
-    function changeRouter(uint256 _proposalId) external onlyAdmin {
-        address _newRouter;
+    function changeFactory(uint256 _proposalId) external onlyAdmin {
+        address _newFactory;
 
-        _newRouter = IEmiVoting(_voting).getVotingResult(_proposalId);
-        require(_newRouter != address(0), "New Router address is wrong");
+        _newFactory = IEmiVoting(_voting).getVotingResult(_proposalId);
+        require(_newFactory != address(0), "EmiVamp: New factory address is wrong");
 
-        ourRouter = IEmiRouter(_newRouter);
+        ourFactory = _newFactory;
     }
 
     /**
@@ -1313,7 +1415,8 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
             address(token0),
             address(token1),
             amountIn0,
-            amountIn1
+            amountIn1,
+            msg.sender
         );
     }
 
@@ -1321,43 +1424,58 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
         address _token0,
         address _token1,
         uint256 _amount0,
-        uint256 _amount1
+        uint256 _amount1,
+        address _to
     ) internal {
-        TransferHelper.safeApprove(_token0, address(ourRouter), _amount0);
-        TransferHelper.safeApprove(_token1, address(ourRouter), _amount1);
 
-        (uint256 amountOut0, uint256 amountOut1, uint256 liquidityOut) =
-            ourRouter.addLiquidity(
-                address(_token0),
-                address(_token1),
-                _amount0,
-                _amount1,
-                0,
-                0,
-                defRef
+        (uint256 amountA, uint256 amountB) =
+            _addLiquidity(_token0, _token1, _amount0, _amount1);
+
+        IEmiswap pairContract =
+            IEmiswapRegistry(ourFactory).pools(
+                IERC20(_token0),
+                IERC20(_token1)
             );
 
-        (, , address _pair) =
-            ourRouter.getReserves(IERC20(_token0), IERC20(_token1));
+        TransferHelper.safeApprove(_token0, address(pairContract), amountA);
+        TransferHelper.safeApprove(_token1, address(pairContract), amountB);
 
-        TransferHelper.safeTransfer(_pair, msg.sender, liquidityOut);
+        uint256[] memory amounts;
+        amounts = new uint256[](2);
+        uint256[] memory minAmounts;
+        minAmounts = new uint256[](2);
+
+        if (_token0 < _token1) {
+            amounts[0] = amountA;
+            amounts[1] = amountB;
+        } else {
+            amounts[0] = amountB;
+            amounts[1] = amountA;
+        }
+
+        uint256 liquidity =
+            IEmiswap(pairContract).deposit(amounts, minAmounts, defRef);
+        TransferHelper.safeTransfer(address(pairContract), _to, liquidity);
 
         // return the change
-        if (amountOut0 < _amount0) {
+        if (amountA < _amount0) {
+
             // consumed less tokens 0 than given
             TransferHelper.safeTransfer(
                 _token0,
                 address(msg.sender),
-                _amount0.sub(amountOut0)
+                _amount0.sub(amountA)
             );
         }
 
-        if (amountOut1 < _amount1) {
+
+        if (amountB < _amount1) {
+
             // consumed less tokens 1 than given
             TransferHelper.safeTransfer(
                 _token1,
                 address(msg.sender),
-                _amount1.sub(amountOut1)
+                _amount1.sub(amountB)
             );
         }
     }
@@ -1392,7 +1510,13 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
         uint256 amount0 = token0.balanceOf(address(this)).sub(amountBefore0);
         uint256 amount1 = token1.balanceOf(address(this)).sub(amountBefore1);
 
-        _addOurLiquidity(address(token0), address(token1), amount0, amount1);
+        _addOurLiquidity(
+            address(token0),
+            address(token1),
+            amount0,
+            amount1,
+            msg.sender
+        );
     }
 
     /**
@@ -1403,7 +1527,10 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
         view
         returns (uint16)
     {
-        require(_token0 != address(0) && _token1 != address(0), "EmiVamp: ");
+
+        require(_token0 != address(0), "EmiVamp: wrong token0 address");
+        require(_token1 != address(0), "EmiVamp: wrong token1 address");
+
 
         for (uint16 i = 0; i < lpTokensInfo.length; i++) {
             address t0 = address(0);
@@ -1434,6 +1561,53 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
         return 0;
     }
 
+    // **** ADD LIQUIDITY ****
+    function _addLiquidity(
+        address tokenA,
+        address tokenB,
+        uint256 amountADesired,
+        uint256 amountBDesired
+    ) internal returns (uint256 amountA, uint256 amountB) {
+        IERC20 ERC20tokenA = IERC20(tokenA);
+        IERC20 ERC20tokenB = IERC20(tokenB);
+
+        IEmiswap pairContract =
+            IEmiswapRegistry(ourFactory).pools(ERC20tokenA, ERC20tokenB);
+        // create the pair if it doesn't exist yet
+        if (pairContract == IEmiswap(0)) {
+            pairContract = IEmiswapRegistry(ourFactory).deploy(
+                ERC20tokenA,
+                ERC20tokenB
+            );
+        }
+
+        uint256 reserveA = pairContract.getBalanceForAddition(ERC20tokenA);
+        uint256 reserveB = pairContract.getBalanceForRemoval(ERC20tokenB);
+
+        if (reserveA == 0 && reserveB == 0) {
+            (amountA, amountB) = (amountADesired, amountBDesired);
+        } else {
+            uint256 amountBOptimal =
+                EmiswapLib.quote(amountADesired, reserveA, reserveB);
+            if (amountBOptimal <= amountBDesired) {
+                require(
+                    amountBOptimal >= 0,
+                    "EmiswapRouter: INSUFFICIENT_B_AMOUNT"
+                );
+                (amountA, amountB) = (amountADesired, amountBOptimal);
+            } else {
+                uint256 amountAOptimal =
+                    EmiswapLib.quote(amountBDesired, reserveB, reserveA);
+                assert(amountAOptimal <= amountADesired);
+                require(
+                    amountAOptimal >= 0,
+                    "EmiswapRouter: INSUFFICIENT_A_AMOUNT"
+                );
+                (amountA, amountB) = (amountAOptimal, amountBDesired);
+            }
+        }
+    }
+
     /**
      * @dev Owner can transfer out any accidentally sent ERC20 tokens
      */
@@ -1442,8 +1616,7 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
         address beneficiary,
         uint256 tokens
     ) external onlyAdmin nonReentrant() returns (bool success) {
-        require(tokenAddress != address(0), "Token address cannot be 0");
-
+        require(tokenAddress != address(0), "EmiVamp: Token address cannot be 0");
         return IERC20(tokenAddress).transfer(beneficiary, tokens);
     }
 }
