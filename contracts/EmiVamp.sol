@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.2;
 
-import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "./uniswapv2/interfaces/IUniswapV2Pair.sol";
 import "./uniswapv2/interfaces/IUniswapV2Factory.sol";
 import "./libraries/Priviledgeable.sol";
+import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+
 import "./interfaces/IEmiswap.sol";
 import "./interfaces/IEmiVoting.sol";
 import "./interfaces/IMooniswap.sol";
@@ -15,7 +16,7 @@ import "./libraries/EmiswapLib.sol";
 /**
  * @dev Contract to convert liquidity from other market makers (Uniswap/Mooniswap) to our pairs.
  */
-contract EmiVamp is Initializable, Priviledgeable {
+contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     struct LPTokenInfo {
@@ -26,9 +27,9 @@ contract EmiVamp is Initializable, Priviledgeable {
     // Info of each third-party lp-token.
     LPTokenInfo[] public lpTokensInfo;
 
- string public codeVersion = "EmiVamp v1.0-147-ge81080c";
-    address public ourFactory;
 
+    string public codeVersion = "EmiVamp v1.0-147-ge81080c";
+    address public ourFactory;
     event Deposit(address indexed user, address indexed token, uint256 amount);
 
     address public defRef;
@@ -46,6 +47,7 @@ contract EmiVamp is Initializable, Priviledgeable {
         address _ourfactory,
         address _ourvoting
     ) public initializer {
+
         require(_lptokens.length > 0, "EmiVamp: length>0!");
         require(_lptokens.length == _types.length, "EmiVamp: lengths!");
         require(_ourfactory != address(0), "EmiVamp: factory!");
@@ -76,7 +78,9 @@ contract EmiVamp is Initializable, Priviledgeable {
         view
         returns (address, address)
     {
+
         require(_pid < lpTokensInfo.length, "EmiVamp: Wrong lpToken idx");
+
         if (lpTokensInfo[_pid].tokenType == 0) {
             // this is uniswap
             IUniswapV2Pair lpToken = IUniswapV2Pair(lpTokensInfo[_pid].lpToken);
@@ -90,6 +94,7 @@ contract EmiVamp is Initializable, Priviledgeable {
     }
 
     /**
+
      * @dev Adds new entry to the list of convertible LP-tokens
      */
     function addLPToken(address _token, uint16 _tokenType)
@@ -97,6 +102,7 @@ contract EmiVamp is Initializable, Priviledgeable {
         onlyAdmin
         returns (uint256)
     {
+
         require(_token != address(0), "EmiVamp: Token address cannot be 0");
         require(_tokenType < 2, "EmiVamp: Wrong type");
 
@@ -209,6 +215,7 @@ contract EmiVamp is Initializable, Priviledgeable {
         uint256 _amount1,
         address _to
     ) internal {
+
         (uint256 amountA, uint256 amountB) =
             _addLiquidity(_token0, _token1, _amount0, _amount1);
 
@@ -240,6 +247,7 @@ contract EmiVamp is Initializable, Priviledgeable {
 
         // return the change
         if (amountA < _amount0) {
+
             // consumed less tokens 0 than given
             TransferHelper.safeTransfer(
                 _token0,
@@ -248,7 +256,9 @@ contract EmiVamp is Initializable, Priviledgeable {
             );
         }
 
+
         if (amountB < _amount1) {
+
             // consumed less tokens 1 than given
             TransferHelper.safeTransfer(
                 _token1,
@@ -305,8 +315,10 @@ contract EmiVamp is Initializable, Priviledgeable {
         view
         returns (uint16)
     {
+
         require(_token0 != address(0), "EmiVamp: wrong token0 address");
         require(_token1 != address(0), "EmiVamp: wrong token1 address");
+
 
         for (uint16 i = 0; i < lpTokensInfo.length; i++) {
             address t0 = address(0);
@@ -393,6 +405,7 @@ contract EmiVamp is Initializable, Priviledgeable {
         uint256 tokens
     ) external onlyAdmin returns (bool success) {
         require(tokenAddress != address(0), "EmiVamp: Token address cannot be 0");
+
 
         return IERC20(tokenAddress).transfer(beneficiary, tokens);
     }
