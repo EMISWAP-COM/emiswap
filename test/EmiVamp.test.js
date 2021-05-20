@@ -1,24 +1,21 @@
 // eslint-disable-next-line no-unused-vars
-const { accounts, defaultSender } = require('@openzeppelin/test-environment');
 const { ether, time, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
-const { default: BigNumber } = require('bignumber.js');
 const { assert } = require('chai');
-const { contract } = require('./twrapper');
 
-const EmiFactory = contract.fromArtifact('EmiFactory');
-const Emiswap = contract.fromArtifact('Emiswap');
-const EmiRouter = contract.fromArtifact('EmiRouter');
-const UniswapV2Factory = contract.fromArtifact('UniswapV2Factory');
-const UniswapV2Pair = contract.fromArtifact('UniswapV2Pair');
-const MockUSDX = contract.fromArtifact('MockUSDX');
-const MockUSDY = contract.fromArtifact('MockUSDY');
-const MockUSDZ = contract.fromArtifact('MockUSDZ');
-const MockWBTC = contract.fromArtifact('MockWBTC');
-const EmiVamp = contract.fromArtifact('EmiVamp');
-const Token = contract.fromArtifact('TokenMock');
-const TokenWETH = contract.fromArtifact('MockWETH');
-const EmiVoting = contract.fromArtifact('EmiVoting');
-const Timelock = contract.fromArtifact('Timelock');
+const EmiFactory = artifacts.require('EmiFactory');
+const Emiswap = artifacts.require('Emiswap');
+const EmiRouter = artifacts.require('EmiRouter');
+const UniswapV2Factory = artifacts.require('UniswapV2Factory');
+const UniswapV2Pair = artifacts.require('UniswapV2Pair');
+const MockUSDX = artifacts.require('MockUSDX');
+const MockUSDY = artifacts.require('MockUSDY');
+const MockUSDZ = artifacts.require('MockUSDZ');
+const MockWBTC = artifacts.require('MockWBTC');
+const EmiVamp = artifacts.require('EmiVamp');
+const Token = artifacts.require('TokenMock');
+const TokenWETH = artifacts.require('MockWETH');
+const EmiVoting = artifacts.require('EmiVoting');
+const Timelock = artifacts.require('Timelock');
 
 const { web3 } = MockUSDX;
 
@@ -67,8 +64,13 @@ v WBTC   (8)
   renBTC (8)
 */
 
-describe('EmiVamp test', function () {
-    const [TestOwner, alice, bob, clarc, dave, eve, george, henry, ivan] = accounts;
+contract('EmiVamp test', function (accounts) {
+    const TestOwner = accounts[0];
+    const alice = accounts[1];
+    const bob = accounts[2];
+    const clarc = accounts[3];
+    const henry = accounts[4];
+    const dave = accounts[5];
 
     beforeEach(async function () {
         uniswapFactory = await UniswapV2Factory.new(TestOwner);
@@ -116,14 +118,14 @@ describe('EmiVamp test', function () {
         await uniswapPair.mint(alice);
         let ttt = new BN(wethToPair);
         let ttt2 = new BN(usdzToPair);
-        await weth.deposit({ value: ttt.mul(new BN(10)).toString()});
-        await weth.transfer(uniswapPair.address, ttt.mul(new BN(10)).toString());
-        await usdz.transfer(uniswapPair.address, ttt2.mul(new BN(10)).toString());
+        await weth.deposit({ value: ttt.mul(new BN(1)).toString()});
+        await weth.transfer(uniswapPair.address, ttt.mul(new BN(1)).toString());
+        await usdz.transfer(uniswapPair.address, ttt2.mul(new BN(4)).toString());
         await uniswapPair.mint(bob);
 
-        await weth.deposit({ value: ttt.mul(new BN(30)).toString() });
-        await weth.transfer(uniswapPair.address, ttt.mul(new BN(30)).toString());
-        await usdz.transfer(uniswapPair.address, ttt2.mul(new BN(30)).toString());
+        await weth.deposit({ value: ttt.mul(new BN(1)).toString() });
+        await weth.transfer(uniswapPair.address, ttt.mul(new BN(1)).toString());
+        await usdz.transfer(uniswapPair.address, ttt2.mul(new BN(5)).toString());
         await uniswapPair.mint(dave);
 
         await usdx.transfer(bob, usdxToPair_USDXWETH);
@@ -159,37 +161,10 @@ describe('EmiVamp test', function () {
 
         await mooniPair.approve(vamp.address, '1000000000000000000000000000', {from: alice});
 
-        await vamp.initialize([mooniPair.address, pairAddress, pairAddressUSDX_WETH], [1, 0, 0], this.router.address, this.emiVote.address, {from:henry});
+        await vamp.initialize([mooniPair.address, pairAddress, pairAddressUSDX_WETH], [1, 0, 0], this.factory.address, this.emiVote.address, {from:henry});
 
     });
     describe('Process allowed tokens lists', ()=> {
-      it('should successfully get tokens list length under admin', async function () {
-        let b = await vamp.getAllowedTokensLength({from: henry});
-        console.log('We have %d allowed tokens', b);
-        assert.equal(b, 0);
-      });
-      it('should successfully get tokens list length under non-admin wallet', async function () {
-        let b = await vamp.getAllowedTokensLength();
-        assert.equal(b, 0);
-      });
-      it('should successfully add tokens under admin', async function () {
-        let tx = await vamp.addAllowedToken(weth.address, {from: henry});
-        console.log('Adding allowed token gas used: %d', tx.receipt.gasUsed);
-        await vamp.addAllowedToken(usdz.address, {from: henry});
-        b = await vamp.getAllowedTokensLength({from: henry});
-        console.log('Now we have %d allowed tokens', b);
-        assert.equal(b, 2);
-      });
-      it('should successfully list tokens under admin', async function () {
-        await vamp.addAllowedToken(weth.address, {from: henry});
-        await vamp.addAllowedToken(usdz.address, {from: henry});
-        b = await vamp.getAllowedTokensLength({from: henry});
-        assert.equal(b, 2);
-        b = await vamp.allowedTokens(0, {from: henry});
-        assert.equal(b, weth.address);
-        b = await vamp.allowedTokens(1, {from: henry});
-        assert.equal(b, usdz.address);
-      });
       it('should allow to list LP-tokens', async function () {
         let b = await vamp.lpTokensInfoLength();
         console.log(b);
@@ -199,10 +174,13 @@ describe('EmiVamp test', function () {
 	b = await vamp.lpTokensInfo(2);
         assert.equal(b.lpToken, uniswapPairUSDX_WETH.address);
       });
-      it('should succeed to list tokens under non-admin wallet', async function () {
-        await vamp.addAllowedToken(usdz.address, {from: henry});
-        let b = await vamp.allowedTokens(0);
-        assert.equal(b, usdz.address);
+      it('should allow to add new LP-tokens from admin account', async function () {
+	await vamp.addLPToken(clarc, 1, {from: henry});
+	b = await vamp.lpTokensInfoLength();
+        assert.equal(b, 4);
+      });
+      it('should not allow to add new LP-tokens from non-admin account', async function () {
+	expectRevert.unspecified(vamp.addLPToken(clarc, 1, {from: bob}));
       });
     });
     describe('Deposit LP-tokens to our contract', ()=> {
@@ -215,7 +193,7 @@ describe('EmiVamp test', function () {
         console.log('Gas used for LP-tokens transfer: ' + tx.receipt.gasUsed);
       });
       it('should be transferring Mooniswap tokens successfully', async function () {
-        console.log('MooniPair address is %s', mooniPair);
+        console.log('MooniPair address is %s', mooniPair.address);
         let b = await mooniPair.balanceOf(alice);
         console.log('Alice has %d LP-tokens', b);
         let tx = await vamp.deposit(0, 1000000, {from: alice});

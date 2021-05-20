@@ -12,7 +12,6 @@ import "./libraries/Priviledgeable.sol";
 
 contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
     using SafeMath for uint256;
-    using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     //-----------------------------------------------------------------------------------
@@ -56,7 +55,7 @@ contract EmiVesting is Initializable, Priviledgeable, IEmiVesting {
 
     // !!!In updates to contracts set new variables strictly below this line!!!
     //-----------------------------------------------------------------------------------
-    string public codeVersion = "EmiVesting v1.0-137-gf94b488";
+ string public codeVersion = "EmiVesting v1.0-147-ge81080c";
 
     //-----------------------------------------------------------------------------------
     // Smart contract Constructor
