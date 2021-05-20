@@ -1,21 +1,24 @@
 // eslint-disable-next-line no-unused-vars
+const { accounts, defaultSender } = require('@openzeppelin/test-environment');
 const { ether, time, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
+const { default: BigNumber } = require('bignumber.js');
 const { assert } = require('chai');
+const { contract } = require('./twrapper');
 
-const EmiFactory = artifacts.require('EmiFactory');
-const Emiswap = artifacts.require('Emiswap');
-const EmiRouter = artifacts.require('EmiRouter');
-const UniswapV2Factory = artifacts.require('UniswapV2Factory');
-const UniswapV2Pair = artifacts.require('UniswapV2Pair');
-const MockUSDX = artifacts.require('MockUSDX');
-const MockUSDY = artifacts.require('MockUSDY');
-const MockUSDZ = artifacts.require('MockUSDZ');
-const MockWBTC = artifacts.require('MockWBTC');
-const EmiVamp = artifacts.require('EmiVamp');
-const Token = artifacts.require('TokenMock');
-const TokenWETH = artifacts.require('MockWETH');
-const EmiVoting = artifacts.require('EmiVoting');
-const Timelock = artifacts.require('Timelock');
+const EmiFactory = contract.fromArtifact('EmiFactory');
+const Emiswap = contract.fromArtifact('Emiswap');
+const EmiRouter = contract.fromArtifact('EmiRouter');
+const UniswapV2Factory = contract.fromArtifact('UniswapV2Factory');
+const UniswapV2Pair = contract.fromArtifact('UniswapV2Pair');
+const MockUSDX = contract.fromArtifact('MockUSDX');
+const MockUSDY = contract.fromArtifact('MockUSDY');
+const MockUSDZ = contract.fromArtifact('MockUSDZ');
+const MockWBTC = contract.fromArtifact('MockWBTC');
+const EmiVamp = contract.fromArtifact('EmiVamp');
+const Token = contract.fromArtifact('TokenMock');
+const TokenWETH = contract.fromArtifact('MockWETH');
+const EmiVoting = contract.fromArtifact('EmiVoting');
+const Timelock = contract.fromArtifact('Timelock');
 
 const { web3 } = MockUSDX;
 
@@ -64,13 +67,14 @@ v WBTC   (8)
   renBTC (8)
 */
 
-contract('EmiVamp test', function (accounts) {
-    const TestOwner = accounts[0];
+describe('EmiVamp test', function () {
+  const [TestOwner, alice, bob, clarc, dave, eve, george, henry, ivan] = accounts;
+    /* const TestOwner = accounts[0];
     const alice = accounts[1];
     const bob = accounts[2];
     const clarc = accounts[3];
     const henry = accounts[4];
-    const dave = accounts[5];
+    const dave = accounts[5]; */
 
     beforeEach(async function () {
         uniswapFactory = await UniswapV2Factory.new(TestOwner);
