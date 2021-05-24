@@ -7,14 +7,19 @@ const { contract } = require('./twrapper');
 
 const UniswapV2Factory = contract.fromArtifact('UniswapV2Factory');
 const UniswapV2Pair = contract.fromArtifact('UniswapV2Pair');
+const EmiFactory = contract.fromArtifact('EmiFactory');
+const Emiswap = contract.fromArtifact('Emiswap');
+const OneSplitFactory = contract.fromArtifact('OneSplitMock');
+const EmiRouter = contract.fromArtifact('EmiRouter');
 const MockUSDX = contract.fromArtifact('MockUSDX');
 const MockUSDY = contract.fromArtifact('MockUSDY');
 const MockUSDZ = contract.fromArtifact('MockUSDZ');
 const MockWETH = contract.fromArtifact('MockWETH');
 const MockWBTC = contract.fromArtifact('MockWBTC');
-const EmiPrice = contract.fromArtifact('EmiPrice');
+const EmiPrice = contract.fromArtifact('EmiPrice2');
 
 const { web3 } = MockUSDX;
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 MockUSDX.numberFormat = 'String';
 
@@ -22,11 +27,17 @@ MockUSDX.numberFormat = 'String';
 const { BN } = web3.utils;
 
 let uniswapFactory;
+let emiFactory;
+let oneSplitFactory;
+let emiRouter;
 let uniswapPair;
 let uPair;
 let usdx;
+let usdx4;
+let akita;
 let usdy;
 let usdz;
+let usdzz;
 let weth;
 let wbtc;
 let vamp;
@@ -60,16 +71,23 @@ describe('EmiPrice2 test', function () {
     const [TestOwner, alice, bob, clarc, dave, eve, george, henry, ivan] = accounts;
 
     beforeEach(async function () {
-        uniswapFactory = await UniswapV2Factory.new(TestOwner);
 
         usdx = await MockUSDX.new();
         usdy = await MockUSDY.new();
         usdz = await MockUSDZ.new();
+        usdzz = await MockUSDZ.new();
+        usdx4 = await MockUSDX.new();
+        akita = await MockUSDY.new();
         weth = await MockWETH.new();
         wbtc = await MockWBTC.new();
         price = await EmiPrice.new();
 
-        await price.initialize(uniswapFactory.address, uniswapFactory.address, uniswapFactory.address, weth.address);
+        uniswapFactory = await UniswapV2Factory.new(TestOwner);
+        emiFactory = await EmiFactory.new(TestOwner);
+        emiRouter = await EmiRouter.new(emiFactory.address, weth.address);
+        oneSplitFactory = await OneSplitFactory.new();
+
+        await price.initialize(emiFactory.address, uniswapFactory.address, oneSplitFactory.address, emiRouter.address);
 
         /* USDX - USDZ pair (DAI - USDC) */
         await uniswapFactory.createPair(weth.address, usdz.address);
@@ -110,20 +128,109 @@ describe('EmiPrice2 test', function () {
         await weth.deposit({ value: wethToPair_USDXWETH });
         await weth.transfer(uniswapPairUSDX_WETH.address, wethToPair_USDXWETH);
         await uniswapPairUSDX_WETH.mint(alice);
+        // pairs with 4 links: z-x, zz-x, y-zz, y-wbtc, try to get price for z-wbtc
+        await emiFactory.deploy(usdz.address, usdx.address);
+        await emiFactory.deploy(usdzz.address, usdx.address);
+        await emiFactory.deploy(usdy.address, usdzz.address);
+        await emiFactory.deploy(usdy.address, wbtc.address);
+
+        let esp1 = await Emiswap.at(await emiFactory.pools(usdz.address, usdx.address));
+                                                          
+        await usdx.approve(esp1.address, money.usdx('1000000000'));
+        await usdz.approve(esp1.address, money.usdc('1000000000'));
+        await esp1.deposit([money.usdx('1'), money.usdc('23')],[money.zero, money.zero], ZERO_ADDRESS);
+
+        let esp2 = await Emiswap.at(await emiFactory.pools(usdzz.address, usdx.address));
+        await usdzz.approve(esp2.address, money.usdc('1000000000'));
+        await usdx.approve(esp2.address, money.usdx('1000000000'));
+        await esp2.deposit([money.usdx('12'), money.usdc('400')],[money.zero, money.zero], ZERO_ADDRESS);
+
+        let esp3 = await Emiswap.at(await emiFactory.pools(usdy.address, usdzz.address));
+        await usdzz.approve(esp3.address, money.usdc('1000000000'));
+        await usdy.approve(esp3.address, money.usdy('1000000000'));
+        await esp3.deposit([money.usdc('41'), money.usdy('3')],[money.zero, money.zero], ZERO_ADDRESS);
+
+
+        let esp4 = await Emiswap.at(await emiFactory.pools(usdy.address, wbtc.address));
+        await wbtc.approve(esp4.address, money.wbtc('1000000000'));
+        await usdy.approve(esp4.address, money.usdy('1000000000'));
+        await esp4.deposit([money.usdy('2'), money.wbtc('591')],[money.zero, money.zero], ZERO_ADDRESS);
     });
     describe('get prices of coins', ()=> {
-      it('should get prices successfully', async function () {
-        let b = await price.getCoinPrices([usdx.address, usdz.address], 1);
+      it('should get Uniswap prices successfully', async function () {
+        let b = await price.getCoinPrices([usdx.address, usdz.address, wbtc.address], [usdx.address, usdz.address, wbtc.address], 1);
         console.log('Got price results: %s, %s', b[0].toString(), b[1].toString());        
 
-        let p0 = parseFloat(b[0].toString(10)) / 100000;
-        let p1 = parseFloat(b[1].toString(10)) / 100000;
+        let p0 = parseFloat(b[0].toString(10));
+        let p1 = parseFloat(b[1].toString(10));
+
+        console.log('Price calc: %f, %f', p0, p1);
+
+        assert.equal(b.length, 3);
+        assert.isAbove(p0, 0);
+        assert.isAtLeast(p1, 0);
+      });
+      it('should get Mooniswap prices successfully', async function () {
+        let b = await price.getCoinPrices([usdx.address, wbtc.address], [usdx.address, usdz.address, wbtc.address], 2);
+        console.log('Got price results: %s, %s', b[0].toString(), b[1].toString());        
+
+        let p0 = parseFloat(b[0].toString(10));
+        let p1 = parseFloat(b[1].toString(10));
 
         console.log('Price calc: %f, %f', p0, p1);
 
         assert.equal(b.length, 2);
         assert.isAbove(p0, 0);
         assert.isAtLeast(p1, 0);
+      });
+      it('should get our prices successfully', async function () {
+        let b = await price.getCoinPrices([usdx.address, usdz.address, weth.address], [usdx.address, usdz.address], 0);
+        console.log('Got price results: %s, %s, %s', b[0].toString(), b[1].toString(), b[2].toString());
+
+        let p0 = parseFloat(b[0].toString(10));
+        let p1 = parseFloat(b[1].toString(10));
+        let p2 = parseFloat(b[2].toString(10));
+
+        console.log('Price calc: %f, %f, %f', p0, p1, p2);
+
+        assert.equal(b.length, 3);
+        assert.isAbove(p0, 0);
+        assert.isAtLeast(p1, 0);
+      });
+      it('should get base token prices successfully', async function () {
+        let b = await price.getCoinPrices([usdx.address, usdz.address], [usdx.address, usdz.address], 0);
+        console.log('Got price results: %s, %s', b[0].toString(), b[1].toString());        
+
+        let p0 = parseFloat(b[0].toString(10));
+        let p1 = parseFloat(b[1].toString(10));
+
+        console.log('Price calc: %f, %f', p0, p1);
+
+        assert.equal(b.length, 2);
+        assert.isAbove(p0, 0);
+        assert.isAtLeast(p1, 0);
+      });
+      it('should get prices through 4 pairs successfully', async function () {
+        let b = await price.getCoinPrices([usdz.address],[wbtc.address], 0);
+        console.log('Got price results: %s', b[0].toString());
+
+        let p0 = parseFloat(b[0].toString(10));
+
+        console.log('Price calc: %f', p0);
+
+        assert.equal(b.length, 1);
+        assert.isAbove(p0, 0);
+      });
+      it('should get AKITA price successfully', async function () {
+        let b = await price.getCoinPrices([akita.address], [usdx.address, usdz.address], 0);
+        console.log('Got price results: %s', b[0].toString());
+
+        let p0 = parseFloat(b[0].toString(10));
+
+        console.log('Price calc: %f', p0);
+
+        assert.equal(b.length, 1);
+        assert.isAbove(p0, 0);
       });
     });
 });
