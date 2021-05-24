@@ -6,7 +6,7 @@ import "./uniswapv2/interfaces/IUniswapV2Factory.sol";
 import "./libraries/Priviledgeable.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./interfaces/IEmiswap.sol";
 import "./interfaces/IEmiVoting.sol";
 import "./interfaces/IMooniswap.sol";
@@ -28,7 +28,7 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
     LPTokenInfo[] public lpTokensInfo;
 
 
-    string public codeVersion = "EmiVamp v1.0-147-ge81080c";
+ string public codeVersion = "EmiVamp v1.0-159-g102f789";
     address public ourFactory;
     event Deposit(address indexed user, address indexed token, uint256 amount);
 
@@ -404,10 +404,8 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
         address tokenAddress,
         address beneficiary,
         uint256 tokens
-    ) external onlyAdmin returns (bool success) {
+    ) external onlyAdmin nonReentrant() returns (bool success) {
         require(tokenAddress != address(0), "EmiVamp: Token address cannot be 0");
-
-
         return IERC20(tokenAddress).transfer(beneficiary, tokens);
     }
 }

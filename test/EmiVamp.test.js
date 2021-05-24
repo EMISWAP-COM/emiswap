@@ -68,12 +68,7 @@ v WBTC   (8)
 */
 
 describe('EmiVamp test', function () {
-    const TestOwner = accounts[0];
-    const alice = accounts[1];
-    const bob = accounts[2];
-    const clarc = accounts[3];
-    const henry = accounts[4];
-    const dave = accounts[5];
+  const [TestOwner, alice, bob, clarc, dave, eve, george, henry, ivan] = accounts;
 
     beforeEach(async function () {
         uniswapFactory = await UniswapV2Factory.new(TestOwner);
