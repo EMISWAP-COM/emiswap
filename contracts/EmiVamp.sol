@@ -27,8 +27,7 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
     // Info of each third-party lp-token.
     LPTokenInfo[] public lpTokensInfo;
 
-
- string public codeVersion = "EmiVamp v1.0-159-g102f789";
+    string public codeVersion = "EmiVamp v1.0-159-g102f789";
     address public ourFactory;
     event Deposit(address indexed user, address indexed token, uint256 amount);
 
@@ -47,7 +46,6 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
         address _ourfactory,
         address _ourvoting
     ) public initializer {
-
         require(_lptokens.length > 0, "EmiVamp: length>0!");
         require(_lptokens.length == _types.length, "EmiVamp: lengths!");
         require(_ourfactory != address(0), "EmiVamp: factory!");
@@ -79,7 +77,6 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
         view
         returns (address, address)
     {
-
         require(_pid < lpTokensInfo.length, "EmiVamp: Wrong lpToken idx");
 
         if (lpTokensInfo[_pid].tokenType == 0) {
@@ -103,7 +100,6 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
         onlyAdmin
         returns (uint256)
     {
-
         require(_token != address(0), "EmiVamp: Token address cannot be 0");
         require(_tokenType < 2, "EmiVamp: Wrong type");
 
@@ -150,7 +146,10 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
         address _newFactory;
 
         _newFactory = IEmiVoting(_voting).getVotingResult(_proposalId);
-        require(_newFactory != address(0), "EmiVamp: New factory address is wrong");
+        require(
+            _newFactory != address(0),
+            "EmiVamp: New factory address is wrong"
+        );
 
         ourFactory = _newFactory;
     }
@@ -216,7 +215,6 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
         uint256 _amount1,
         address _to
     ) internal {
-
         (uint256 amountA, uint256 amountB) =
             _addLiquidity(_token0, _token1, _amount0, _amount1);
 
@@ -248,7 +246,6 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
 
         // return the change
         if (amountA < _amount0) {
-
             // consumed less tokens 0 than given
             TransferHelper.safeTransfer(
                 _token0,
@@ -257,9 +254,7 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
             );
         }
 
-
         if (amountB < _amount1) {
-
             // consumed less tokens 1 than given
             TransferHelper.safeTransfer(
                 _token1,
@@ -316,10 +311,8 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
         view
         returns (uint16)
     {
-
         require(_token0 != address(0), "EmiVamp: wrong token0 address");
         require(_token1 != address(0), "EmiVamp: wrong token1 address");
-
 
         for (uint16 i = 0; i < lpTokensInfo.length; i++) {
             address t0 = address(0);
@@ -405,7 +398,10 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
         address beneficiary,
         uint256 tokens
     ) external onlyAdmin nonReentrant() returns (bool success) {
-        require(tokenAddress != address(0), "EmiVamp: Token address cannot be 0");
+        require(
+            tokenAddress != address(0),
+            "EmiVamp: Token address cannot be 0"
+        );
         return IERC20(tokenAddress).transfer(beneficiary, tokens);
     }
 }
