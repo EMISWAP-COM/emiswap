@@ -59,6 +59,7 @@ contract EmiVamp is Initializable, Priviledgeable, ReentrancyGuard {
             );
         }
         ourFactory = _ourfactory;
+        _voting = _ourvoting;
         defRef = address(0xdF3242dE305d033Bb87334169faBBf3b7d3D96c2);
         _addAdmin(msg.sender);
     }

@@ -56,7 +56,7 @@ module.exports = {
             gasLimit: 12000000,
             network_id: '*',
         },
-/*        test: {
+        test: {
             networkCheckTimeout: 100000,
             provider() {
                 // eslint-disable-next-line global-require
@@ -65,7 +65,7 @@ module.exports = {
             },
             skipDryRun: true,
             network_id: '*',
-        },*/
+        },
     },
     compilers: {
         solc: {

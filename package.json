@@ -58,7 +58,7 @@
         "contracts"
     ],
     "scripts": {
-        "test": "mocha --exit --recursive test --timeout 30000",
+        "test": "mocha --exit --recursive test --timeout 100000",
         "ttest": "truffle test --network test",
         "compile": "node update-version.js && truffle compile",
         "deploy": "truffle migrate --network local",
