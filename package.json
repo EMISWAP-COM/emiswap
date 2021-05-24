@@ -101,6 +101,7 @@
         "dist:mocktoken": "truffle-flattener ./contracts/mocks/MockWBTC.sol > ./flat/MockWBTC.Full.sol",
         "dist:emivault": "node update-version.js && truffle-flattener ./contracts/EmiVault.sol > ./flat/EmiVault.Full.sol",
         "dist:emiprice": "node update-version.js && truffle-flattener ./contracts/EmiPrice.sol > ./flat/EmiPrice.Full.sol",
+        "dist:emiprice2": "node update-version.js && truffle-flattener ./contracts/EmiPrice2.sol > ./flat/EmiPrice2.Full.sol",
         "dist:timelock": "node update-version.js && truffle-flattener ./contracts/Timelock.sol > ./flat/Timelock.Full.sol",
         "dist:tokenmock": "node update-version.js && truffle-flattener ./contracts/mocks/TokenMock.sol > ./flat/mocks/TokenMock.Full.sol",
         "prettier": "prettier --write \"contracts/**/*.sol\""

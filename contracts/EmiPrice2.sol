@@ -19,6 +19,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
     uint256 constant MARKET_OUR = 0;
     uint256 constant MARKET_UNISWAP = 1;
     uint256 constant MARKET_1INCH = 2;
+    uint256 constant MAX_PATH_LENGTH = 5;
 
     string public codeVersion = "EmiPrice2 v1.0-137-gf94b488";
 
@@ -96,8 +97,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         for (uint256 i = 0; i < _coins.length; i++) {
             _p = IUniswapV2Pair(_factory.getPair(_coins[i], _base));
             uint256 decimal = ERC20(_coins[i]).decimals();
-            if (address(_p) == address(0)) { // calculate using routes
-
+            if (address(_p) == address(0)) {
                 _prices[i] = 0;
             } else {
                 (uint256 reserv0, uint256 reserv1, ) = _p.getReserves();
@@ -131,7 +131,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
             for (uint m = 0; m < _base.length; m++) {
 
               if (_coins[i]==_base[m]) {
-                _prices[i] = 10**18;
+                _prices[i] = 10**18; // special case: 1 for base token
                 break;
               }
 
@@ -179,12 +179,11 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                 1,
                 0
             );
-            _prices[i] = _prices[i].div(10**18); // 18 decimal places
         }
     }
 
     /**
-     * @dev Calculates route from _target token to _base
+     * @dev Calculates route from _target token to _base, will use adopted Li algorithm
      */
     function _calculateRoute(address _target, address _base)
         internal
@@ -192,29 +191,115 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         returns(address[] memory path)
     {
       Emiswap [] memory pools = EmiFactory(market[0]).getAllPools();
+      uint8 [] memory pairIdx = new uint8[](pools.length);
 
-      for (uint256 i = 0; i < pools.length; i++) { // look for the final part of path
-        delete path;
+      _calcNextLink(pools, pairIdx, 1, _target);
+      address[] memory _curStep = new address[](1);
+      _curStep[0] = _target;
+      address[] memory _prevStep;
 
-        if (address(pools[i].tokens(1)) == _base || address(pools[i].tokens(0)) == _base) { // found match
-          path[i++] = address(pools[i]);
-          address _from = _base;
-          address _next = _getNextLink(pools, _target, _from);
+      for (uint8 i = 2; i < MAX_PATH_LENGTH; i++) { // mark pairs
+        // pass the wave
+        _copySteps(_prevStep, _curStep);
+        _curStep = new address[](pools.length);
+
+        for (uint256 j = 0; j < pools.length; j++) {
+          if (pairIdx[j] == i-1) {
+            address _a = _getAddressFromPrevStep(pools[j], _prevStep);
+            _calcNextLink(pools, pairIdx, i, _a);
+            _addToCurrentStep(pools[j], _curStep, _a);
+          }
+        }
+      }
+      // matrix marked -- start creating route
+      uint8 baseIdx = 0;
+
+      for (uint8 i = 0; i < pools.length; i++) {
+        if (address(pools[i].tokens(1)) == _base || address(pools[i].tokens(0)) == _base) {
+          if (baseIdx==0 || baseIdx > pairIdx[i]) { // look for shortest available path
+            baseIdx = i;
+          }
+        }
+      }
+
+      if (baseIdx==0) { // no route found
+        return new address[](0);
+      } else { // get back to target from base
+        address _a = _base;
+
+        path = new address[](baseIdx);
+
+        for (uint8 i = baseIdx; i < 1; i--) { // take pair from last level
+          for (uint256 j = 0; j < pools.length; j++) {
+            if (pairIdx[j] == i && (address(pools[j].tokens(1)) == _a || address(pools[j].tokens(0)) == _a)) { // push path chain
+              path[i-1] = address(pools[j]);
+              _a = (address(pools[j].tokens(0)) == _a)?address(pools[j].tokens(1)):address(pools[j].tokens(0));
+              break;
+            }
+          }
         }
       }
     }
 
     /**
-     * @dev Calculates next chain link from _from token to _to
+     * @dev Marks next level from _token 
      */
-    function _getNextLink(Emiswap [] memory _pools, address _to, address _from) internal view returns (address _pair)
+    function _calcNextLink(Emiswap [] memory _pools, uint8 [] memory _idx, uint8 lvl, address _token) internal view
     {
-      (address t0, address t1) = (_to > _from)?(_to, _from):(_from, _to);
-
-      for (uint256 i = 0; i < _pools.length; i++) { // look for the final part of path
-        if (address(_pools[i].tokens(0)) == t0 && address(_pools[i].tokens(1)) == t1) { // found match
-          return address(_pools[i]);
+      for (uint256 j = 0; j < _pools.length; j++) {
+        if (_idx[j] == 0) {
+          if (address(_pools[j].tokens(1)) == _token || address(_pools[j].tokens(0)) == _token) { // found match
+            _idx[j] = lvl;
+          }
         }
       }
     }
+
+    function _getAddressFromPrevStep(Emiswap pool, address[] memory prevStep) internal view returns(address r)
+    {
+      for (uint256 i = 0; i < prevStep.length; i++) {
+        if (address(pool.tokens(0)) == prevStep[i] || address(pool.tokens(1)) == prevStep[i]) {
+          return (address(pool.tokens(0)) == prevStep[i])?address(pool.tokens(1)):address(pool.tokens(0));
+        }
+      }
+    }
+
+    function _copySteps(address[] memory _to, address[] memory _from) internal pure
+    {
+      delete _to;
+      uint256 l = 0;
+
+      for (uint256 i = 0; i < _from.length; i++) {
+        if (_from[i] == address(0)) {
+          break;
+        } else {
+          l++;
+        }
+      }
+      _to = new address[](l);
+
+      for (uint256 i = 0; i < _to.length; i++) {
+        _to[i] = _from[i];
+      }
+    }
+
+    function _addToCurrentStep(Emiswap p, address[] memory _step, address _token) internal view
+    {
+      uint256 l = 0;
+      address _secondToken = (address(p.tokens(0)) == _token)?address(p.tokens(1)):address(p.tokens(0));
+
+      for (uint256 i = 0; i < _step.length; i++) {
+        if (_step[i]==_secondToken) {
+          return;
+        } else {
+          if (_step[i] == address(0)) {
+            break;
+          } else {
+            l++;
+          }
+        }
+      }
+      _step[l-1] = _secondToken;
+    }
+
 }
