@@ -58,7 +58,7 @@
         "contracts"
     ],
     "scripts": {
-        "test": "mocha --exit --recursive test --timeout 30000",
+        "test": "mocha --exit --recursive test --timeout 100000",
         "ttest": "truffle test --network test",
         "compile": "node update-version.js && truffle compile",
         "deploy": "truffle migrate --network local",
@@ -103,6 +103,6 @@
         "dist:emiprice": "node update-version.js && truffle-flattener ./contracts/EmiPrice.sol > ./flat/EmiPrice.Full.sol",
         "dist:timelock": "node update-version.js && truffle-flattener ./contracts/Timelock.sol > ./flat/Timelock.Full.sol",
         "dist:tokenmock": "node update-version.js && truffle-flattener ./contracts/mocks/TokenMock.sol > ./flat/mocks/TokenMock.Full.sol",
-        "prettier": "prettier --write 'contracts/**/*.sol'"
+        "prettier": "prettier --write \"contracts/**/*.sol\""
     }
 }
