@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.6.2;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -121,8 +122,8 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                     _prices[i] = 0; // special case
                 } else {
                     _prices[i] = (address(_coins[i]) < address(_base))
-                        ? reserv1.mul(10**(18 - target_decimal + base_decimal)).div(reserv0)
-                        : reserv0.mul(10**(18 - base_decimal + target_decimal)).div(reserv1);
+                        ? reserv1.mul(10**(18 - base_decimal + target_decimal)).div(reserv0)
+                        : reserv0.mul(10**(18 - target_decimal + base_decimal)).div(reserv1);
                 }
             }
         }
@@ -157,7 +158,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                 ); // do we have straigt pair?
                 if (address(_p) == address(0)) {
                     // we have to calc route
-                    address[] memory _route =
+                    address[] memory _route = 
                         _calculateRoute(_coins[i], _base[m]);
                     if (_route.length == 0) {
                         continue; // try next base token
@@ -223,21 +224,19 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         uint8[] memory pairIdx = new uint8[](pools.length); // vector for storing path step indexes
 
         // Phase 1. Mark pairs starting from target token
-        _calcNextLink(pools, pairIdx, 1, _target); // start from 1 step
-        address[] memory _curStep = new address[](1);
+        _markPathStep(pools, pairIdx, 1, _target); // start from 1 step
+        address[] memory _curStep = new address[](pools.length);
         _curStep[0] = _target; // store target address as first current step
-        address[] memory _prevStep;
+        address[] memory _prevStep = new address[](pools.length);
 
         for (uint8 i = 2; i < MAX_PATH_LENGTH; i++) {
             // pass the wave
-            _copySteps(_prevStep, _curStep);
-            delete _curStep;
-            _curStep = new address[](pools.length);
+            _moveSteps(_prevStep, _curStep);
 
             for (uint256 j = 0; j < pools.length; j++) {
                 if (pairIdx[j] == i - 1) { // found previous step, store second token
                     address _a = _getAddressFromPrevStep(pools[j], _prevStep);
-                    _calcNextLink(pools, pairIdx, i, _a);
+                    _markPathStep(pools, pairIdx, i, _a);
                     _addToCurrentStep(pools[j], _curStep, _a);
                 }
             }
@@ -284,80 +283,67 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                     }
                 }
             }
+            return path;
         }
     }
 
     /**
      * @dev Marks next path level from _token
      */
-    function _calcNextLink(
+    function _markPathStep(
         Emiswap[] memory _pools,
         uint8[] memory _idx,
         uint8 lvl,
         address _token
     ) internal view {
         for (uint256 j = 0; j < _pools.length; j++) {
-            if (_idx[j] == 0) { // empty indexx cell
-                if (
-                    address(_pools[j].tokens(1)) == _token ||
-                    address(_pools[j].tokens(0)) == _token
-                ) {
+            if (_idx[j] == 0 && (address(_pools[j].tokens(1)) == _token ||
+                address(_pools[j].tokens(0)) == _token)) {
                     // found match
-                    _idx[j] = lvl;
-                }
+                _idx[j] = lvl;
             }
         }
     }
 
     /**
-     * @dev Marks next level from _token
+     * @dev Get address of the second token from previous level pair
      */
-    function _getAddressFromPrevStep(Emiswap pool, address[] memory prevStep)
+    function _getAddressFromPrevStep(Emiswap pair, address[] memory prevStep)
         internal
         view
         returns (address r)
     {
         for (uint256 i = 0; i < prevStep.length; i++) {
-            if (
-                address(pool.tokens(0)) == prevStep[i] ||
-                address(pool.tokens(1)) == prevStep[i]
+            if (prevStep[i]!=address(0) && 
+                (address(pair.tokens(0)) == prevStep[i] ||
+                address(pair.tokens(1)) == prevStep[i])
             ) {
                 return
-                    (address(pool.tokens(0)) == prevStep[i])
-                        ? address(pool.tokens(1))
-                        : address(pool.tokens(0));
+                    (address(pair.tokens(0)) == prevStep[i])
+                        ? address(pair.tokens(1))
+                        : address(pair.tokens(0));
             }
         }
+        return address(0);
     }
 
     /**
-     * @dev Copies one array to another striping empty entries
+     * @dev Moves one array to another striping empty entries
      */
-    function _copySteps(address[] memory _to, address[] memory _from)
+    function _moveSteps(address[] memory _to, address[] memory _from)
         internal
         pure
     {
-        delete _to;
-        uint256 l = 0;
-
         for (uint256 i = 0; i < _from.length; i++) {
-            if (_from[i] == address(0)) {
-                break;
-            } else {
-                l++;
-            }
-        }
-        _to = new address[](l);
-
-        for (uint256 i = 0; i < _to.length; i++) {
-            _to[i] = _from[i];
+          _to[i] = _from[i];
+          _from[i] = address(0);
         }
     }
 
     /**
      * @dev Adds pairs second token address to current step array
      * @param p pool
-     * @param _step Array for storing next step addresses
+     * @param _step Array for storing current step addresses
      * @param _token First token pair address
      */
     function _addToCurrentStep(
@@ -366,13 +352,9 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         address _token
     ) internal view {
         uint256 l = 0;
-        address _secondToken =
-            (address(p.tokens(0)) == _token)
-                ? address(p.tokens(1))
-                : address(p.tokens(0));
 
         for (uint256 i = 0; i < _step.length; i++) {
-            if (_step[i] == _secondToken) { // token already exists in a list
+            if (_step[i] == _token) { // token already exists in a list
                 return;
             } else {
                 if (_step[i] == address(0)) { // first free cell found
@@ -382,6 +364,6 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                 }
             }
         }
-        _step[l] = _secondToken;
+        _step[l] = _token;
     }
 }
