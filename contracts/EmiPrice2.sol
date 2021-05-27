@@ -79,8 +79,9 @@ contract EmiPrice2 is Initializable, Priviledgeable {
     {
         return _calculateRoute(_target, _base);
     }
+
     /**
-     * @dev Upgradeable proxy constructor replacement
+     * @dev Changes market factory address
      */
     function changeMarket(uint8 idx, address _market) external onlyAdmin {
         require(_market != address(0), "Token address cannot be 0");
@@ -112,7 +113,8 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                 break;
             }
 
-            (address t0, address t1) = (_coins[i] < _base)?(_coins[i], _base):(_base, _coins[i]);
+            (address t0, address t1) =
+                (_coins[i] < _base) ? (_coins[i], _base) : (_base, _coins[i]);
             _p = IUniswapV2Pair(_factory.getPair(t0, t1));
             if (address(_p) == address(0)) {
                 _prices[i] = 0;
@@ -122,8 +124,12 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                     _prices[i] = 0; // special case
                 } else {
                     _prices[i] = (address(_coins[i]) < address(_base))
-                        ? reserv1.mul(10**(18 - base_decimal + target_decimal)).div(reserv0)
-                        : reserv0.mul(10**(18 - target_decimal + base_decimal)).div(reserv1);
+                        ? reserv1
+                            .mul(10**(18 - base_decimal + target_decimal))
+                            .div(reserv0)
+                        : reserv0
+                            .mul(10**(18 - target_decimal + base_decimal))
+                            .div(reserv1);
                 }
             }
         }
@@ -152,13 +158,14 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                     break;
                 }
 
-                (address t0, address t1) = (_coins[i] < _base[m])?(_coins[i], _base[m]):(_base[m], _coins[i]);
-                _p = Emiswap(
-                    _factory.pools(IERC20(t0), IERC20(t1))
-                ); // do we have straigt pair?
+                (address t0, address t1) =
+                    (_coins[i] < _base[m])
+                        ? (_coins[i], _base[m])
+                        : (_base[m], _coins[i]);
+                _p = Emiswap(_factory.pools(IERC20(t0), IERC20(t1))); // do we have straigt pair?
                 if (address(_p) == address(0)) {
                     // we have to calc route
-                    address[] memory _route = 
+                    address[] memory _route =
                         _calculateRoute(_coins[i], _base[m]);
                     if (_route.length == 0) {
                         continue; // try next base token
@@ -166,10 +173,10 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                         uint256 _in = 10**uint256(ERC20(_base[m]).decimals());
                         uint256[] memory _amts =
                             IEmiRouter(emiRouter).getAmountsOut(_in, _route);
-                        if (_amts.length>0) {
-                          _prices[i] = _amts[_amts.length - 1];
+                        if (_amts.length > 0) {
+                            _prices[i] = _amts[_amts.length - 1];
                         } else {
-                          _prices[i] = 0;
+                            _prices[i] = 0;
                         }
                         break;
                     }
@@ -234,7 +241,8 @@ contract EmiPrice2 is Initializable, Priviledgeable {
             _moveSteps(_prevStep, _curStep);
 
             for (uint256 j = 0; j < pools.length; j++) {
-                if (pairIdx[j] == i - 1) { // found previous step, store second token
+                if (pairIdx[j] == i - 1) {
+                    // found previous step, store second token
                     address _a = _getAddressFromPrevStep(pools[j], _prevStep);
                     _markPathStep(pools, pairIdx, i, _a);
                     _addToCurrentStep(pools[j], _curStep, _a);
@@ -264,7 +272,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
             // get back to target from base
             address _a = _base;
 
-            path = new address[](baseIdx+1);
+            path = new address[](baseIdx + 1);
             path[baseIdx] = _base;
 
             for (uint8 i = baseIdx; i > 0; i--) {
@@ -298,9 +306,12 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         address _token
     ) internal view {
         for (uint256 j = 0; j < _pools.length; j++) {
-            if (_idx[j] == 0 && (address(_pools[j].tokens(1)) == _token ||
-                address(_pools[j].tokens(0)) == _token)) {
-                    // found match
+            if (
+                _idx[j] == 0 &&
+                (address(_pools[j].tokens(1)) == _token ||
+                    address(_pools[j].tokens(0)) == _token)
+            ) {
+                // found match
                 _idx[j] = lvl;
             }
         }
@@ -315,9 +326,10 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         returns (address r)
     {
         for (uint256 i = 0; i < prevStep.length; i++) {
-            if (prevStep[i]!=address(0) && 
+            if (
+                prevStep[i] != address(0) &&
                 (address(pair.tokens(0)) == prevStep[i] ||
-                address(pair.tokens(1)) == prevStep[i])
+                    address(pair.tokens(1)) == prevStep[i])
             ) {
                 return
                     (address(pair.tokens(0)) == prevStep[i])
@@ -336,8 +348,8 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         pure
     {
         for (uint256 i = 0; i < _from.length; i++) {
-          _to[i] = _from[i];
-          _from[i] = address(0);
+            _to[i] = _from[i];
+            _from[i] = address(0);
         }
     }
 
@@ -355,10 +367,12 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         uint256 l = 0;
 
         for (uint256 i = 0; i < _step.length; i++) {
-            if (_step[i] == _token) { // token already exists in a list
+            if (_step[i] == _token) {
+                // token already exists in a list
                 return;
             } else {
-                if (_step[i] == address(0)) { // first free cell found
+                if (_step[i] == address(0)) {
+                    // first free cell found
                     break;
                 } else {
                     l++;
