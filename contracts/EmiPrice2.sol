@@ -94,9 +94,11 @@ contract EmiPrice2 is Initializable, Priviledgeable {
             return;
         }
 
+        uint256 base_decimal = ERC20(_base).decimals();
+
         for (uint256 i = 0; i < _coins.length; i++) {
             _p = IUniswapV2Pair(_factory.getPair(_coins[i], _base));
-            uint256 decimal = ERC20(_coins[i]).decimals();
+            uint256 target_decimal = ERC20(_coins[i]).decimals();
             if (address(_p) == address(0)) {
                 _prices[i] = 0;
             } else {
@@ -105,8 +107,8 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                     _prices[i] = 0; // special case
                 } else {
                     _prices[i] = address(_coins[i]) < address(_base)
-                        ? reserv1.mul(10**(18 - decimal)).div(reserv0)
-                        : reserv0.mul(10**(18 - decimal)).div(reserv1);
+                        ? reserv1.mul(10**(base_decimal - target_decimal)).div(reserv0)
+                        : reserv0.mul(10**(base_decimal - target_decimal)).div(reserv1);
                 }
             }
         }

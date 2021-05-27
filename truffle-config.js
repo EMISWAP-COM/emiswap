@@ -65,7 +65,7 @@ module.exports = {
             },
             skipDryRun: true,
             network_id: '*',
-        },
+        }, 
     },
     compilers: {
         solc: {
