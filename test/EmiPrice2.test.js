@@ -33,7 +33,6 @@ let emiRouter;
 let uniswapPair;
 let uPair;
 let usdx;
-let usdx4;
 let akita;
 let usdy;
 let usdz;
@@ -76,7 +75,6 @@ describe('EmiPrice2 test', function () {
         usdy = await MockUSDY.new();
         usdz = await MockUSDZ.new();
         usdzz = await MockUSDZ.new();
-        usdx4 = await MockUSDX.new();
         akita = await MockUSDY.new();
         weth = await MockWETH.new();
         wbtc = await MockWBTC.new();
@@ -145,6 +143,8 @@ describe('EmiPrice2 test', function () {
           await esp1.deposit([money.usdx('23'), money.usdc('11')], [money.zero, money.zero], ZERO_ADDRESS);
         }
 
+	await time.increase(60 * 5); // increase time to 5 minutes
+
         let esp2 = await Emiswap.at(await emiFactory.pools(usdzz.address, usdx.address));
         await usdzz.approve(esp2.address, money.usdc('1000000000'));
         await usdx.approve(esp2.address, money.usdx('1000000000'));
@@ -153,6 +153,8 @@ describe('EmiPrice2 test', function () {
         } else {
           await esp2.deposit([money.usdx('400'), money.usdc('12')], [money.zero, money.zero], ZERO_ADDRESS);
         }
+
+	await time.increase(60 * 10); // increase time to 10 minutes
 
         let esp3 = await Emiswap.at(await emiFactory.pools(usdy.address, usdzz.address));
         await usdzz.approve(esp3.address, money.usdc('1000000000'));
@@ -163,6 +165,8 @@ describe('EmiPrice2 test', function () {
           await esp3.deposit([money.usdy('41'), money.usdc('3')], [money.zero, money.zero], ZERO_ADDRESS);
         }
 
+	await time.increase(60 * 10); // increase time to 10 minutes
+
         let esp4 = await Emiswap.at(await emiFactory.pools(usdy.address, wbtc.address));
         await wbtc.approve(esp4.address, money.wbtc('1000000000'));
         await usdy.approve(esp4.address, money.usdy('1000000000'));
@@ -172,48 +176,51 @@ describe('EmiPrice2 test', function () {
           await esp4.deposit([money.usdy('2'), money.wbtc('59')], [money.zero, money.zero], ZERO_ADDRESS);
         }
 
+	await time.increase(60 * 10); // increase time to 10 minutes
+
         // Init AKITA pair
         await emiFactory.deploy(akita.address, weth.address);
 
         await weth.deposit({ value: money.weth('10') });
 
         let akitaPair = await Emiswap.at(await emiFactory.pools(akita.address, weth.address));
-        await weth.approve(akitaPair.address, money.weth('1000'));
-        await akita.approve(akitaPair.address, money.usdy('1000000000'));
+        await weth.approve(akitaPair.address, money.weth('10000000000000'));
+        await akita.approve(akitaPair.address, money.usdy('10000000000000'));
         if (weth.address < usdy.address) {
           await akitaPair.deposit([money.weth('1'), money.usdy('33')], [money.zero, money.zero], ZERO_ADDRESS);
         } else {
           await akitaPair.deposit([money.usdy('33'), money.weth('1')], [money.zero, money.zero], ZERO_ADDRESS);
         }
+	await time.increase(60 * 10); // increase time to 10 minutes
     });
     describe('get prices of coins', ()=> {
       it('should get Uniswap prices successfully', async function () {
         let b = await price.getCoinPrices([usdx.address, usdz.address, weth.address], [weth.address], 1);
         console.log('Got price results: %s, %s, %s', b[0].toString(), b[1].toString(), b[2].toString());
 
-        let p0 = parseFloat(b[0].toString(10));
-        let p1 = parseFloat(b[1].toString(10));
-        let p2 = parseFloat(b[2].toString(10));
+        let p0 = parseFloat(web3.utils.fromWei(b[0]));
+        let p1 = parseFloat(web3.utils.fromWei(b[1]));
+        let p2 = parseFloat(web3.utils.fromWei(b[2]));
 
         console.log('Price calc: %f, %f, %f', p0, p1, p2);
 
         assert.equal(b.length, 3);
-        assert.isAbove(b[0], 0);
-        assert.isAbove(b[1], 0);
-        expect(b[2]).to.be.bignumber.equal(new BN('1'));
+        assert.isAbove(p0, 0.0025);
+        assert.isAbove(p1, 99);
+        assert.isAtLeast(p2, 0.9999);
       });
       it('should get Mooniswap prices successfully', async function () {
         let b = await price.getCoinPrices([usdx.address, wbtc.address], [usdx.address], 2);
         console.log('Got price results: %s, %s', b[0].toString(), b[1].toString());        
 
-        let p0 = parseFloat(b[0].toString(10));
-        let p1 = parseFloat(b[1].toString(10));
+        let p0 = parseFloat(web3.utils.fromWei(b[0]));
+        let p1 = parseFloat(web3.utils.fromWei(b[1]));
 
         console.log('Price calc: %f, %f', p0, p1);
 
         assert.equal(b.length, 2);
-        assert.isAbove(p0, 0);
-        assert.isAtLeast(p1, 0);
+        assert.isAbove(p0, 319.999);
+        assert.isAbove(p1, 0);
       });
       it('should get our prices successfully', async function () {
         let b = await price.getCoinPrices([usdx.address, usdz.address, weth.address], [usdx.address, usdz.address], 0);
@@ -233,8 +240,8 @@ describe('EmiPrice2 test', function () {
         let b = await price.getCoinPrices([usdx.address, usdz.address], [usdx.address, usdz.address], 0);
         console.log('Got price results: %s, %s', b[0].toString(), b[1].toString());
 
-        let p0 = parseFloat(b[0].toString(10));
-        let p1 = parseFloat(b[1].toString(10));
+        let p0 = parseFloat(web3.utils.fromWei(b[0]));
+        let p1 = parseFloat(web3.utils.fromWei(b[1]));
 
         console.log('Price calc: %f, %f', p0, p1);
 

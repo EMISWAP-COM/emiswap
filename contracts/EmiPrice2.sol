@@ -97,8 +97,15 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         uint256 base_decimal = ERC20(_base).decimals();
 
         for (uint256 i = 0; i < _coins.length; i++) {
-            _p = IUniswapV2Pair(_factory.getPair(_coins[i], _base));
             uint256 target_decimal = ERC20(_coins[i]).decimals();
+
+            if (_coins[i] == _base) {
+                _prices[i] = 10**18; // special case: 1 for base token
+                break;
+            }
+
+            (address t0, address t1) = (_coins[i] < _base)?(_coins[i], _base):(_base, _coins[i]);
+            _p = IUniswapV2Pair(_factory.getPair(t0, t1));
             if (address(_p) == address(0)) {
                 _prices[i] = 0;
             } else {
@@ -106,9 +113,9 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                 if (reserv1 == 0 || reserv0 == 0) {
                     _prices[i] = 0; // special case
                 } else {
-                    _prices[i] = address(_coins[i]) < address(_base)
-                        ? reserv1.mul(10**(base_decimal - target_decimal)).div(reserv0)
-                        : reserv0.mul(10**(base_decimal - target_decimal)).div(reserv1);
+                    _prices[i] = (address(_coins[i]) < address(_base))
+                        ? reserv0.mul(10**(18 - base_decimal + target_decimal)).div(reserv1)
+                        : reserv1.mul(10**(18 - target_decimal + base_decimal)).div(reserv0);
                 }
             }
         }
@@ -137,8 +144,9 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                     break;
                 }
 
+                (address t0, address t1) = (_coins[i] < _base[m])?(_coins[i], _base[m]):(_base[m], _coins[i]);
                 _p = Emiswap(
-                    _factory.pools(IERC20(_coins[i]), IERC20(_base[m]))
+                    _factory.pools(IERC20(t0), IERC20(t1))
                 ); // do we have straigt pair?
                 if (address(_p) == address(0)) {
                     // we have to calc route
@@ -150,7 +158,11 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                         uint256 _in = 10**uint256(ERC20(_base[m]).decimals());
                         uint256[] memory _amts =
                             IEmiRouter(emiRouter).getAmountsOut(_in, _route);
-                        _prices[i] = _amts[_amts.length - 1];
+                        if (_amts.length>0) {
+                          _prices[i] = _amts[_amts.length - 1];
+                        } else {
+                          _prices[i] = 0;
+                        }
                         break;
                     }
                 } else {
@@ -160,7 +172,6 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                         IERC20(_base[m]),
                         10**uint256(ERC20(_coins[i]).decimals())
                     );
-                    _prices[i] = _prices[i].div(10**18);
                     break;
                 }
             }
@@ -181,10 +192,11 @@ contract EmiPrice2 is Initializable, Priviledgeable {
             return;
         }
         for (uint256 i = 0; i < _coins.length; i++) {
+            uint256 d = uint256(ERC20(_coins[i]).decimals());
             (_prices[i], ) = _factory.getExpectedReturn(
                 IERC20(_coins[i]),
                 IERC20(_base),
-                10**uint256(ERC20(_coins[i]).decimals()),
+                10**d,
                 1,
                 0
             );
@@ -192,36 +204,39 @@ contract EmiPrice2 is Initializable, Priviledgeable {
     }
 
     /**
-     * @dev Calculates route from _target token to _base, will use adopted Li algorithm
+     * @dev Calculates route from _target token to _base, using adopted Li algorithm
+     * https://ru.wikipedia.org/wiki/%D0%90%D0%BB%D0%B3%D0%BE%D1%80%D0%B8%D1%82%D0%BC_%D0%9B%D0%B8
      */
     function _calculateRoute(address _target, address _base)
         internal
         view
         returns (address[] memory path)
     {
-        Emiswap[] memory pools = EmiFactory(market[0]).getAllPools();
-        uint8[] memory pairIdx = new uint8[](pools.length);
+        Emiswap[] memory pools = EmiFactory(market[0]).getAllPools(); // gets all pairs
+        uint8[] memory pairIdx = new uint8[](pools.length); // vector for storing path step indexes
 
-        _calcNextLink(pools, pairIdx, 1, _target);
+        // Phase 1. Mark pairs starting from target token
+        _calcNextLink(pools, pairIdx, 1, _target); // start from 1 step
         address[] memory _curStep = new address[](1);
-        _curStep[0] = _target;
+        _curStep[0] = _target; // store target address as first current step
         address[] memory _prevStep;
 
         for (uint8 i = 2; i < MAX_PATH_LENGTH; i++) {
-            // mark pairs
             // pass the wave
             _copySteps(_prevStep, _curStep);
+            delete _curStep;
             _curStep = new address[](pools.length);
 
             for (uint256 j = 0; j < pools.length; j++) {
-                if (pairIdx[j] == i - 1) {
+                if (pairIdx[j] == i - 1) { // found previous step, store second token
                     address _a = _getAddressFromPrevStep(pools[j], _prevStep);
                     _calcNextLink(pools, pairIdx, i, _a);
                     _addToCurrentStep(pools[j], _curStep, _a);
                 }
             }
         }
-        // matrix marked -- start creating route
+
+        // matrix marked -- start creating route from base token back to target
         uint8 baseIdx = 0;
 
         for (uint8 i = 0; i < pools.length; i++) {
@@ -245,7 +260,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
 
             path = new address[](baseIdx);
 
-            for (uint8 i = baseIdx; i < 1; i--) {
+            for (uint8 i = baseIdx; i > 0; i--) {
                 // take pair from last level
                 for (uint256 j = 0; j < pools.length; j++) {
                     if (
@@ -266,7 +281,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
     }
 
     /**
-     * @dev Marks next level from _token
+     * @dev Marks next path level from _token
      */
     function _calcNextLink(
         Emiswap[] memory _pools,
@@ -275,7 +290,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         address _token
     ) internal view {
         for (uint256 j = 0; j < _pools.length; j++) {
-            if (_idx[j] == 0) {
+            if (_idx[j] == 0) { // empty indexx cell
                 if (
                     address(_pools[j].tokens(1)) == _token ||
                     address(_pools[j].tokens(0)) == _token
@@ -287,6 +302,9 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         }
     }
 
+    /**
+     * @dev Marks next level from _token
+     */
     function _getAddressFromPrevStep(Emiswap pool, address[] memory prevStep)
         internal
         view
@@ -305,6 +323,9 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         }
     }
 
+    /**
+     * @dev Copies one array to another striping empty entries
+     */
     function _copySteps(address[] memory _to, address[] memory _from)
         internal
         pure
@@ -326,6 +347,12 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         }
     }
 
+    /**
+     * @dev Adds pairs second token address to current step array
+     * @param p pool
+     * @param _step Array for storing next step addresses
+     * @param _token First token pair address
+     */
     function _addToCurrentStep(
         Emiswap p,
         address[] memory _step,
@@ -338,16 +365,16 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                 : address(p.tokens(0));
 
         for (uint256 i = 0; i < _step.length; i++) {
-            if (_step[i] == _secondToken) {
+            if (_step[i] == _secondToken) { // token already exists in a list
                 return;
             } else {
-                if (_step[i] == address(0)) {
+                if (_step[i] == address(0)) { // first free cell found
                     break;
                 } else {
                     l++;
                 }
             }
         }
-        _step[l - 1] = _secondToken;
+        _step[l] = _secondToken;
     }
 }
