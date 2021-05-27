@@ -240,12 +240,6 @@ describe('EmiPrice2 test', function () {
       });
       it('should get our prices successfully', async function () {
         console.log('Tokens: USDZ %s, USDX %s, USDZZ %s, USDY %s, WBTC %s', usdz.address, usdx.address, usdzz.address, usdy.address, wbtc.address);
-        let p = await emiFactory.getAllPools();
-        console.log('Pools: ', p);
-        for (var i = 0; i < p.length; i++) {
-           let pr = await Emiswap.at(p[i]);
-           console.log('Pool %s: token %s <=> token %s', pr.address, await pr.tokens(0), await pr.tokens(1));
-        }
 
         let route = await price.calcRoute(usdz.address, wbtc.address);
         console.log('Route to USDZ from WBTC: ', route);
@@ -286,7 +280,7 @@ describe('EmiPrice2 test', function () {
         let b = await price.getCoinPrices([usdz.address],[wbtc.address], 0);
         console.log('Got price results: %s', b[0].toString());
 
-        let p0 = parseFloat(b[0].toString(10));
+        let p0 = parseFloat(web3.utils.fromWei(b[0]));
 
         console.log('Price calc: %f', p0);
 
@@ -305,7 +299,7 @@ describe('EmiPrice2 test', function () {
         let amt = await emiRouter.getAmountsOut(money.usdy('1'), p);
         console.log(amt);
 
-        let p0 = parseFloat(b[0].toString(10));
+        let p0 = parseFloat(web3.utils.fromWei(b[0]));
 
         console.log('Price calc: %f', p0);
 

@@ -264,7 +264,8 @@ contract EmiPrice2 is Initializable, Priviledgeable {
             // get back to target from base
             address _a = _base;
 
-            path = new address[](baseIdx);
+            path = new address[](baseIdx+1);
+            path[baseIdx] = _base;
 
             for (uint8 i = baseIdx; i > 0; i--) {
                 // take pair from last level
@@ -275,10 +276,10 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                             address(pools[j].tokens(0)) == _a)
                     ) {
                         // push path chain
-                        path[i - 1] = address(pools[j]);
                         _a = (address(pools[j].tokens(0)) == _a) // get next token from pair
                             ? address(pools[j].tokens(1))
                             : address(pools[j].tokens(0));
+                        path[i - 1] = _a;
                         break;
                     }
                 }
