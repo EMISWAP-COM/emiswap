@@ -71,6 +71,13 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         return _prices;
     }
 
+    function calcRoute(address _target, address _base)
+        external
+        view
+        returns (address[] memory path)
+    {
+        return _calculateRoute(_target, _base);
+    }
     /**
      * @dev Upgradeable proxy constructor replacement
      */
@@ -114,8 +121,8 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                     _prices[i] = 0; // special case
                 } else {
                     _prices[i] = (address(_coins[i]) < address(_base))
-                        ? reserv0.mul(10**(18 - base_decimal + target_decimal)).div(reserv1)
-                        : reserv1.mul(10**(18 - target_decimal + base_decimal)).div(reserv0);
+                        ? reserv1.mul(10**(18 - target_decimal + base_decimal)).div(reserv0)
+                        : reserv0.mul(10**(18 - base_decimal + target_decimal)).div(reserv1);
                 }
             }
         }
@@ -212,7 +219,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         view
         returns (address[] memory path)
     {
-        Emiswap[] memory pools = EmiFactory(market[0]).getAllPools(); // gets all pairs
+        Emiswap[] memory pools = EmiFactory(market[MARKET_OUR]).getAllPools(); // gets all pairs
         uint8[] memory pairIdx = new uint8[](pools.length); // vector for storing path step indexes
 
         // Phase 1. Mark pairs starting from target token
@@ -246,7 +253,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
             ) {
                 if (baseIdx == 0 || baseIdx > pairIdx[i]) {
                     // look for shortest available path
-                    baseIdx = i;
+                    baseIdx = pairIdx[i];
                 }
             }
         }
@@ -270,7 +277,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                     ) {
                         // push path chain
                         path[i - 1] = address(pools[j]);
-                        _a = (address(pools[j].tokens(0)) == _a)
+                        _a = (address(pools[j].tokens(0)) == _a) // get next token from pair
                             ? address(pools[j].tokens(1))
                             : address(pools[j].tokens(0));
                         break;

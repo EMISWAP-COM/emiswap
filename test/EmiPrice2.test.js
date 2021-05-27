@@ -205,8 +205,8 @@ describe('EmiPrice2 test', function () {
         console.log('Price calc: %f, %f, %f', p0, p1, p2);
 
         assert.equal(b.length, 3);
-        assert.isAbove(p0, 0.0025);
-        assert.isAbove(p1, 99);
+        assert.isAtLeast(p0, 0.0025);
+        assert.isAbove(p1, 0.99);
         assert.isAtLeast(p2, 0.9999);
       });
       it('should get Mooniswap prices successfully', async function () {
@@ -223,18 +223,22 @@ describe('EmiPrice2 test', function () {
         assert.isAbove(p1, 0);
       });
       it('should get our prices successfully', async function () {
+        let p = await price.calcRoute(usdz.address, wbtc.address);
+        console.log('Route to USDZ from USDX: ', p);
         let b = await price.getCoinPrices([usdx.address, usdz.address, weth.address], [usdx.address, usdz.address], 0);
         console.log('Got price results: %s, %s, %s', b[0].toString(), b[1].toString(), b[2].toString());
+        console.log('B: ', b);
 
-        let p0 = parseFloat(b[0].toString(10));
-        let p1 = parseFloat(b[1].toString(10));
-        let p2 = parseFloat(b[2].toString(10));
+        let p0 = parseFloat(web3.utils.fromWei(b[0]));
+        let p1 = parseFloat(web3.utils.fromWei(b[1]));
+        let p2 = parseFloat(web3.utils.fromWei(b[2]));
 
         console.log('Price calc: %f, %f, %f', p0, p1, p2);
 
         assert.equal(b.length, 3);
         assert.isAbove(p0, 0);
         assert.isAtLeast(p1, 0);
+        assert.isAbove(p0, 0);
       });
       it('should get base token prices successfully', async function () {
         let b = await price.getCoinPrices([usdx.address, usdz.address], [usdx.address, usdz.address], 0);
@@ -261,6 +265,9 @@ describe('EmiPrice2 test', function () {
         assert.isAbove(p0, 0);
       });
       it('should get AKITA price successfully', async function () {
+        let p = await price.calcRoute(akita.address, usdx.address);
+        console.log('Route to AKITA from USDX: ', p);
+
         let b = await price.getCoinPrices([akita.address], [usdx.address], 0);
         console.log('Got price results: %s', b[0].toString());
 
