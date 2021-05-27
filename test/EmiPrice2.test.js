@@ -99,7 +99,7 @@ describe('EmiPrice2 test', function () {
         const pairAddressUSDX_WETH = await uniswapFactory.getPair(usdx.address, weth.address);
         uniswapPairUSDX_WETH = await UniswapV2Pair.at(pairAddressUSDX_WETH);
 
-        const wethToPair = new BN(100).mul(new BN(10).pow(new BN(await usdx.decimals()))).toString();
+        const wethToPair = new BN(100).mul(new BN(10).pow(new BN(await weth.decimals()))).toString();
         const usdzToPair = new BN(101).mul(new BN(10).pow(new BN(await usdz.decimals()))).toString();
     
         const usdxToPair_USDXWETH = new BN(400).mul(new BN(10).pow(new BN(await usdx.decimals()))).toString();
@@ -111,14 +111,14 @@ describe('EmiPrice2 test', function () {
         await uniswapPair.mint(alice);
         let ttt = new BN(wethToPair);
         let ttt2 = new BN(usdzToPair);
-        await weth.deposit({ value: ttt.mul(new BN(2)).toString()});
-        await weth.transfer(uniswapPair.address, ttt.mul(new BN(2)).toString());
-        await usdz.transfer(uniswapPair.address, ttt2.mul(new BN(2)).toString());
+        await weth.deposit({ value: ttt.toString()});
+        await weth.transfer(uniswapPair.address, ttt.toString());
+        await usdz.transfer(uniswapPair.address, ttt2.toString());
         await uniswapPair.mint(bob);
 
-        await weth.deposit({ value: ttt.mul(new BN(3)).toString() });
-        await weth.transfer(uniswapPair.address, ttt.mul(new BN(3)).toString());
-        await usdz.transfer(uniswapPair.address, ttt2.mul(new BN(3)).toString());
+        await weth.deposit({ value: ttt.toString() });
+        await weth.transfer(uniswapPair.address, ttt.toString());
+        await usdz.transfer(uniswapPair.address, ttt2.toString());
         await uniswapPair.mint(dave);
 
         await usdx.transfer(bob, usdxToPair_USDXWETH);
@@ -224,10 +224,9 @@ describe('EmiPrice2 test', function () {
       });
       it('should get our prices successfully', async function () {
         let p = await price.calcRoute(usdz.address, wbtc.address);
-        console.log('Route to USDZ from USDX: ', p);
+        console.log('Route to USDZ from WBTC: ', p);
         let b = await price.getCoinPrices([usdx.address, usdz.address, weth.address], [usdx.address, usdz.address], 0);
         console.log('Got price results: %s, %s, %s', b[0].toString(), b[1].toString(), b[2].toString());
-        console.log('B: ', b);
 
         let p0 = parseFloat(web3.utils.fromWei(b[0]));
         let p1 = parseFloat(web3.utils.fromWei(b[1]));

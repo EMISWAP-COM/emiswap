@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.6.2;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -74,7 +75,8 @@ contract EmiPrice2 is Initializable, Priviledgeable {
     function calcRoute(address _target, address _base)
         external
         view
-        returns (address[] memory path)
+        returns (uint8[] memory r)
+//        returns (address[] memory path)
     {
         return _calculateRoute(_target, _base);
     }
@@ -121,8 +123,8 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                     _prices[i] = 0; // special case
                 } else {
                     _prices[i] = (address(_coins[i]) < address(_base))
-                        ? reserv1.mul(10**(18 - target_decimal + base_decimal)).div(reserv0)
-                        : reserv0.mul(10**(18 - base_decimal + target_decimal)).div(reserv1);
+                        ? reserv1.mul(10**(18 - base_decimal + target_decimal)).div(reserv0)
+                        : reserv0.mul(10**(18 - target_decimal + base_decimal)).div(reserv1);
                 }
             }
         }
@@ -157,8 +159,8 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                 ); // do we have straigt pair?
                 if (address(_p) == address(0)) {
                     // we have to calc route
-                    address[] memory _route =
-                        _calculateRoute(_coins[i], _base[m]);
+                    address[] memory _route = new address[](1);
+//                        _calculateRoute(_coins[i], _base[m]);
                     if (_route.length == 0) {
                         continue; // try next base token
                     } else {
@@ -217,10 +219,12 @@ contract EmiPrice2 is Initializable, Priviledgeable {
     function _calculateRoute(address _target, address _base)
         internal
         view
-        returns (address[] memory path)
+//        returns (address[] memory path)
+        returns (uint8[] memory r)
     {
         Emiswap[] memory pools = EmiFactory(market[MARKET_OUR]).getAllPools(); // gets all pairs
-        uint8[] memory pairIdx = new uint8[](pools.length); // vector for storing path step indexes
+        uint8[] memory pairIdx = new uint8[](pools.length); // vector for storing path step levels
+        address[] memory path;
 
         // Phase 1. Mark pairs starting from target token
         _calcNextLink(pools, pairIdx, 1, _target); // start from 1 step
@@ -242,8 +246,9 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                 }
             }
         }
+        return pairIdx;
 
-        // matrix marked -- start creating route from base token back to target
+        // Phase 2. Vector marked -- start looking for route from base token back to target
         uint8 baseIdx = 0;
 
         for (uint8 i = 0; i < pools.length; i++) {
@@ -260,7 +265,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
 
         if (baseIdx == 0) {
             // no route found
-            return new address[](0);
+//            return new address[](0);
         } else {
             // get back to target from base
             address _a = _base;
@@ -284,6 +289,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                     }
                 }
             }
+//            return path;
         }
     }
 
@@ -297,12 +303,12 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         address _token
     ) internal view {
         for (uint256 j = 0; j < _pools.length; j++) {
-            if (_idx[j] == 0) { // empty indexx cell
+            if (_idx[j] == 0) { // empty index cell
                 if (
                     address(_pools[j].tokens(1)) == _token ||
                     address(_pools[j].tokens(0)) == _token
                 ) {
-                    // found match
+                    // found match => mark cell
                     _idx[j] = lvl;
                 }
             }

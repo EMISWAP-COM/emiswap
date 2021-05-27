@@ -57,7 +57,7 @@ module.exports = {
             network_id: '*',
         },
         test: {
-            networkCheckTimeout: 100000,
+            networkCheckTimeout: 1000000,
             provider() {
                 // eslint-disable-next-line global-require
                 const { provider } = require('@openzeppelin/test-environment');
@@ -80,7 +80,7 @@ module.exports = {
     },
     plugins: ["solidity-coverage"],
     mocha: { // https://github.com/cgewecke/eth-gas-reporter
-        timeout: 100000,
+        timeout: 1000000,
         reporter: '',
         reporterOptions : {
             currency: 'USD',
