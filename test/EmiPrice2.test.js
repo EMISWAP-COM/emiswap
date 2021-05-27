@@ -280,6 +280,9 @@ describe('EmiPrice2 test', function () {
         let p = await price.calcRoute(usdz.address, wbtc.address);
         console.log('Route to USDZ from WBTC: ', p);
 
+        let amt = await emiRouter.getAmountsOut(money.usdc('1'), p);
+        console.log(amt);
+
         let b = await price.getCoinPrices([usdz.address],[wbtc.address], 0);
         console.log('Got price results: %s', b[0].toString());
 
@@ -298,6 +301,9 @@ describe('EmiPrice2 test', function () {
 
         let b = await price.getCoinPrices([akita.address], [usdx.address], 0);
         console.log('Got price results: %s', b[0].toString());
+
+        let amt = await emiRouter.getAmountsOut(money.usdy('1'), p);
+        console.log(amt);
 
         let p0 = parseFloat(b[0].toString(10));
 
