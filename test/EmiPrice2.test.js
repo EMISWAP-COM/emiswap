@@ -126,114 +126,87 @@ describe('EmiPrice2 test', function () {
         await weth.deposit({ value: wethToPair_USDXWETH });
         await weth.transfer(uniswapPairUSDX_WETH.address, wethToPair_USDXWETH);
         await uniswapPairUSDX_WETH.mint(alice);
+	      
+        // pairs with 4 links: z-x,   zz-x,   y-zz, y-wbtc, try to get price for z-wbtc
+        // pairs with 4 links: 11:23, 12:400, 41:3, 2:59,   try to get price for z-wbtc
 
-	await time.increase(60 * 10); // increase time to 10 minutes
+        // usdz-usdx Add liquidity (11:23)
+        await usdz.approve(emiRouter.address, money.usdc('1000000000'));
+        await usdx.approve(emiRouter.address, money.usdx('1000000000'));
+        await emiRouter.addLiquidity(
+          usdz.address,
+          usdx.address, 
+          money.usdc('11'),
+          money.usdx('23'),
+          money.zero,
+          money.zero,
+          ZERO_ADDRESS);
 
-        // pairs with 4 links: z-x, zz-x, y-zz, y-wbtc, try to get price for z-wbtc
-        await emiFactory.deploy(usdz.address, usdx.address);
-        await emiFactory.deploy(usdzz.address, usdx.address);
-        await emiFactory.deploy(usdy.address, usdzz.address);
-        await emiFactory.deploy(usdy.address, wbtc.address);
-        await emiFactory.deploy(usdzz.address, weth.address);
+        // usdzz-usdx Add liquidity (12:400)
+        await usdzz.approve(emiRouter.address, money.usdc('1000000000'));
+        await usdx.approve(emiRouter.address, money.usdx('1000000000'));
+        await emiRouter.addLiquidity(
+          usdzz.address, 
+          usdx.address,
+          money.usdc('12'),
+          money.usdx('400'),
+          money.zero,
+          money.zero,
+          ZERO_ADDRESS);
 
-        let esp1 = await Emiswap.at(await emiFactory.pools(usdz.address, usdx.address));
-                                                          
-        await usdx.approve(esp1.address, money.usdx('1000000000'));
-        await usdz.approve(esp1.address, money.usdc('1000000000'));
-        console.log('Pair Z-X: USDX balance: %s, trying to deposit: %s', web3.utils.fromWei(await usdx.balanceOf(defaultSender)),
-          web3.utils.fromWei(money.usdx('23')));
-        console.log('Pair Z-X: USDZ balance: %s, trying to deposit: %s', await usdz.balanceOf(defaultSender),
-          money.usdc('11'));
+        // usdzz-usdy Add liquidity (3:41)
+        await usdzz.approve(emiRouter.address, money.usdc('1000000000'));
+        await usdy.approve(emiRouter.address, money.usdy('1000000000'));
+        await emiRouter.addLiquidity(
+          usdzz.address, 
+          usdy.address,
+          money.usdc('3'),
+          money.usdy('41'),
+          money.zero,
+          money.zero,
+          ZERO_ADDRESS);
 
-        if (usdz.address < usdx.address) {
-          await esp1.deposit([money.usdc('11'), money.usdx('23')], [money.zero, money.zero], ZERO_ADDRESS);
-        } else {
-          await esp1.deposit([money.usdx('23'), money.usdc('11')], [money.zero, money.zero], ZERO_ADDRESS);
-        }
+        // wbtc-usdy Add liquidity (59:2)
+        await wbtc.approve(emiRouter.address, money.wbtc('1000000000'));
+        await usdy.approve(emiRouter.address, money.usdy('1000000000'));
+        await emiRouter.addLiquidity(
+          wbtc.address, 
+          usdy.address,
+          money.wbtc('59'),
+          money.usdy('2'),
+          money.zero,
+          money.zero,
+          ZERO_ADDRESS);
 
-	await time.increase(60 * 10); // increase time to 10 minutes
-
-        let esp2 = await Emiswap.at(await emiFactory.pools(usdzz.address, usdx.address));
-        await usdzz.approve(esp2.address, money.usdc('1000000000'));
-        await usdx.approve(esp2.address, money.usdx('1000000000'));
-        console.log('Pair ZZ-X: USDX balance: %s, trying to deposit: %s', web3.utils.fromWei(await usdx.balanceOf(defaultSender)),
-          web3.utils.fromWei(money.usdx('400')));
-        console.log('Pair ZZ-X: USDZZ balance: %s, trying to deposit: %s', await usdzz.balanceOf(defaultSender),
-          money.usdc('12'));
-
-        if (usdzz.address < usdx.address) {
-          await esp2.deposit([money.usdc('12'), money.usdx('400')], [money.zero, money.zero], ZERO_ADDRESS);
-        } else {
-          await esp2.deposit([money.usdx('400'), money.usdc('12')], [money.zero, money.zero], ZERO_ADDRESS);
-        }
-
-	await time.increase(60 * 10); // increase time to 10 minutes
-
-        let esp3 = await Emiswap.at(await emiFactory.pools(usdy.address, usdzz.address));
-        await usdzz.approve(esp3.address, money.usdc('1000000000'));
-        await usdy.approve(esp3.address, money.usdy('1000000000'));
-        console.log('Pair ZZ-Y: USDY balance: %s, trying to deposit: %s', await usdy.balanceOf(defaultSender),
-          money.usdy('41'));
-        console.log('Pair ZZ-Y: USDZZ balance: %s, trying to deposit: %s', await usdzz.balanceOf(defaultSender),
-          money.usdc('12'));
-
-        if (usdzz.address < usdy.address) {
-          await esp3.deposit([money.usdc('3'), money.usdy('41')], [money.zero, money.zero], ZERO_ADDRESS);
-        } else {
-          await esp3.deposit([money.usdy('41'), money.usdc('3')], [money.zero, money.zero], ZERO_ADDRESS);
-        }
-
-	await time.increase(60 * 10); // increase time to 10 minutes
-
-        let esp4 = await Emiswap.at(await emiFactory.pools(usdy.address, wbtc.address));
-        await wbtc.approve(esp4.address, money.wbtc('1000000000'));
-        await usdy.approve(esp4.address, money.usdy('1000000000'));
-        console.log('Pair WBTC-Y: USDY balance: %s, trying to deposit: %s', await usdy.balanceOf(defaultSender),
-          money.usdy('2'));
-        console.log('Pair WBTC-Y: WBTC balance: %s, trying to deposit: %s', await wbtc.balanceOf(defaultSender),
-          money.wbtc('59'));
-
-        if (wbtc.address < usdy.address) {
-          await esp4.deposit([money.wbtc('59'), money.usdy('2')], [money.zero, money.zero], ZERO_ADDRESS);
-        } else {
-          await esp4.deposit([money.usdy('2'), money.wbtc('59')], [money.zero, money.zero], ZERO_ADDRESS);
-        }
-
-	await time.increase(60 * 10); // increase time to 10 minutes
-
+        // weth-usdzz Add liquidity (5:2)
         await weth.deposit({ value: money.weth('100') });
+        await weth.approve(emiRouter.address, money.weth('1000000000'));
+        await usdzz.approve(emiRouter.address, money.usdc('1000000000'));
+        await emiRouter.addLiquidity(
+          weth.address, 
+          usdzz.address,
+          money.weth('5'),
+          money.usdc('2'),
+          money.zero,
+          money.zero,
+          ZERO_ADDRESS);	      
 
-        let esp5 = await Emiswap.at(await emiFactory.pools(usdzz.address, weth.address));
-        await weth.approve(esp5.address, money.weth('1000000000'));
-        await usdzz.approve(esp5.address, money.usdc('1000000000'));
-
-        console.log('Pair ZZ-WETH: WETH balance: %s, trying to deposit: %s', web3.utils.fromWei(await weth.balanceOf(defaultSender)),
-          web3.utils.fromWei(money.weth('5')));
-        console.log('Pair ZZ-WETH: USDZZ balance: %s, trying to deposit: %s', await usdzz.balanceOf(defaultSender),
-          money.usdc('2'));
-
-        if (weth.address < usdzz.address) {
-          await esp5.deposit([money.weth('5'), money.usdc('2')], [money.zero, money.zero], ZERO_ADDRESS);
-        } else {
-          await esp5.deposit([money.usdc('2'), money.weth('5')], [money.zero, money.zero], ZERO_ADDRESS);
-        }
-
-	await time.increase(60 * 10); // increase time to 10 minutes
-
-        // Init AKITA pair
-        await emiFactory.deploy(akita.address, weth.address);
-
+        // Init AKITA pair      
+        
+        // weth-usdzz Add liquidity (1:33)
         await weth.deposit({ value: money.weth('10') });
+        await weth.approve(emiRouter.address, money.weth('1000000000'));
+        await akita.approve(emiRouter.address, money.usdy('1000000000'));
+        await emiRouter.addLiquidity(
+          weth.address, 
+          akita.address,
+          money.weth('1'),
+          money.usdy('33'),
+          money.zero,
+          money.zero,
+          ZERO_ADDRESS);
 
-        let akitaPair = await Emiswap.at(await emiFactory.pools(akita.address, weth.address));
-        await weth.approve(akitaPair.address, money.weth('10000000000000'));
-        await akita.approve(akitaPair.address, money.usdy('10000000000000'));
-        if (weth.address < akita.address) {
-          await akitaPair.deposit([money.weth('1'), money.usdy('33')], [money.zero, money.zero], ZERO_ADDRESS);
-        } else {
-          await akitaPair.deposit([money.usdy('33'), money.weth('1')], [money.zero, money.zero], ZERO_ADDRESS);
-        }
-	await time.increase(60 * 10); // increase time to 10 minutes
+	      await time.increase(60 * 10); // increase time to 10 minutes
     });
     describe('get prices of coins', ()=> {
       it('should get Uniswap prices successfully', async function () {
@@ -301,7 +274,9 @@ describe('EmiPrice2 test', function () {
         console.log('Route to USDZ from WBTC: ', p);
 
         let amt = await emiRouter.getAmountsOut(money.usdc('1'), p);
-        console.log(amt);
+        amt.forEach(element => {          
+          console.log('amt', element.toString())
+        })
 
         let b = await price.getCoinPrices([usdz.address],[wbtc.address], 0);
         console.log('Got price results: %s', b[0].toString());
@@ -323,7 +298,9 @@ describe('EmiPrice2 test', function () {
         console.log('Got price results: %s', b[0].toString());
 
         let amt = await emiRouter.getAmountsOut(money.usdy('1'), p);
-        console.log(amt);
+        amt.forEach(element => {          
+          console.log('amt', element.toString())
+        })
 
         let p0 = parseFloat(web3.utils.fromWei(b[0]));
 
