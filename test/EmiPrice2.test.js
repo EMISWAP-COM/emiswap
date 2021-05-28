@@ -140,6 +140,11 @@ describe('EmiPrice2 test', function () {
                                                           
         await usdx.approve(esp1.address, money.usdx('1000000000'));
         await usdz.approve(esp1.address, money.usdc('1000000000'));
+        console.log('Pair Z-X: USDX balance: %s, trying to deposit: %s', web3.utils.fromWei(await usdx.balanceOf(defaultSender)),
+          web3.utils.fromWei(money.usdx('23')));
+        console.log('Pair Z-X: USDZ balance: %s, trying to deposit: %s', await usdz.balanceOf(defaultSender),
+          money.usdc('11'));
+
         if (usdz.address < usdx.address) {
           await esp1.deposit([money.usdc('11'), money.usdx('23')], [money.zero, money.zero], ZERO_ADDRESS);
         } else {
@@ -151,6 +156,11 @@ describe('EmiPrice2 test', function () {
         let esp2 = await Emiswap.at(await emiFactory.pools(usdzz.address, usdx.address));
         await usdzz.approve(esp2.address, money.usdc('1000000000'));
         await usdx.approve(esp2.address, money.usdx('1000000000'));
+        console.log('Pair ZZ-X: USDX balance: %s, trying to deposit: %s', web3.utils.fromWei(await usdx.balanceOf(defaultSender)),
+          web3.utils.fromWei(money.usdx('400')));
+        console.log('Pair ZZ-X: USDZZ balance: %s, trying to deposit: %s', await usdzz.balanceOf(defaultSender),
+          money.usdc('12'));
+
         if (usdzz.address < usdx.address) {
           await esp2.deposit([money.usdc('12'), money.usdx('400')], [money.zero, money.zero], ZERO_ADDRESS);
         } else {
@@ -162,6 +172,11 @@ describe('EmiPrice2 test', function () {
         let esp3 = await Emiswap.at(await emiFactory.pools(usdy.address, usdzz.address));
         await usdzz.approve(esp3.address, money.usdc('1000000000'));
         await usdy.approve(esp3.address, money.usdy('1000000000'));
+        console.log('Pair ZZ-Y: USDY balance: %s, trying to deposit: %s', await usdy.balanceOf(defaultSender),
+          money.usdy('41'));
+        console.log('Pair ZZ-Y: USDZZ balance: %s, trying to deposit: %s', await usdzz.balanceOf(defaultSender),
+          money.usdc('12'));
+
         if (usdzz.address < usdy.address) {
           await esp3.deposit([money.usdc('3'), money.usdy('41')], [money.zero, money.zero], ZERO_ADDRESS);
         } else {
@@ -173,6 +188,11 @@ describe('EmiPrice2 test', function () {
         let esp4 = await Emiswap.at(await emiFactory.pools(usdy.address, wbtc.address));
         await wbtc.approve(esp4.address, money.wbtc('1000000000'));
         await usdy.approve(esp4.address, money.usdy('1000000000'));
+        console.log('Pair WBTC-Y: USDY balance: %s, trying to deposit: %s', await usdy.balanceOf(defaultSender),
+          money.usdy('2'));
+        console.log('Pair WBTC-Y: WBTC balance: %s, trying to deposit: %s', await wbtc.balanceOf(defaultSender),
+          money.wbtc('59'));
+
         if (wbtc.address < usdy.address) {
           await esp4.deposit([money.wbtc('59'), money.usdy('2')], [money.zero, money.zero], ZERO_ADDRESS);
         } else {
@@ -186,6 +206,12 @@ describe('EmiPrice2 test', function () {
         let esp5 = await Emiswap.at(await emiFactory.pools(usdzz.address, weth.address));
         await weth.approve(esp5.address, money.weth('1000000000'));
         await usdzz.approve(esp5.address, money.usdc('1000000000'));
+
+        console.log('Pair ZZ-WETH: WETH balance: %s, trying to deposit: %s', web3.utils.fromWei(await weth.balanceOf(defaultSender)),
+          web3.utils.fromWei(money.weth('5')));
+        console.log('Pair ZZ-WETH: USDZZ balance: %s, trying to deposit: %s', await usdzz.balanceOf(defaultSender),
+          money.usdc('2'));
+
         if (weth.address < usdzz.address) {
           await esp5.deposit([money.weth('5'), money.usdc('2')], [money.zero, money.zero], ZERO_ADDRESS);
         } else {
@@ -202,7 +228,7 @@ describe('EmiPrice2 test', function () {
         let akitaPair = await Emiswap.at(await emiFactory.pools(akita.address, weth.address));
         await weth.approve(akitaPair.address, money.weth('10000000000000'));
         await akita.approve(akitaPair.address, money.usdy('10000000000000'));
-        if (weth.address < usdy.address) {
+        if (weth.address < akita.address) {
           await akitaPair.deposit([money.weth('1'), money.usdy('33')], [money.zero, money.zero], ZERO_ADDRESS);
         } else {
           await akitaPair.deposit([money.usdy('33'), money.weth('1')], [money.zero, money.zero], ZERO_ADDRESS);

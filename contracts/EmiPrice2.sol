@@ -7,9 +7,10 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./uniswapv2/interfaces/IUniswapV2Factory.sol";
 import "./uniswapv2/interfaces/IUniswapV2Pair.sol";
 import "./libraries/Priviledgeable.sol";
-import "./EmiFactory.sol";
+import "./interfaces/IEmiERC20.sol";
+import "./interfaces/IEmiFactory.sol";
 import "./interfaces/IEmiRouter.sol";
-import "./Emiswap.sol";
+import "./interfaces/IEmiswap.sol";
 import "./interfaces/IOneSplit.sol";
 
 contract EmiPrice2 is Initializable, Priviledgeable {
@@ -103,10 +104,10 @@ contract EmiPrice2 is Initializable, Priviledgeable {
             return;
         }
 
-        uint256 base_decimal = ERC20(_base).decimals();
+        uint256 base_decimal = IEmiERC20(_base).decimals();
 
         for (uint256 i = 0; i < _coins.length; i++) {
-            uint256 target_decimal = ERC20(_coins[i]).decimals();
+            uint256 target_decimal = IEmiERC20(_coins[i]).decimals();
 
             if (_coins[i] == _base) {
                 _prices[i] = 10**18; // special case: 1 for base token
@@ -143,8 +144,8 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         address[] calldata _base,
         uint256[] memory _prices
     ) internal view {
-        EmiFactory _factory = EmiFactory(market[MARKET_OUR]);
-        Emiswap _p;
+        IEmiFactory _factory = IEmiFactory(market[MARKET_OUR]);
+        IEmiswap _p;
 
         if (address(_factory) == address(0)) {
             return;
@@ -162,7 +163,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                     (_coins[i] < _base[m])
                         ? (_coins[i], _base[m])
                         : (_base[m], _coins[i]);
-                _p = Emiswap(_factory.pools(IERC20(t0), IERC20(t1))); // do we have straigt pair?
+                _p = IEmiswap(_factory.pools(IERC20(t0), IERC20(t1))); // do we have straigt pair?
                 if (address(_p) == address(0)) {
                     // we have to calc route
                     address[] memory _route =
@@ -170,7 +171,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                     if (_route.length == 0) {
                         continue; // try next base token
                     } else {
-                        uint256 _in = 10**uint256(ERC20(_base[m]).decimals());
+                        uint256 _in = 10**uint256(IEmiERC20(_base[m]).decimals());
                         uint256[] memory _amts =
                             IEmiRouter(emiRouter).getAmountsOut(_in, _route);
                         if (_amts.length > 0) {
@@ -185,7 +186,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                     (_prices[i], ) = _p.getReturn(
                         IERC20(_coins[i]),
                         IERC20(_base[m]),
-                        10**uint256(ERC20(_coins[i]).decimals())
+                        10**uint256(IEmiERC20(_coins[i]).decimals())
                     );
                     break;
                 }
@@ -207,7 +208,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
             return;
         }
         for (uint256 i = 0; i < _coins.length; i++) {
-            uint256 d = uint256(ERC20(_coins[i]).decimals());
+            uint256 d = uint256(IEmiERC20(_coins[i]).decimals());
             (_prices[i], ) = _factory.getExpectedReturn(
                 IERC20(_coins[i]),
                 IERC20(_base),
@@ -227,7 +228,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         view
         returns (address[] memory path)
     {
-        Emiswap[] memory pools = EmiFactory(market[MARKET_OUR]).getAllPools(); // gets all pairs
+        IEmiswap[] memory pools = IEmiFactory(market[MARKET_OUR]).getAllPools(); // gets all pairs
         uint8[] memory pairIdx = new uint8[](pools.length); // vector for storing path step indexes
 
         // Phase 1. Mark pairs starting from target token
@@ -245,7 +246,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                     // found previous step, store second token
                     address _a = _getAddressFromPrevStep(pools[j], _prevStep);
                     _markPathStep(pools, pairIdx, i, _a);
-                    _addToCurrentStep(pools[j], _curStep, _a);
+                    _addToCurrentStep(_curStep, _a);
                 }
             }
         }
@@ -300,7 +301,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
      * @dev Marks next path level from _token
      */
     function _markPathStep(
-        Emiswap[] memory _pools,
+        IEmiswap[] memory _pools,
         uint8[] memory _idx,
         uint8 lvl,
         address _token
@@ -320,7 +321,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
     /**
      * @dev Get address of the second token from previous level pair
      */
-    function _getAddressFromPrevStep(Emiswap pair, address[] memory prevStep)
+    function _getAddressFromPrevStep(IEmiswap pair, address[] memory prevStep)
         internal
         view
         returns (address r)
@@ -355,15 +356,13 @@ contract EmiPrice2 is Initializable, Priviledgeable {
 
     /**
      * @dev Adds pairs second token address to current step array
-     * @param p pool
      * @param _step Array for storing current step addresses
      * @param _token First token pair address
      */
     function _addToCurrentStep(
-        Emiswap p,
         address[] memory _step,
         address _token
-    ) internal view {
+    ) internal pure {
         uint256 l = 0;
 
         for (uint256 i = 0; i < _step.length; i++) {

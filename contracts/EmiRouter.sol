@@ -467,13 +467,12 @@ contract EmiRouter {
         IEmiswap pairContract =
             IEmiswapRegistry(factory).pools(IERC20(tokenFrom), IERC20(tokenTo));
 
-        if (
-            pairContract.getReturn(
+        (, uint256 amt1) = pairContract.getReturn(
                 IERC20(tokenFrom),
                 IERC20(tokenTo),
                 ammountFrom
-            ) > 0
-        ) {
+            );
+        if (amt1 > 0) {
             TransferHelper.safeApprove(
                 tokenFrom,
                 address(pairContract),

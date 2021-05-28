@@ -39,7 +39,7 @@ interface IEmiswap {
         IERC20 fromToken,
         IERC20 destToken,
         uint256 amount
-    ) external view returns (uint256 returnAmount);
+    ) external view returns (uint256, uint256);
 
     function swap(
         IERC20 fromToken,
