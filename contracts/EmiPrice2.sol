@@ -22,7 +22,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
     uint256 constant MARKET_1INCH = 2;
     uint256 constant MAX_PATH_LENGTH = 5;
 
-    string public codeVersion = "EmiPrice2 v1.0-137-gf94b488";
+ string public codeVersion = "EmiPrice2 v1.0-179-g698bc7c";
 
     /**
      * @dev Upgradeable proxy constructor replacement
