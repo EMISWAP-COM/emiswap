@@ -8,7 +8,6 @@ import "./uniswapv2/interfaces/IUniswapV2Factory.sol";
 import "./uniswapv2/interfaces/IUniswapV2Pair.sol";
 import "./libraries/Priviledgeable.sol";
 import "./interfaces/IEmiERC20.sol";
-import "./interfaces/IEmiFactory.sol";
 import "./interfaces/IEmiRouter.sol";
 import "./interfaces/IEmiswap.sol";
 import "./interfaces/IOneSplit.sol";
@@ -144,7 +143,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         address[] calldata _base,
         uint256[] memory _prices
     ) internal view {
-        IEmiFactory _factory = IEmiFactory(market[MARKET_OUR]);
+        IEmiswapRegistry _factory = IEmiswapRegistry(market[MARKET_OUR]);
         IEmiswap _p;
 
         if (address(_factory) == address(0)) {
@@ -228,7 +227,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         view
         returns (address[] memory path)
     {
-        IEmiswap[] memory pools = IEmiFactory(market[MARKET_OUR]).getAllPools(); // gets all pairs
+        IEmiswap[] memory pools = IEmiswapRegistry(market[MARKET_OUR]).getAllPools(); // gets all pairs
         uint8[] memory pairIdx = new uint8[](pools.length); // vector for storing path step indexes
 
         // Phase 1. Mark pairs starting from target token

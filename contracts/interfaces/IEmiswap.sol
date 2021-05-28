@@ -13,6 +13,7 @@ interface IEmiswapRegistry {
     function isPool(address addr) external view returns (bool);
 
     function deploy(IERC20 tokenA, IERC20 tokenB) external returns (IEmiswap);
+    function getAllPools() external view returns (IEmiswap[] memory);
 }
 
 interface IEmiswap {
