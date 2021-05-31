@@ -119,7 +119,8 @@ contract EmiPrice2 is Initializable, Priviledgeable {
             uint[] memory _amts =
                 IUniswapV2Router02(uniRouter).getAmountsOut(_in, _path);
                 if (_amts.length > 0) {
-                    _prices[i] = _amts[_amts.length - 1].mul(10**(base_decimal - target_decimal));
+//                    _prices[i] = _amts[_amts.length - 1].mul(10**(base_decimal - target_decimal));
+                    _prices[i] = _amts[1];
                 } else {
                     _prices[i] = 0;
 		}
@@ -157,7 +158,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                 if (address(_p) == address(0)) {
                     // we have to calc route
                     address[] memory _route =
-                        _calculateRoute(_base[m], _coins[i]);
+                        _calculateRoute(_coins[i], _base[m]);
                     if (_route.length == 0) {
                         continue; // try next base token
                     } else {
