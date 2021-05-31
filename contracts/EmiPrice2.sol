@@ -22,7 +22,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
     uint256 constant MARKET_1INCH = 2;
     uint256 constant MAX_PATH_LENGTH = 5;
 
- string public codeVersion = "EmiPrice2 v1.0-179-g698bc7c";
+ string public codeVersion = "EmiPrice2 v1.0-183-g3ae9438";
 
     /**
      * @dev Upgradeable proxy constructor replacement
@@ -128,7 +128,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                             .mul(10**(18 - base_decimal + target_decimal))
                             .div(reserv0)
                         : reserv0
-                            .mul(10**(18 - target_decimal + base_decimal))
+                            .mul(10**(18 - base_decimal + target_decimal))
                             .div(reserv1);
                 }
             }
@@ -162,7 +162,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                     (_coins[i] < _base[m])
                         ? (_coins[i], _base[m])
                         : (_base[m], _coins[i]);
-                _p = IEmiswap(_factory.pools(IERC20(t0), IERC20(t1))); // do we have straigt pair?
+                _p = IEmiswap(_factory.pools(IERC20(t0), IERC20(t1))); // do we have direct pair?
                 if (address(_p) == address(0)) {
                     // we have to calc route
                     address[] memory _route =
@@ -181,7 +181,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                         break;
                     }
                 } else {
-                    // yes, calc straight price
+                    // yes, calc direct price
                     (_prices[i], ) = _p.getReturn(
                         IERC20(_coins[i]),
                         IERC20(_base[m]),

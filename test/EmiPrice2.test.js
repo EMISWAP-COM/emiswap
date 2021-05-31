@@ -99,9 +99,9 @@ describe('EmiPrice2 test', function () {
         const pairAddressUSDX_WETH = await uniswapFactory.getPair(usdx.address, weth.address);
         uniswapPairUSDX_WETH = await UniswapV2Pair.at(pairAddressUSDX_WETH);
 
-        const wethToPair = new BN(100).mul(new BN(10).pow(new BN(await usdx.decimals()))).toString();
+        const wethToPair = new BN(100).mul(new BN(10).pow(new BN(await weth.decimals()))).toString();
         const usdzToPair = new BN(101).mul(new BN(10).pow(new BN(await usdz.decimals()))).toString();
-    
+
         const usdxToPair_USDXWETH = new BN(400).mul(new BN(10).pow(new BN(await usdx.decimals()))).toString();
         const wethToPair_USDXWETH = new BN(1).mul(new BN(10).pow(new BN(await weth.decimals()))).toString();
 
@@ -126,7 +126,7 @@ describe('EmiPrice2 test', function () {
         await weth.deposit({ value: wethToPair_USDXWETH });
         await weth.transfer(uniswapPairUSDX_WETH.address, wethToPair_USDXWETH);
         await uniswapPairUSDX_WETH.mint(alice);
-	      
+
         // pairs with 4 links: z-x,   zz-x,   y-zz, y-wbtc, try to get price for z-wbtc
         // pairs with 4 links: 11:23, 12:400, 41:3, 2:59,   try to get price for z-wbtc
 
@@ -189,10 +189,10 @@ describe('EmiPrice2 test', function () {
           money.usdc('2'),
           money.zero,
           money.zero,
-          ZERO_ADDRESS);	      
+          ZERO_ADDRESS);
 
-        // Init AKITA pair      
-        
+        // Init AKITA pair
+
         // weth-usdzz Add liquidity (1:33)
         await weth.deposit({ value: money.weth('10') });
         await weth.approve(emiRouter.address, money.weth('1000000000'));
@@ -206,12 +206,15 @@ describe('EmiPrice2 test', function () {
           money.zero,
           ZERO_ADDRESS);
 
-	      await time.increase(60 * 10); // increase time to 10 minutes
+	await time.increase(60 * 10); // increase time to 10 minutes
     });
     describe('get prices of coins', ()=> {
       it('should get Uniswap prices successfully', async function () {
         let b = await price.getCoinPrices([usdx.address, usdz.address, weth.address], [weth.address], 1);
         console.log('Got price results: %s, %s, %s', b[0].toString(), b[1].toString(), b[2].toString());
+
+        let tt = await uniswapPair.getReserves();
+        console.log('USDZ-WETH reserves: %s, %s', tt[0].toString(10), tt[1].toString(10));
 
         let p0 = parseFloat(web3.utils.fromWei(b[0]));
         let p1 = parseFloat(web3.utils.fromWei(b[1]));
@@ -220,13 +223,14 @@ describe('EmiPrice2 test', function () {
         console.log('Price calc: %f, %f, %f', p0, p1, p2);
 
         assert.equal(b.length, 3);
-        assert.isAtLeast(p0, 0.0025);
+        assert.equal(p0, 0.0025);
         assert.isAbove(p1, 0.99);
-        assert.isAtLeast(p2, 0.9999);
+        assert.isBelow(p1, 1);
+        assert.equal(p2, 1);
       });
       it('should get Mooniswap prices successfully', async function () {
         let b = await price.getCoinPrices([usdx.address, wbtc.address], [usdx.address], 2);
-        console.log('Got price results: %s, %s', b[0].toString(), b[1].toString());        
+        console.log('Got price results: %s, %s', b[0].toString(), b[1].toString());
 
         let p0 = parseFloat(web3.utils.fromWei(b[0]));
         let p1 = parseFloat(web3.utils.fromWei(b[1]));
@@ -234,14 +238,20 @@ describe('EmiPrice2 test', function () {
         console.log('Price calc: %f, %f', p0, p1);
 
         assert.equal(b.length, 2);
-        assert.isAbove(p0, 319.999);
-        assert.isAbove(p1, 0);
+        assert.equal(p0, 320);
+        assert.equal(p1, 3.2e-8);
       });
       it('should get our prices successfully', async function () {
-        console.log('Tokens: USDZ %s, USDX %s, USDZZ %s, USDY %s, WBTC %s', usdz.address, usdx.address, usdzz.address, usdy.address, wbtc.address);
+        console.log('Tokens: USDZ %s, USDX %s, USDZZ %s, USDY %s, WETH %s', usdz.address, usdx.address, usdzz.address, usdy.address, weth.address);
 
-        let route = await price.calcRoute(usdz.address, wbtc.address);
-        console.log('Route to USDZ from WBTC: ', route);
+        let route = await price.calcRoute(weth.address, usdx.address);
+        console.log('Route to WETH from USDX: ', route);
+        route = await price.calcRoute(weth.address, usdz.address);
+        console.log('Route to WETH from USDZ: ', route);
+
+        let amt = await emiRouter.getReserves(usdz.address, usdx.address);
+        console.log('Router reserves USDZ-USDX: %s, %s', amt[0].toString(10), amt[1].toString(10));
+
         let b = await price.getCoinPrices([usdx.address, usdz.address, weth.address], [usdx.address, usdz.address], 0);
         console.log('Got price results: %s, %s, %s', b[0].toString(), b[1].toString(), b[2].toString());
 
@@ -252,9 +262,10 @@ describe('EmiPrice2 test', function () {
         console.log('Price calc: %f, %f, %f', p0, p1, p2);
 
         assert.equal(b.length, 3);
-        assert.isAbove(p0, 0);
-        assert.isAtLeast(p1, 0);
-        assert.isAbove(p0, 0);
+        assert.equal(p0, 1);
+        assert.isAbove(p1, 0.478);
+        assert.isBelow(p1, 0.479);
+        assert.isAbove(p2, 0);
       });
       it('should get base token prices successfully', async function () {
         let b = await price.getCoinPrices([usdx.address, usdz.address], [usdx.address, usdz.address], 0);
@@ -274,7 +285,7 @@ describe('EmiPrice2 test', function () {
         console.log('Route to USDZ from WBTC: ', p);
 
         let amt = await emiRouter.getAmountsOut(money.usdc('1'), p);
-        amt.forEach(element => {          
+        amt.forEach(element => {
           console.log('amt', element.toString())
         })
 
@@ -298,7 +309,7 @@ describe('EmiPrice2 test', function () {
         console.log('Got price results: %s', b[0].toString());
 
         let amt = await emiRouter.getAmountsOut(money.usdy('1'), p);
-        amt.forEach(element => {          
+        amt.forEach(element => {
           console.log('amt', element.toString())
         })
 
