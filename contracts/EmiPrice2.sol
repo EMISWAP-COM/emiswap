@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./uniswapv2/interfaces/IUniswapV2Factory.sol";
 import "./uniswapv2/interfaces/IUniswapV2Pair.sol";
+import "./uniswapv2/interfaces/IUniswapV2Router02.sol";
 import "./libraries/Priviledgeable.sol";
 import "./interfaces/IEmiERC20.sol";
 import "./interfaces/IEmiRouter.sol";
@@ -17,6 +18,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
     using SafeMath for uint256;
     address[3] public market;
     address public emiRouter;
+    address public uniRouter;
     uint256 constant MARKET_OUR = 0;
     uint256 constant MARKET_UNISWAP = 1;
     uint256 constant MARKET_1INCH = 2;
@@ -31,17 +33,20 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         address _market1,
         address _market2,
         address _market3,
-        address _router
+        address _emirouter,
+        address _unirouter
     ) public initializer {
         require(_market1 != address(0), "Market1 address cannot be 0");
         require(_market2 != address(0), "Market2 address cannot be 0");
         require(_market3 != address(0), "Market3 address cannot be 0");
-        require(_router != address(0), "Router address cannot be 0");
+        require(_emirouter != address(0), "EmiRouter address cannot be 0");
+        require(_unirouter != address(0), "UniRouter address cannot be 0");
 
         market[0] = _market1;
         market[1] = _market2;
         market[2] = _market3;
-        emiRouter = _router;
+        emiRouter = _emirouter;
+        uniRouter = _unirouter;
         _addAdmin(msg.sender);
     }
 
@@ -113,25 +118,18 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                 break;
             }
 
-            (address t0, address t1) =
-                (_coins[i] < _base) ? (_coins[i], _base) : (_base, _coins[i]);
-            _p = IUniswapV2Pair(_factory.getPair(t0, t1));
-            if (address(_p) == address(0)) {
-                _prices[i] = 0;
-            } else {
-                (uint256 reserv0, uint256 reserv1, ) = _p.getReserves();
-                if (reserv1 == 0 || reserv0 == 0) {
-                    _prices[i] = 0; // special case
+            uint256 _in = 10**base_decimal;
+	    address[] _route = new address[](2);
+            _route[0] = address(_coins[i]);
+            _route[1] = address(_base);
+
+            uint256[] memory _amts =
+                IUniswapV2Router02(uniRouter).getAmountsOut(_in, _route);
+                if (_amts.length > 0) {
+                    _prices[i] = _amts[_amts.length - 1].mul(10**(18 - base_decimal + target_decimal));
                 } else {
-                    _prices[i] = (address(_coins[i]) < address(_base))
-                        ? reserv1
-                            .mul(10**(18 - base_decimal + target_decimal))
-                            .div(reserv0)
-                        : reserv0
-                            .mul(10**(18 - base_decimal + target_decimal))
-                            .div(reserv1);
-                }
-            }
+                    _prices[i] = 0;
+		}
         }
     }
 
