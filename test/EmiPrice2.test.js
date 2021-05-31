@@ -72,7 +72,6 @@ describe('EmiPrice2 test', function () {
     const [TestOwner, alice, bob, clarc, dave, eve, george, henry, ivan] = accounts;
 
     beforeEach(async function () {
-
         usdx = await MockUSDX.new();
         usdy = await MockUSDY.new();
         usdz = await MockUSDZ.new();
@@ -102,11 +101,11 @@ describe('EmiPrice2 test', function () {
         const pairAddressUSDX_WETH = await uniswapFactory.getPair(usdx.address, weth.address);
         uniswapPairUSDX_WETH = await UniswapV2Pair.at(pairAddressUSDX_WETH);
 
-        const wethToPair = new BN(100).mul(new BN(10).pow(new BN(await weth.decimals()))).toString();
-        const usdzToPair = new BN(101).mul(new BN(10).pow(new BN(await usdz.decimals()))).toString();
+        const wethToPair = new BN(1000).mul(new BN(10).pow(new BN(await weth.decimals()))).toString();
+        const usdzToPair = new BN(4010).mul(new BN(10).pow(new BN(await usdz.decimals()))).toString();
 
-        const usdxToPair_USDXWETH = new BN(400).mul(new BN(10).pow(new BN(await usdx.decimals()))).toString();
-        const wethToPair_USDXWETH = new BN(1).mul(new BN(10).pow(new BN(await weth.decimals()))).toString();
+        const usdxToPair_USDXWETH = new BN(400000).mul(new BN(10).pow(new BN(await usdx.decimals()))).toString();
+        const wethToPair_USDXWETH = new BN(1000).mul(new BN(10).pow(new BN(await weth.decimals()))).toString();
 
         await weth.deposit({ value: wethToPair });
         await weth.transfer(uniswapPair.address, wethToPair);
@@ -213,15 +212,10 @@ describe('EmiPrice2 test', function () {
     });
     describe('get prices of coins', ()=> {
       it('should get Uniswap prices successfully', async function () {
-        let amt = await uniswapRouter.getAmountsOut(money.usdc('1'), [usdz.address, weth.address]);
-        amt.forEach(element => {
-          console.log('amt', element.toString())
-        })
-
         let b = await price.getCoinPrices([usdx.address, usdz.address, weth.address], [weth.address], 1);
         console.log('Got price results: %s, %s, %s', b[0].toString(), b[1].toString(), b[2].toString());
 
-        let tt = await uniswapPair.getReserves();
+        let tt = await uniswapPairUSDX_WETH.getReserves();
         console.log('USDZ-WETH reserves: %s, %s', tt[0].toString(10), tt[1].toString(10));
 
         let p0 = parseFloat(web3.utils.fromWei(b[0]));
@@ -231,9 +225,10 @@ describe('EmiPrice2 test', function () {
         console.log('Price calc: %f, %f, %f', p0, p1, p2);
 
         assert.equal(b.length, 3);
-        assert.equal(p0, 0.0025);
-        assert.isAbove(p1, 0.99);
-        assert.isBelow(p1, 1);
+        assert.isAbove(p0, 398);
+        assert.isBelow(p0, 398.403);
+        assert.isAbove(p1, 3.99);
+        assert.isBelow(p1, 4);
         assert.equal(p2, 1);
       });
       it('should get Mooniswap prices successfully', async function () {
