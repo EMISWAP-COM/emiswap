@@ -6,6 +6,7 @@ const { assert } = require('chai');
 const { contract } = require('./twrapper');
 
 const UniswapV2Factory = contract.fromArtifact('UniswapV2Factory');
+const UniswapV2Router = contract.fromArtifact('UniswapV2Router02');
 const UniswapV2Pair = contract.fromArtifact('UniswapV2Pair');
 const EmiFactory = contract.fromArtifact('EmiFactory');
 const Emiswap = contract.fromArtifact('Emiswap');
@@ -27,6 +28,7 @@ MockUSDX.numberFormat = 'String';
 const { BN } = web3.utils;
 
 let uniswapFactory;
+let uniswapRouter;
 let emiFactory;
 let oneSplitFactory;
 let emiRouter;
@@ -84,8 +86,9 @@ describe('EmiPrice2 test', function () {
         emiFactory = await EmiFactory.new(TestOwner);
         emiRouter = await EmiRouter.new(emiFactory.address, weth.address);
         oneSplitFactory = await OneSplitFactory.new();
+        uniswapRouter = await UniswapV2Router.new(uniswapFactory.address, weth.address);
 
-        await price.initialize(emiFactory.address, uniswapFactory.address, oneSplitFactory.address, emiRouter.address);
+        await price.initialize(emiFactory.address, uniswapFactory.address, oneSplitFactory.address, emiRouter.address, uniswapRouter.address);
 
         /* USDX - USDZ pair (DAI - USDC) */
         await uniswapFactory.createPair(weth.address, usdz.address);
@@ -210,6 +213,11 @@ describe('EmiPrice2 test', function () {
     });
     describe('get prices of coins', ()=> {
       it('should get Uniswap prices successfully', async function () {
+        let amt = await uniswapRouter.getAmountsOut(money.usdc('1'), [usdz.address, weth.address]);
+        amt.forEach(element => {
+          console.log('amt', element.toString())
+        })
+
         let b = await price.getCoinPrices([usdx.address, usdz.address, weth.address], [weth.address], 1);
         console.log('Got price results: %s, %s, %s', b[0].toString(), b[1].toString(), b[2].toString());
 

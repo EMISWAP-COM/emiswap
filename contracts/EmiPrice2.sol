@@ -101,13 +101,6 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         address _base,
         uint256[] memory _prices
     ) internal view {
-        IUniswapV2Factory _factory = IUniswapV2Factory(market[MARKET_UNISWAP]);
-        IUniswapV2Pair _p;
-
-        if (address(_factory) == address(0)) {
-            return;
-        }
-
         uint256 base_decimal = IEmiERC20(_base).decimals();
 
         for (uint256 i = 0; i < _coins.length; i++) {
@@ -118,15 +111,16 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                 break;
             }
 
-            uint256 _in = 10**base_decimal;
-	    address[] _route = new address[](2);
-            _route[0] = address(_coins[i]);
-            _route[1] = address(_base);
+            uint _in = 10**base_decimal;
 
-            uint256[] memory _amts =
-                IUniswapV2Router02(uniRouter).getAmountsOut(_in, _route);
+            address[] memory _path = new address[](2);
+            _path[0] = _base;
+            _path[1] = _coins[i];
+            uint[] memory _amts =
+                IUniswapV2Router02(uniRouter).getAmountsOut(_in, _path);
                 if (_amts.length > 0) {
-                    _prices[i] = _amts[_amts.length - 1].mul(10**(18 - base_decimal + target_decimal));
+//                    _prices[i] = _amts[_amts.length - 1].mul(10**(base_decimal - target_decimal));
+                    _prices[i] = _amts[1];
                 } else {
                     _prices[i] = 0;
 		}
