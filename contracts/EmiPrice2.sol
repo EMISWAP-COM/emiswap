@@ -119,8 +119,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
             uint[] memory _amts =
                 IUniswapV2Router02(uniRouter).getAmountsOut(_in, _path);
                 if (_amts.length > 0) {
-//                    _prices[i] = _amts[_amts.length - 1].mul(10**(base_decimal - target_decimal));
-                    _prices[i] = _amts[1];
+                    _prices[i] = _amts[_amts.length - 1].mul(10**(base_decimal - target_decimal));
                 } else {
                     _prices[i] = 0;
 		}
@@ -211,7 +210,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
     }
 
     /**
-     * @dev Calculates route from _target token to _base, using adopted Li algorithm
+     * @dev Calculates route from _target token to _base, using adapted Li algorithm
      * https://ru.wikipedia.org/wiki/%D0%90%D0%BB%D0%B3%D0%BE%D1%80%D0%B8%D1%82%D0%BC_%D0%9B%D0%B8
      */
     function _calculateRoute(address _target, address _base)

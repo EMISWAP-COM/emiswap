@@ -102,11 +102,11 @@ describe('EmiPrice2 test', function () {
         const pairAddressUSDX_WETH = await uniswapFactory.getPair(usdx.address, weth.address);
         uniswapPairUSDX_WETH = await UniswapV2Pair.at(pairAddressUSDX_WETH);
 
-        const wethToPair = new BN(100).mul(new BN(10).pow(new BN(await weth.decimals()))).toString();
-        const usdzToPair = new BN(101).mul(new BN(10).pow(new BN(await usdz.decimals()))).toString();
+        const wethToPair = new BN(1000).mul(new BN(10).pow(new BN(await weth.decimals()))).toString();
+        const usdzToPair = new BN(4010).mul(new BN(10).pow(new BN(await usdz.decimals()))).toString();
 
-        const usdxToPair_USDXWETH = new BN(400).mul(new BN(10).pow(new BN(await usdx.decimals()))).toString();
-        const wethToPair_USDXWETH = new BN(1).mul(new BN(10).pow(new BN(await weth.decimals()))).toString();
+        const usdxToPair_USDXWETH = new BN(400000).mul(new BN(10).pow(new BN(await usdx.decimals()))).toString();
+        const wethToPair_USDXWETH = new BN(1000).mul(new BN(10).pow(new BN(await weth.decimals()))).toString();
 
         await weth.deposit({ value: wethToPair });
         await weth.transfer(uniswapPair.address, wethToPair);
@@ -222,7 +222,7 @@ describe('EmiPrice2 test', function () {
         console.log('Got price results: %s, %s, %s', b[0].toString(), b[1].toString(), b[2].toString());
 
         let tt = await uniswapPair.getReserves();
-        console.log('USDZ-WETH reserves: %s, %s', tt[0].toString(10), tt[1].toString(10));
+        console.log('WETH-USDZ reserves: %s, %s', tt[0].toString(10), tt[1].toString(10));
 
         let p0 = parseFloat(web3.utils.fromWei(b[0]));
         let p1 = parseFloat(web3.utils.fromWei(b[1]));
@@ -231,9 +231,10 @@ describe('EmiPrice2 test', function () {
         console.log('Price calc: %f, %f, %f', p0, p1, p2);
 
         assert.equal(b.length, 3);
-        assert.equal(p0, 0.0025);
-        assert.isAbove(p1, 0.99);
-        assert.isBelow(p1, 1);
+        assert.isAbove(p0, 398);
+        assert.isBelow(p0, 398.403);
+        assert.isAbove(p1, 3.99);
+        assert.isBelow(p1, 4);
         assert.equal(p2, 1);
       });
       it('should get Mooniswap prices successfully', async function () {
@@ -257,9 +258,6 @@ describe('EmiPrice2 test', function () {
         route = await price.calcRoute(weth.address, usdz.address);
         console.log('Route to WETH from USDZ: ', route);
 
-        let amt = await emiRouter.getReserves(usdz.address, usdx.address);
-        console.log('Router reserves USDZ-USDX: %s, %s', amt[0].toString(10), amt[1].toString(10));
-
         let b = await price.getCoinPrices([usdx.address, usdz.address, weth.address], [usdx.address, usdz.address], 0);
         console.log('Got price results: %s, %s, %s', b[0].toString(), b[1].toString(), b[2].toString());
 
@@ -271,9 +269,10 @@ describe('EmiPrice2 test', function () {
 
         assert.equal(b.length, 3);
         assert.equal(p0, 1);
-        assert.isAbove(p1, 0.478);
-        assert.isBelow(p1, 0.479);
-        assert.isAbove(p2, 0);
+        assert.isAbove(p1, 1.91);
+        assert.isBelow(p1, 1.917);
+        assert.isAbove(p2, 10.81);
+        assert.isBelow(p2, 10.811);
       });
       it('should get base token prices successfully', async function () {
         let b = await price.getCoinPrices([usdx.address, usdz.address], [usdx.address, usdz.address], 0);
@@ -297,7 +296,7 @@ describe('EmiPrice2 test', function () {
           console.log('amt', element.toString())
         })
 
-        let b = await price.getCoinPrices([usdz.address],[wbtc.address], 0);
+        let b = await price.getCoinPrices([usdz.address], [wbtc.address], 0);
         console.log('Got price results: %s', b[0].toString());
 
         let p0 = parseFloat(web3.utils.fromWei(b[0]));
@@ -305,7 +304,8 @@ describe('EmiPrice2 test', function () {
         console.log('Price calc: %f', p0);
 
         assert.equal(b.length, 1);
-        assert.isAbove(p0, 0);
+        assert.isAbove(p0, 16.36);
+        assert.isBelow(p0, 16.37);
       });
       it('should get AKITA price successfully', async function () {
         console.log('Tokens: USDZ %s, USDX %s, USDZZ %s, USDY %s, WBTC %s, AKITA %s, WETH %s', usdz.address, usdx.address, usdzz.address, usdy.address, wbtc.address, akita.address, weth.address);
