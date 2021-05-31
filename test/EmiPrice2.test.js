@@ -268,6 +268,14 @@ describe('EmiPrice2 test', function () {
         assert.isAbove(p2, 0);
       });
       it('should get base token prices successfully', async function () {
+        let p = await price.calcRoute(usdz.address, usdx.address);
+        console.log('Route to USDZ from USDX: ', p);
+
+        let amt = await emiRouter.getAmountsOut(money.usdc('1'), p);
+        amt.forEach(element => {
+          console.log('amt', element.toString())
+        })
+
         let b = await price.getCoinPrices([usdx.address, usdz.address], [usdx.address, usdz.address], 0);
         console.log('Got price results: %s, %s', b[0].toString(), b[1].toString());
 
