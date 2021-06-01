@@ -108,18 +108,18 @@ contract EmiPrice2 is Initializable, Priviledgeable {
 
             if (_coins[i] == _base) {
                 _prices[i] = 10**18; // special case: 1 for base token
-                break;
+                continue;
             }
 
-            uint _in = 10**base_decimal;
+            uint _in = 10**target_decimal;
 
             address[] memory _path = new address[](2);
-            _path[0] = _base;
-            _path[1] = _coins[i];
+            _path[0] = _coins[i];
+            _path[1] = _base;
             uint[] memory _amts =
                 IUniswapV2Router02(uniRouter).getAmountsOut(_in, _path);
                 if (_amts.length > 0) {
-                    _prices[i] = _amts[_amts.length - 1].mul(10**(base_decimal - target_decimal));
+                    _prices[i] = _amts[_amts.length - 1].mul(10**(18 - base_decimal));
                 } else {
                     _prices[i] = 0;
 		}

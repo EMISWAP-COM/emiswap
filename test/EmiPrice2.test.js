@@ -213,7 +213,13 @@ describe('EmiPrice2 test', function () {
     });
     describe('get prices of coins', ()=> {
       it('should get Uniswap prices successfully', async function () {
+        console.log('USDZ-WETH:');
         let amt = await uniswapRouter.getAmountsOut(money.usdc('1'), [usdz.address, weth.address]);
+        amt.forEach(element => {
+          console.log('amt', element.toString())
+        })
+        console.log('USDX-WETH:');
+        amt = await uniswapRouter.getAmountsOut(money.usdx('1'), [usdx.address, weth.address]);
         amt.forEach(element => {
           console.log('amt', element.toString())
         })
@@ -231,10 +237,10 @@ describe('EmiPrice2 test', function () {
         console.log('Price calc: %f, %f, %f', p0, p1, p2);
 
         assert.equal(b.length, 3);
-        assert.isAbove(p0, 398);
-        assert.isBelow(p0, 398.403);
-        assert.isAbove(p1, 3.99);
-        assert.isBelow(p1, 4);
+        assert.isAbove(p0, 0.0024);
+        assert.isBelow(p0, 0.0025);
+        assert.isAbove(p1, 0.24);
+        assert.isBelow(p1, 0.25);
         assert.equal(p2, 1);
       });
       it('should get Mooniswap prices successfully', async function () {
