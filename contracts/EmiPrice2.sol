@@ -24,7 +24,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
     uint256 constant MARKET_1INCH = 2;
     uint256 constant MAX_PATH_LENGTH = 5;
 
- string public codeVersion = "EmiPrice2 v1.0-183-g3ae9438";
+    string public codeVersion = "EmiPrice2 v1.0-183-g3ae9438";
 
     /**
      * @dev Upgradeable proxy constructor replacement
@@ -111,18 +111,20 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                 continue;
             }
 
-            uint _in = 10**target_decimal;
+            uint256 _in = 10**target_decimal;
 
             address[] memory _path = new address[](2);
             _path[0] = _coins[i];
             _path[1] = _base;
-            uint[] memory _amts =
+            uint256[] memory _amts =
                 IUniswapV2Router02(uniRouter).getAmountsOut(_in, _path);
-                if (_amts.length > 0) {
-                    _prices[i] = _amts[_amts.length - 1].mul(10**(18 - base_decimal));
-                } else {
-                    _prices[i] = 0;
-		}
+            if (_amts.length > 0) {
+                _prices[i] = _amts[_amts.length - 1].mul(
+                    10**(18 - base_decimal)
+                );
+            } else {
+                _prices[i] = 0;
+            }
         }
     }
 
@@ -168,7 +170,9 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                         uint256[] memory _amts =
                             IEmiRouter(emiRouter).getAmountsOut(_in, _route);
                         if (_amts.length > 0) {
-                            _prices[i] = _amts[_amts.length - 1].mul(10**(18 - base_decimal));
+                            _prices[i] = _amts[_amts.length - 1].mul(
+                                10**(18 - base_decimal)
+                            );
                         } else {
                             _prices[i] = 0;
                         }
@@ -221,7 +225,8 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         view
         returns (address[] memory path)
     {
-        IEmiswap[] memory pools = IEmiswapRegistry(market[MARKET_OUR]).getAllPools(); // gets all pairs
+        IEmiswap[] memory pools =
+            IEmiswapRegistry(market[MARKET_OUR]).getAllPools(); // gets all pairs
         uint8[] memory pairIdx = new uint8[](pools.length); // vector for storing path step indexes
 
         // Phase 1. Mark pairs starting from target token
@@ -352,10 +357,10 @@ contract EmiPrice2 is Initializable, Priviledgeable {
      * @param _step Array for storing current step addresses
      * @param _token First token pair address
      */
-    function _addToCurrentStep(
-        address[] memory _step,
-        address _token
-    ) internal pure {
+    function _addToCurrentStep(address[] memory _step, address _token)
+        internal
+        pure
+    {
         uint256 l = 0;
 
         for (uint256 i = 0; i < _step.length; i++) {

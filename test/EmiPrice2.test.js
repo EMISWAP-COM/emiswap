@@ -73,6 +73,8 @@ describe('EmiPrice2 test', function () {
 
     beforeEach(async function () {
 
+        usdxunk = await MockUSDX.new();
+
         usdx = await MockUSDX.new();
         usdy = await MockUSDY.new();
         usdz = await MockUSDZ.new();
@@ -87,6 +89,8 @@ describe('EmiPrice2 test', function () {
         emiRouter = await EmiRouter.new(emiFactory.address, weth.address);
         oneSplitFactory = await OneSplitFactory.new();
         uniswapRouter = await UniswapV2Router.new(uniswapFactory.address, weth.address);
+
+        //console.log('init code', await uniswapFactory.getInitHash());
 
         await price.initialize(emiFactory.address, uniswapFactory.address, oneSplitFactory.address, emiRouter.address, uniswapRouter.address);
 
@@ -263,8 +267,9 @@ describe('EmiPrice2 test', function () {
         console.log('Route to WETH from USDX: ', route);
         route = await price.calcRoute(weth.address, usdz.address);
         console.log('Route to WETH from USDZ: ', route);
-
-        let b = await price.getCoinPrices([usdx.address, usdz.address, weth.address], [usdx.address, usdz.address], 0);
+        
+        // take base token list by order, if first not found take next
+        let b = await price.getCoinPrices([usdx.address, usdz.address, weth.address], [usdxunk.address /*token unknown*/, usdx.address], 0);
         console.log('Got price results: %s, %s, %s', b[0].toString(), b[1].toString(), b[2].toString());
 
         let p0 = parseFloat(web3.utils.fromWei(b[0]));
@@ -294,6 +299,7 @@ describe('EmiPrice2 test', function () {
         assert.isAtLeast(p1, 0);
       });
       it('should get prices through 4 pairs successfully', async function () {
+        console.log('Tokens: USDZ %s, USDX %s, USDZZ %s, USDY %s, WETH %s', usdz.address, usdx.address, usdzz.address, usdy.address, weth.address);
         let p = await price.calcRoute(usdz.address, wbtc.address);
         console.log('Route to USDZ from WBTC: ', p);
 
@@ -317,7 +323,7 @@ describe('EmiPrice2 test', function () {
         console.log('Tokens: USDZ %s, USDX %s, USDZZ %s, USDY %s, WBTC %s, AKITA %s, WETH %s', usdz.address, usdx.address, usdzz.address, usdy.address, wbtc.address, akita.address, weth.address);
 
         let p = await price.calcRoute(akita.address, usdx.address);
-        console.log('Route to AKITA from USDX: ', p);
+        console.log('Route from AKITA to USDX: ', p);
 
         let b = await price.getCoinPrices([akita.address], [usdx.address], 0);
         console.log('Got price results: %s', b[0].toString());
