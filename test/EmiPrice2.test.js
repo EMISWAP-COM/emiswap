@@ -326,7 +326,8 @@ describe('EmiPrice2 test', function () {
         console.log('Price calc: %f', p0);
 
         assert.equal(b.length, 1);
-        assert.isAbove(p0, 0);
+        assert.isAbove(p0, 0.38);
+        assert.isBelow(p0, 0.39);
       });
     });
 });

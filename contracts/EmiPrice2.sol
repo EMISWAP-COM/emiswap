@@ -143,11 +143,14 @@ contract EmiPrice2 is Initializable, Priviledgeable {
 
         for (uint256 i = 0; i < _coins.length; i++) {
             // test each base token -- whether we can use it for price calc
+            uint256 target_decimal = IEmiERC20(_coins[i]).decimals();
+
             for (uint256 m = 0; m < _base.length; m++) {
                 if (_coins[i] == _base[m]) {
                     _prices[i] = 10**18; // special case: 1 for base token
                     break;
                 }
+                uint256 base_decimal = IEmiERC20(_base[m]).decimals();
 
                 (address t0, address t1) =
                     (_coins[i] < _base[m])
@@ -161,11 +164,11 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                     if (_route.length == 0) {
                         continue; // try next base token
                     } else {
-                        uint256 _in = 10**uint256(IEmiERC20(_base[m]).decimals());
+                        uint256 _in = 10**target_decimal;
                         uint256[] memory _amts =
                             IEmiRouter(emiRouter).getAmountsOut(_in, _route);
                         if (_amts.length > 0) {
-                            _prices[i] = _amts[_amts.length - 1];
+                            _prices[i] = _amts[_amts.length - 1].mul(10**(18 - base_decimal));
                         } else {
                             _prices[i] = 0;
                         }
@@ -176,7 +179,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                     (_prices[i], ) = _p.getReturn(
                         IERC20(_coins[i]),
                         IERC20(_base[m]),
-                        10**uint256(IEmiERC20(_coins[i]).decimals())
+                        10**target_decimal
                     );
                     break;
                 }
