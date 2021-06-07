@@ -95,6 +95,24 @@ contract EmiPrice2 is Initializable, Priviledgeable {
         market[idx] = _market;
     }
 
+    /**
+     * @dev Changes unirouter factory address
+     */
+    function changeUniRouter(address _router) external onlyAdmin {
+        require(_router != address(0), "Router address cannot be 0");
+
+        uniRouter = _router;
+    }
+
+    /**
+     * @dev Changes market factory address
+     */
+    function changeEmiRouter(address _router) external onlyAdmin {
+        require(_router != address(0), "Router address cannot be 0");
+
+        emiRouter = _router;
+    }
+
     // internal methods
     function _getUniswapPrice(
         address[] calldata _coins,
@@ -159,32 +177,29 @@ contract EmiPrice2 is Initializable, Priviledgeable {
                         ? (_coins[i], _base[m])
                         : (_base[m], _coins[i]);
                 _p = IEmiswap(_factory.pools(IERC20(t0), IERC20(t1))); // do we have direct pair?
+                address[] memory _route;
+
                 if (address(_p) == address(0)) {
                     // we have to calc route
-                    address[] memory _route =
-                        _calculateRoute(_coins[i], _base[m]);
-                    if (_route.length == 0) {
-                        continue; // try next base token
-                    } else {
-                        uint256 _in = 10**target_decimal;
-                        uint256[] memory _amts =
-                            IEmiRouter(emiRouter).getAmountsOut(_in, _route);
-                        if (_amts.length > 0) {
-                            _prices[i] = _amts[_amts.length - 1].mul(
-                                10**(18 - base_decimal)
-                            );
-                        } else {
-                            _prices[i] = 0;
-                        }
-                        break;
-                    }
+                    _route = _calculateRoute(_coins[i], _base[m]);
+                } else { // just take direct pair
+                    _route = new address[](2);
+                    _route[0] = _coins[i];
+                    _route[1] = _base[m];
+                }
+                if (_route.length == 0) {
+                    continue; // try next base token
                 } else {
-                    // yes, calc direct price
-                    (_prices[i], ) = _p.getReturn(
-                        IERC20(_coins[i]),
-                        IERC20(_base[m]),
-                        10**target_decimal
-                    );
+                    uint256 _in = 10**target_decimal;
+                    uint256[] memory _amts =
+                        IEmiRouter(emiRouter).getAmountsOut(_in, _route);
+                    if (_amts.length > 0) {
+                        _prices[i] = _amts[_amts.length - 1].mul(
+                            10**(18 - base_decimal)
+                        );
+                    } else {
+                        _prices[i] = 0;
+                    }
                     break;
                 }
             }

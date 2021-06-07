@@ -285,6 +285,23 @@ describe('EmiPrice2 test', function () {
         assert.isAbove(p2, 10.81);
         assert.isBelow(p2, 10.811);
       });
+      it('should get our direct prices successfully', async function () {
+        let route = await price.calcRoute(usdzz.address, usdx.address);
+        console.log('Route to USDZZ from USDX: ', route);
+        
+        // take base token list by order, if first not found take next
+        let b = await price.getCoinPrices([usdx.address], [usdzz.address], 0);
+        console.log('Got price results: %s', b[0].toString());
+
+        let p0 = parseFloat(web3.utils.fromWei(b[0]));
+
+        console.log('Price calc: %f', p0);
+
+        assert.equal(b.length, 1);
+        assert.isAbove(p0, 0.029);
+        assert.isBelow(p0, 0.03);
+      });
+
       it('should get base token prices successfully', async function () {
         let b = await price.getCoinPrices([usdx.address, usdz.address], [usdx.address, usdz.address], 0);
         console.log('Got price results: %s, %s', b[0].toString(), b[1].toString());
