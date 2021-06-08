@@ -24,7 +24,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
     uint256 constant MARKET_1INCH = 2;
     uint256 constant MAX_PATH_LENGTH = 5;
 
-    string public codeVersion = "EmiPrice2 v1.0-183-g3ae9438";
+ string public codeVersion = "EmiPrice2 v1.0-200-g8d0b0fa";
 
     /**
      * @dev Upgradeable proxy constructor replacement
@@ -115,7 +115,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
 
     // internal methods
     function _getUniswapPrice(
-        address[] calldata _coins,
+        address[] memory _coins,
         address _base,
         uint256[] memory _prices
     ) internal view {
@@ -150,8 +150,8 @@ contract EmiPrice2 is Initializable, Priviledgeable {
      * @dev Get price from our router
      */
     function _getOurPrice(
-        address[] calldata _coins,
-        address[] calldata _base,
+        address[] memory _coins,
+        address[] memory _base,
         uint256[] memory _prices
     ) internal view {
         IEmiswapRegistry _factory = IEmiswapRegistry(market[MARKET_OUR]);
@@ -210,7 +210,7 @@ contract EmiPrice2 is Initializable, Priviledgeable {
      * @dev Get price from 1inch integrator
      */
     function _get1inchPrice(
-        address[] calldata _coins,
+        address[] memory _coins,
         address _base,
         uint256[] memory _prices
     ) internal view {
