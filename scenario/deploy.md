@@ -302,3 +302,24 @@ If upgrade proxy account differ from main system account, we need to setup admin
 6. To remove token from CrowdSale listing -> execute method "setStatusByID", with parameters:
     6.1 "index number"
     6.2 0 (status 0 - is not listed)
+
+### EmiPrice2
+0. Switch to SOLIDITY COMPILER tab.
+1. Switch to _EmiPric2.full.sol_ in opened file list tabs.
+2. Press big blue button *Compile EmiPrice2.sol*.
+3. Select *TransparentUpgradeableProxy* from Contract field.
+4. Change account address to upgrade admin account if it exist.
+5. Prepare initialization data:
+   1. On Deployed Contract section open EMIPRICE2 accordion
+   2. Select initialize method, open params pane
+   3. Set _market1_ field to this address (EmiFactory): 0x1771dff85160768255f0a44d20965665806cbf48.
+   4. Set _market2_ field to this address (Uniswap factory): 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f.
+   5. Set _market3_ field to this address (OneSplit contract): 0x1814222fa8c8c1C1bf380e3BBFBd9De8657Da476.
+   6. Set _emiRouter_ field to this address (EmiRouter): 0x52893082158EE997Bb46748bD2ccb2bbB5A23E71.
+   7. Set _uniRouter_ field to this address (Uniswap router02): 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D.
+   8. Press small double-sheet icon to the left of *transact* button (don't press button itself!!!)
+6. Set _LOGIC address_ parameter to emiPriceImpl address.
+7. Set _ADMIN address_ parameter to emiVotableProxyAdmin address.
+8. Set _DATA bytes_ parameter to value from step 5-8. It should look like long digits string: 0xcd6dc687000000000000000000000000652c9accc53e765e1d96e2455e618daab79ba5950000000000000000000000000000000000000000000000000000000000000001
+9. Push Transact button.
+10. On "Deployed Contracts" section -> last TransactUpgradeableProxy AT... entry write down final *EmiPrice2* address.
