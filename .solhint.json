@@ -5,7 +5,7 @@
       "avoid-throw": "off",
       "avoid-suicide": "error",
       "avoid-sha3": "warn",
-      "compiler-version": ["error", "^0.6.0"],
+      "compiler-version": ["error", "^0.6.12"],
       "private-vars-leading-underscore": "error"
     }
 }

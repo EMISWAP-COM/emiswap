@@ -154,7 +154,7 @@ describe('EmiFactory', function () {
             console.log('pool token name', await pool.name(), '|', 'pool token symbol', await pool.symbol(), '|');
 
             let calcedPoolAddress = 
-                (BigInt(token1.address) < BigInt(token2.address) ?             
+                (BigInt(token1.address) < BigInt(token2.address) ?
                     getCreate2Address(
                         this.factory.address,
                         keccak256(['bytes'], [pack(['address', 'address'], [token1.address, token2.address])]),

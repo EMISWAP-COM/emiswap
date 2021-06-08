@@ -13,6 +13,7 @@ interface IEmiswapRegistry {
     function isPool(address addr) external view returns (bool);
 
     function deploy(IERC20 tokenA, IERC20 tokenB) external returns (IEmiswap);
+    function getAllPools() external view returns (IEmiswap[] memory);
 }
 
 interface IEmiswap {
@@ -39,7 +40,7 @@ interface IEmiswap {
         IERC20 fromToken,
         IERC20 destToken,
         uint256 amount
-    ) external view returns (uint256 returnAmount);
+    ) external view returns (uint256, uint256);
 
     function swap(
         IERC20 fromToken,
@@ -50,5 +51,5 @@ interface IEmiswap {
         address referral
     ) external payable returns (uint256 returnAmount);
 
-    function initialize(IERC20[] memory assets) external;
+    function initialize(IERC20[] calldata assets) external;
 }
