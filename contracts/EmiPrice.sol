@@ -23,6 +23,7 @@ contract EmiPrice is Initializable, Priviledgeable {
  string public codeVersion = "EmiPrice v1.0-145-gf234c9e";
 
 
+
     /**
      * @dev Upgradeable proxy constructor replacement
      */
