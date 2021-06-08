@@ -217,11 +217,11 @@ describe('EmiPrice2 test', function () {
     });
     describe('get prices of coins', ()=> {
       it('should get Uniswap prices successfully', async function () {
-        console.log('USDZ-WETH:');
+        /* console.log('USDZ-WETH:');
         let amt = await uniswapRouter.getAmountsOut(money.usdc('1'), [usdz.address, weth.address]);
         amt.forEach(element => {
           console.log('amt', element.toString())
-        })
+        }) */
         console.log('USDX-WETH:');
         amt = await uniswapRouter.getAmountsOut(money.usdx('1'), [usdx.address, weth.address]);
         amt.forEach(element => {

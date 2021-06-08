@@ -311,6 +311,7 @@ interface IEmiswapRegistry {
     function isPool(address addr) external view returns (bool);
 
     function deploy(IERC20 tokenA, IERC20 tokenB) external returns (IEmiswap);
+    function getAllPools() external view returns (IEmiswap[] memory);
 }
 
 interface IEmiswap {
@@ -337,7 +338,7 @@ interface IEmiswap {
         IERC20 fromToken,
         IERC20 destToken,
         uint256 amount
-    ) external view returns (uint256 returnAmount);
+    ) external view returns (uint256, uint256);
 
     function swap(
         IERC20 fromToken,
@@ -348,7 +349,7 @@ interface IEmiswap {
         address referral
     ) external payable returns (uint256 returnAmount);
 
-    function initialize(IERC20[] calldata assets) external;
+    function initialize(IERC20[] memory assets) external;
 }
 
 // File: contracts/libraries/EmiswapLib.sol
@@ -374,7 +375,7 @@ library EmiswapLib {
             IEmiswapRegistry(factory).pools(IERC20(tokenFrom), IERC20(tokenTo));
 
         if (pairContract != IEmiswap(0)) {
-            ammountTo = pairContract.getReturn(
+            (,ammountTo) = pairContract.getReturn(
                 IERC20(tokenFrom),
                 IERC20(tokenTo),
                 ammountFrom
@@ -752,6 +753,13 @@ contract EmiRouter {
         distribution = _distribution;
     }
 
+    function resetAllowance(address token, address pairContract) public {
+        if (IERC20(token).allowance(address(this), pairContract) > 0) {
+            TransferHelper.safeApprove(token, pairContract, 0);
+        }
+    }
+
+
     // **** Liquidity ****
     /**
      * @param tokenA address of first token in pair
@@ -877,6 +885,8 @@ contract EmiRouter {
             amountB
         );
 
+        resetAllowance(tokenA, address(pairContract));
+        resetAllowance(tokenB, address(pairContract));
         TransferHelper.safeApprove(tokenA, address(pairContract), amountA);
         TransferHelper.safeApprove(tokenB, address(pairContract), amountB);
 
@@ -899,6 +909,7 @@ contract EmiRouter {
 
         //emit Log(amounts[0], amounts[1]);
         liquidity = IEmiswap(pairContract).deposit(amounts, minAmounts, ref);
+
         TransferHelper.safeTransfer(
             address(pairContract),
             msg.sender,
@@ -947,8 +958,11 @@ contract EmiRouter {
             address(this),
             amountToken
         );
+        // set allowance to 0
+        resetAllowance(token, address(pairContract));        
         TransferHelper.safeApprove(token, address(pairContract), amountToken);
         IWETH(WETH).deposit{value: amountETH}();
+        resetAllowance(WETH, address(pairContract));
         TransferHelper.safeApprove(WETH, address(pairContract), amountETH);
 
         uint256[] memory amounts;
@@ -1084,18 +1098,18 @@ contract EmiRouter {
         IEmiswap pairContract =
             IEmiswapRegistry(factory).pools(IERC20(tokenFrom), IERC20(tokenTo));
 
-        if (
-            pairContract.getReturn(
+        (, uint256 amt1) = pairContract.getReturn(
                 IERC20(tokenFrom),
                 IERC20(tokenTo),
                 ammountFrom
-            ) > 0
-        ) {
+            );
+        if (amt1 > 0) {
+            resetAllowance(tokenFrom, address(pairContract));
             TransferHelper.safeApprove(
                 tokenFrom,
                 address(pairContract),
                 ammountFrom
-            );
+            );            
             ammountTo = pairContract.swap(
                 IERC20(tokenFrom),
                 IERC20(tokenTo),
