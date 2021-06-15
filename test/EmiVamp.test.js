@@ -1,6 +1,6 @@
 // eslint-disable-next-line no-unused-vars
-const { accounts, defaultSender } = require('@openzeppelin/test-environment');
-const { ether, time, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
+const { accounts, privateKeys } = require('@openzeppelin/test-environment');
+const { ether, expectRevert } = require('@openzeppelin/test-helpers');
 const { default: BigNumber } = require('bignumber.js');
 const { assert } = require('chai');
 const { contract } = require('./twrapper');
@@ -69,12 +69,6 @@ v WBTC   (8)
 
 describe('EmiVamp test', function () {
   const [TestOwner, alice, bob, clarc, dave, eve, george, henry, ivan] = accounts;
-    /* const TestOwner = accounts[0];
-    const alice = accounts[1];
-    const bob = accounts[2];
-    const clarc = accounts[3];
-    const henry = accounts[4];
-    const dave = accounts[5]; */
 
     beforeEach(async function () {
         uniswapFactory = await UniswapV2Factory.new(TestOwner);

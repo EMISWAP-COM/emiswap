@@ -311,6 +311,7 @@ interface IEmiswapRegistry {
     function isPool(address addr) external view returns (bool);
 
     function deploy(IERC20 tokenA, IERC20 tokenB) external returns (IEmiswap);
+    function getAllPools() external view returns (IEmiswap[] memory);
 }
 
 interface IEmiswap {
@@ -337,7 +338,7 @@ interface IEmiswap {
         IERC20 fromToken,
         IERC20 destToken,
         uint256 amount
-    ) external view returns (uint256 returnAmount);
+    ) external view returns (uint256, uint256);
 
     function swap(
         IERC20 fromToken,
@@ -374,7 +375,7 @@ library EmiswapLib {
             IEmiswapRegistry(factory).pools(IERC20(tokenFrom), IERC20(tokenTo));
 
         if (pairContract != IEmiswap(0)) {
-            ammountTo = pairContract.getReturn(
+            (,ammountTo) = pairContract.getReturn(
                 IERC20(tokenFrom),
                 IERC20(tokenTo),
                 ammountFrom
@@ -752,6 +753,13 @@ contract EmiRouter {
         distribution = _distribution;
     }
 
+    function resetAllowance(address token, address pairContract) public {
+        if (IERC20(token).allowance(address(this), pairContract) > 0) {
+            TransferHelper.safeApprove(token, pairContract, 0);
+        }
+    }
+
+
     // **** Liquidity ****
     /**
      * @param tokenA address of first token in pair
@@ -808,7 +816,7 @@ contract EmiRouter {
             if (amountBOptimal <= amountBDesired) {
                 require(
                     amountBOptimal >= amountBMin,
-                    "EmiswapRouter: INSUFFICIENT_B_AMOUNT"
+                    "EmiRouter:INSUFFICIENT_B_AMOUNT"
                 );
                 (amountA, amountB) = (amountADesired, amountBOptimal);
             } else {
@@ -817,7 +825,7 @@ contract EmiRouter {
                 assert(amountAOptimal <= amountADesired);
                 require(
                     amountAOptimal >= amountAMin,
-                    "EmiswapRouter: INSUFFICIENT_A_AMOUNT"
+                    "EmiRouter:INSUFFICIENT_A_AMOUNT"
                 );
                 (amountA, amountB) = (amountAOptimal, amountBDesired);
             }
@@ -877,6 +885,8 @@ contract EmiRouter {
             amountB
         );
 
+        resetAllowance(tokenA, address(pairContract));
+        resetAllowance(tokenB, address(pairContract));
         TransferHelper.safeApprove(tokenA, address(pairContract), amountA);
         TransferHelper.safeApprove(tokenB, address(pairContract), amountB);
 
@@ -899,6 +909,7 @@ contract EmiRouter {
 
         //emit Log(amounts[0], amounts[1]);
         liquidity = IEmiswap(pairContract).deposit(amounts, minAmounts, ref);
+
         TransferHelper.safeTransfer(
             address(pairContract),
             msg.sender,
@@ -947,8 +958,11 @@ contract EmiRouter {
             address(this),
             amountToken
         );
+        // set allowance to 0
+        resetAllowance(token, address(pairContract));        
         TransferHelper.safeApprove(token, address(pairContract), amountToken);
         IWETH(WETH).deposit{value: amountETH}();
+        resetAllowance(WETH, address(pairContract));
         TransferHelper.safeApprove(WETH, address(pairContract), amountETH);
 
         uint256[] memory amounts;
@@ -1084,18 +1098,18 @@ contract EmiRouter {
         IEmiswap pairContract =
             IEmiswapRegistry(factory).pools(IERC20(tokenFrom), IERC20(tokenTo));
 
-        if (
-            pairContract.getReturn(
+        (, uint256 amt1) = pairContract.getReturn(
                 IERC20(tokenFrom),
                 IERC20(tokenTo),
                 ammountFrom
-            ) > 0
-        ) {
+            );
+        if (amt1 > 0) {
+            resetAllowance(tokenFrom, address(pairContract));
             TransferHelper.safeApprove(
                 tokenFrom,
                 address(pairContract),
                 ammountFrom
-            );
+            );            
             ammountTo = pairContract.swap(
                 IERC20(tokenFrom),
                 IERC20(tokenTo),
@@ -1151,7 +1165,7 @@ contract EmiRouter {
         amounts = getAmountsOut(amountIn, path);
         require(
             amounts[amounts.length - 1] >= amountOutMin,
-            "EmiswapRouter: INSUFFICIENT_OUTPUT_AMOUNT"
+            "EmiRouter:INSUFFICIENT_OUTPUT_AMOUNT"
         );
 
         TransferHelper.safeTransferFrom(
@@ -1182,7 +1196,7 @@ contract EmiRouter {
         amounts = getAmountsIn(amountOut, path);
         require(
             amounts[0] <= amountInMax,
-            "EmiswapRouter: EXCESSIVE_INPUT_AMOUNT"
+            "EmiRouter:EXCESSIVE_INPUT_AMOUNT"
         );
 
         TransferHelper.safeTransferFrom(
@@ -1208,11 +1222,11 @@ contract EmiRouter {
         address to,
         address ref
     ) external payable returns (uint256[] memory amounts) {
-        require(path[0] == WETH, "EmiswapRouter: INVALID_PATH");
+        require(path[0] == WETH, "EmiRouter:INVALID_PATH");
         amounts = getAmountsOut(msg.value, path);
         require(
             amounts[amounts.length - 1] >= amountOutMin,
-            "EmiswapRouter: INSUFFICIENT_OUTPUT_AMOUNT"
+            "EmiRouter:INSUFFICIENT_OUTPUT_AMOUNT"
         );
         IWETH(WETH).deposit{value: amounts[0]}();
         _swapbyRoute(path, amounts[0], to, ref);
@@ -1234,9 +1248,9 @@ contract EmiRouter {
         address to,
         address ref
     ) external returns (uint256[] memory amounts) {
-        require(path[path.length - 1] == WETH, "EmiswapRouter: INVALID_PATH");
+        require(path[path.length - 1] == WETH, "EmiRouter:INVALID_PATH");
         amounts = getAmountsIn(amountOut, path);
-        require(amounts[0] <= amountInMax, "EmiswapRouter: EXCESSIVE_AMOUNT");
+        require(amounts[0] <= amountInMax, "EmiRouter:EXCESSIVE_AMOUNT");
 
         TransferHelper.safeTransferFrom(
             path[0],
@@ -1264,7 +1278,7 @@ contract EmiRouter {
         address to,
         address ref
     ) external {
-        require(path[path.length - 1] == WETH, "EmiswapRouter: INVALID_PATH");
+        require(path[path.length - 1] == WETH, "EmiRouter:INVALID_PATH");
         TransferHelper.safeTransferFrom(
             path[0],
             msg.sender,
@@ -1292,11 +1306,11 @@ contract EmiRouter {
         address to,
         address ref
     ) external payable returns (uint256[] memory amounts) {
-        require(path[0] == WETH, "EmiswapRouter: INVALID_PATH");
+        require(path[0] == WETH, "EmiRouter:INVALID_PATH");
         amounts = getAmountsIn(amountOut, path);
         require(
             amounts[0] <= msg.value,
-            "EmiswapRouter: EXCESSIVE_INPUT_AMOUNT"
+            "EmiRouter:EXCESSIVE_INPUT_AMOUNT"
         );
 
         IWETH(WETH).deposit{value: amounts[0]}();

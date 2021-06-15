@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract MockUSDY is ERC20 {
     uint256 private constant _INITIAL_SUPPLY =
-        100000000 *
+        10000000000 *
             (10 **
                 /* 18 */
                 8);

@@ -20,7 +20,7 @@ library EmiswapLib {
             IEmiswapRegistry(factory).pools(IERC20(tokenFrom), IERC20(tokenTo));
 
         if (pairContract != IEmiswap(0)) {
-            ammountTo = pairContract.getReturn(
+            (,ammountTo) = pairContract.getReturn(
                 IERC20(tokenFrom),
                 IERC20(tokenTo),
                 ammountFrom
